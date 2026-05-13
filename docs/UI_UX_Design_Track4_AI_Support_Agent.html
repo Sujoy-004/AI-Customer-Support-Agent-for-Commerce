@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI/UX Design — AI Customer Support Agent</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --primary: #0F4C81;
+    --primary-light: #E8F1FA;
+    --primary-mid: #378ADD;
+    --accent: #047857;
+    --accent-light: #ECFDF5;
+    --text-dark: #111827;
+    --text-mid: #374151;
+    --text-soft: #6B7280;
+    --border: #E5E7EB;
+    --surface: #F9FAFB;
+    --white: #FFFFFF;
+    --danger: #DC2626;
+    --warning: #D97706;
+    --success: #047857;
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: #F0F4F8; color: var(--text-dark); }
+
+  /* NAV */
+  .nav { background: var(--primary); padding: 0 2rem; display: flex; align-items: center; gap: 2rem; height: 56px; }
+  .nav-brand { color: white; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.3px; }
+  .nav-brand span { color: #93C5FD; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab { color: rgba(255,255,255,0.65); font-size: 0.85rem; padding: 6px 14px; border-radius: 8px; cursor: pointer; border: none; background: transparent; transition: all 0.15s; }
+  .nav-tab.active, .nav-tab:hover { color: white; background: rgba(255,255,255,0.15); }
+  .nav-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: #3B82F6; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600; }
+
+  /* LAYOUT */
+  .canvas { display: none; padding: 2rem; }
+  .canvas.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 2rem; }
+  .page-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.25rem; }
+  .page-header p { color: var(--text-soft); font-size: 0.875rem; }
+
+  /* CARD */
+  .card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); }
+  .card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-weight: 600; font-size: 0.9rem; color: var(--text-dark); }
+  .card-body { padding: 1.5rem; }
+
+  /* GRID LAYOUTS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+  /* STAT CARD */
+  .stat-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 1.25rem 1.5rem; }
+  .stat-label { font-size: 0.75rem; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+  .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--text-dark); }
+  .stat-delta { font-size: 0.75rem; margin-top: 0.25rem; }
+  .delta-up { color: var(--success); }
+  .delta-down { color: var(--danger); }
+
+  /* BADGE */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+  .badge-green { background: #D1FAE5; color: #065F46; }
+  .badge-blue { background: #DBEAFE; color: #1E40AF; }
+  .badge-amber { background: #FEF3C7; color: #92400E; }
+  .badge-red { background: #FEE2E2; color: #991B1B; }
+  .badge-gray { background: #F3F4F6; color: #374151; }
+
+  /* ===================== CHAT SCREEN ===================== */
+  .chat-layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; height: calc(100vh - 160px); min-height: 600px; }
+  
+  /* Sidebar */
+  .chat-sidebar { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-header { padding: 1rem; border-bottom: 1px solid var(--border); }
+  .sidebar-search { width: 100%; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; color: var(--text-dark); background: var(--surface); outline: none; }
+  .sidebar-search:focus { border-color: var(--primary-mid); }
+  .sidebar-section-label { padding: 0.75rem 1rem 0.25rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-soft); font-weight: 600; }
+  .convo-item { display: flex; align-items: flex-start; gap: 10px; padding: 0.75rem 1rem; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; }
+  .convo-item:hover { background: var(--surface); }
+  .convo-item.active { background: var(--primary-light); border-left-color: var(--primary); }
+  .convo-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+  .convo-info { flex: 1; min-width: 0; }
+  .convo-name { font-size: 0.82rem; font-weight: 600; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .convo-preview { font-size: 0.75rem; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .convo-time { font-size: 0.68rem; color: var(--text-soft); white-space: nowrap; }
+  .convo-unread { width: 8px; height: 8px; background: var(--primary-mid); border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+
+  /* Chat area */
+  .chat-area { display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .chat-topbar { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .chat-topbar-info { flex: 1; }
+  .chat-topbar-name { font-weight: 600; font-size: 0.9rem; color: var(--text-dark); }
+  .chat-topbar-sub { font-size: 0.75rem; color: var(--text-soft); }
+  .chat-topbar-actions { display: flex; gap: 8px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-soft); font-size: 0.9rem; transition: all 0.15s; }
+  .icon-btn:hover { background: var(--surface); color: var(--text-dark); }
+  .escalate-btn { padding: 6px 14px; background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+
+  /* Messages */
+  .chat-messages { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; background: var(--surface); }
+  .msg { display: flex; gap: 10px; max-width: 85%; }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+  .msg-bubble { padding: 10px 14px; border-radius: 16px; font-size: 0.83rem; line-height: 1.5; }
+  .msg.agent .msg-bubble { background: var(--white); border: 1px solid var(--border); color: var(--text-dark); border-bottom-left-radius: 4px; }
+  .msg.user .msg-bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+  .msg-time { font-size: 0.65rem; color: var(--text-soft); margin-top: 3px; text-align: center; }
+
+  /* Order card in chat */
+  .order-card-inline { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 8px; font-size: 0.8rem; }
+  .order-card-inline .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .order-card-inline .row:last-child { margin-bottom: 0; }
+  .order-card-inline .label { color: var(--text-soft); }
+  .order-card-inline .value { font-weight: 600; color: var(--text-dark); }
+
+  /* Workflow pills */
+  .workflow-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .workflow-pill { padding: 5px 12px; background: var(--white); border: 1px solid var(--border); border-radius: 20px; font-size: 0.75rem; color: var(--primary); cursor: pointer; font-weight: 500; transition: all 0.15s; }
+  .workflow-pill:hover { background: var(--primary-light); border-color: var(--primary-mid); }
+
+  /* Chat input */
+  .chat-input-area { padding: 1rem; border-top: 1px solid var(--border); background: var(--white); }
+  .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input-box { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.83rem; font-family: var(--font); resize: none; outline: none; transition: border-color 0.15s; min-height: 42px; max-height: 120px; }
+  .chat-input-box:focus { border-color: var(--primary-mid); }
+  .send-btn { width: 42px; height: 42px; background: var(--primary); border: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 1rem; flex-shrink: 0; transition: background 0.15s; }
+  .send-btn:hover { background: var(--primary-mid); }
+  .input-hints { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .hint-chip { padding: 4px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 0.72rem; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
+  .hint-chip:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary-mid); }
+
+  /* Order panel (right side of chat) */
+  .order-panel { position: relative; }
+  .order-panel-inner { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .order-timeline { margin-top: 1rem; display: flex; flex-direction: column; gap: 0; }
+  .timeline-step { display: flex; gap: 12px; padding-bottom: 20px; position: relative; }
+  .timeline-step:last-child { padding-bottom: 0; }
+  .timeline-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; border: 2px solid; }
+  .dot-done { background: var(--success); border-color: var(--success); }
+  .dot-active { background: var(--primary-mid); border-color: var(--primary-mid); box-shadow: 0 0 0 3px rgba(55, 138, 221, 0.2); }
+  .dot-pending { background: var(--white); border-color: var(--border); }
+  .timeline-line { position: absolute; left: 7px; top: 20px; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-step:last-child .timeline-line { display: none; }
+  .timeline-content { flex: 1; }
+  .timeline-label { font-size: 0.8rem; font-weight: 600; color: var(--text-dark); }
+  .timeline-sub { font-size: 0.72rem; color: var(--text-soft); margin-top: 1px; }
+
+  /* ===================== DASHBOARD ===================== */
+  .dashboard-layout { display: flex; flex-direction: column; gap: 1.5rem; }
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+  /* Chart placeholder */
+  .chart-bar-group { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-top: 12px; }
+  .chart-bar { flex: 1; border-radius: 6px 6px 0 0; min-height: 8px; transition: opacity 0.2s; cursor: pointer; }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-labels { display: flex; gap: 6px; margin-top: 6px; }
+  .chart-label { flex: 1; text-align: center; font-size: 0.68rem; color: var(--text-soft); }
+
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .data-table th { text-align: left; padding: 10px 12px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-soft); font-weight: 600; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; color: var(--text-mid); vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface); }
+
+  /* Donut placeholder */
+  .donut-wrap { display: flex; align-items: center; gap: 2rem; }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ===================== POLICY SCREEN ===================== */
+  .policy-layout { display: grid; grid-template-columns: 240px 1fr; gap: 1.5rem; }
+  .policy-nav-item { padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-mid); transition: all 0.15s; }
+  .policy-nav-item:hover { background: var(--surface); }
+  .policy-nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .policy-section { margin-bottom: 2rem; }
+  .policy-section h3 { font-size: 0.9rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+  .policy-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F3F4F6; font-size: 0.82rem; }
+  .policy-row:last-child { border-bottom: none; }
+  .policy-key { color: var(--text-soft); }
+  .policy-val { color: var(--text-dark); font-weight: 500; }
+
+  /* ===================== ESCALATION ===================== */
+  .escalation-layout { display: grid; grid-template-columns: 1fr 360px; gap: 1.5rem; }
+  .escalation-queue-item { padding: 1rem; border-bottom: 1px solid var(--border); display: flex; gap: 12px; cursor: pointer; transition: background 0.15s; }
+  .escalation-queue-item:hover { background: var(--surface); }
+  .escalation-queue-item.urgent { border-left: 3px solid var(--danger); }
+  .escalation-queue-item.normal { border-left: 3px solid var(--primary-mid); }
+  .eq-info { flex: 1; }
+  .eq-name { font-size: 0.83rem; font-weight: 600; color: var(--text-dark); }
+  .eq-reason { font-size: 0.75rem; color: var(--text-soft); margin-top: 2px; }
+  .eq-time { font-size: 0.7rem; color: var(--text-soft); }
+  .context-packet { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; padding: 1rem; }
+  .context-packet h4 { font-size: 0.78rem; font-weight: 700; color: #92400E; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .context-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.78rem; border-bottom: 1px solid #FEF3C7; }
+  .context-row:last-child { border-bottom: none; }
+  .context-k { color: #A16207; }
+  .context-v { color: #78350F; font-weight: 600; }
+
+  /* Status bar */
+  .status-bar { padding: 6px 1rem; background: var(--accent); color: white; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; border-radius: 8px; margin-bottom: 1rem; }
+  .status-dot { width: 7px; height: 7px; background: #86EFAC; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="nav">
+  <div class="nav-brand">Kasparro <span>Support</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('chat', this)">Chat Console</button>
+    <button class="nav-tab" onclick="showTab('dashboard', this)">Dashboard</button>
+    <button class="nav-tab" onclick="showTab('policy', this)">Policy Store</button>
+    <button class="nav-tab" onclick="showTab('escalation', this)">Escalations</button>
+  </div>
+  <div class="nav-right">
+    <div class="status-dot" style="width:8px;height:8px;background:#86EFAC;border-radius:50%;animation:pulse 2s infinite;"></div>
+    <span style="color:rgba(255,255,255,0.8);font-size:0.78rem;">AI Agent Online</span>
+    <div class="nav-avatar">SA</div>
+  </div>
+</nav>
+
+<!-- ========== CHAT SCREEN ========== -->
+<div id="tab-chat" class="canvas active">
+  <div class="page-header">
+    <h1>Chat Console</h1>
+    <p>Active customer conversations — AI-handled with live Shopify integration</p>
+  </div>
+  <div class="chat-layout">
+    
+    <!-- Sidebar: conversation list -->
+    <div class="chat-sidebar">
+      <div class="sidebar-header">
+        <input class="sidebar-search" type="text" placeholder="🔍  Search conversations…">
+      </div>
+      <div style="overflow-y:auto;flex:1;">
+        <div class="sidebar-section-label">Active · 3</div>
+        
+        <div class="convo-item active">
+          <div class="convo-avatar" style="background:#DBEAFE;color:#1E40AF;">PR</div>
+          <div class="convo-info">
+            <div class="convo-name">Priya Rao</div>
+            <div class="convo-preview">Where is my order #4821?</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <div class="convo-time">2m ago</div>
+            <div class="convo-unread"></div>
+          </div>
+        </div>
+
+        <div class="convo-item">
+          <div class="convo-avatar" style="background:#D1FAE5;color:#065F46;">AK</div>
+          <div class="convo-info">
+            <div class="convo-name">Arjun Kumar</div>
+            <div class="convo-preview">I want to return my jacket</div>
+          </div>
+          <div class="convo-time">9m ago</div>
+        </div>
+
+        <div class="convo-item">
+          <div class="convo-avatar" style="background:#FEE2E2;color:#991B1B;">SM</div>
+          <div class="convo-info">
+            <div class="convo-name">Sneha Mehta</div>
+            <div class="convo-preview">Is the L size available?</div>
+          </div>
+          <div class="convo-time">14m ago</div>
+        </div>
+
+        <div class="sidebar-section-label">Resolved today · 12</div>
+
+        <div class="convo-item" style="opacity:0.6;">
+          <div class="convo-avatar" style="background:#F3F4F6;color:#6B7280;">VN</div>
+          <div class="convo-info">
+            <div class="convo-name">Vikram N.</div>
+            <div class="convo-preview">Return initiated ✓</div>
+          </div>
+          <div class="convo-time">1h ago</div>
+        </div>
+
+        <div class="convo-item" style="opacity:0.6;">
+          <div class="convo-avatar" style="background:#F3F4F6;color:#6B7280;">DG</div>
+          <div class="convo-info">
+            <div class="convo-name">Deepa G.</div>
+            <div class="convo-preview">Tracking link sent ✓</div>
+          </div>
+          <div class="convo-time">2h ago</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main chat area -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="chat-area" style="flex:1;">
+        <!-- Topbar -->
+        <div class="chat-topbar">
+          <div class="convo-avatar" style="background:#DBEAFE;color:#1E40AF;width:36px;height:36px;font-size:0.75rem;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">PR</div>
+          <div class="chat-topbar-info">
+            <div class="chat-topbar-name">Priya Rao &nbsp;<span class="badge badge-blue">Order Lookup</span></div>
+            <div class="chat-topbar-sub">priya.rao@email.com · Order #4821 · Verified ✓</div>
+          </div>
+          <div class="chat-topbar-actions">
+            <button class="icon-btn" title="View Order"><i class="fas fa-box"></i></button>
+            <button class="icon-btn" title="Customer History"><i class="fas fa-clock-rotate-left"></i></button>
+            <button class="escalate-btn"><i class="fas fa-arrow-up-right-from-square"></i> Escalate</button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chat-messages">
+
+          <div class="msg agent">
+            <div class="msg-avatar" style="background:#E8F1FA;color:#1A56DB;">AI</div>
+            <div>
+              <div class="msg-bubble">Hi Priya! 👋 I'm here to help. What can I assist you with today?</div>
+              <div class="workflow-pills">
+                <div class="workflow-pill">📦 Track my order</div>
+                <div class="workflow-pill">↩️ Start a return</div>
+                <div class="workflow-pill">❓ Ask about a product</div>
+                <div class="workflow-pill">📄 Return policy</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="msg user">
+            <div class="msg-avatar" style="background:#DBEAFE;color:#1E40AF;">PR</div>
+            <div>
+              <div class="msg-bubble">Where is my order #4821? It's been 4 days</div>
+              <div class="msg-time">10:41 AM</div>
+            </div>
+          </div>
+
+          <div class="msg agent">
+            <div class="msg-avatar" style="background:#E8F1FA;color:#1A56DB;">AI</div>
+            <div>
+              <div class="msg-bubble">
+                Let me look that up for you right now.<br><br>
+                <span style="color:var(--text-soft);font-size:0.78rem;"><i class="fas fa-circle-check" style="color:#047857;"></i> Order verified &nbsp;·&nbsp; <i class="fas fa-plug" style="color:#0F4C81;"></i> Shopify API · live data</span>
+                <div class="order-card-inline">
+                  <div class="row"><span class="label">Order</span><span class="value">#4821</span></div>
+                  <div class="row"><span class="label">Status</span><span><span class="badge badge-blue"><i class="fas fa-truck"></i>&nbsp;In Transit</span></span></div>
+                  <div class="row"><span class="label">Carrier</span><span class="value">BlueDart</span></div>
+                  <div class="row"><span class="label">Tracking</span><span style="color:#1A56DB;font-weight:600;font-size:0.8rem;">BD9912847561</span></div>
+                  <div class="row"><span class="label">Est. Delivery</span><span class="value" style="color:#047857;">Tomorrow by 8 PM</span></div>
+                </div>
+                <div style="margin-top:10px;font-size:0.82rem;">Your order shipped on May 11 and is currently at the Delhi hub. Expected delivery is <strong>tomorrow (May 14)</strong> by 8 PM. Would you like the full tracking link?</div>
+              </div>
+              <div class="msg-time">10:41 AM</div>
+            </div>
+          </div>
+
+          <div class="msg user">
+            <div class="msg-avatar" style="background:#DBEAFE;color:#1E40AF;">PR</div>
+            <div>
+              <div class="msg-bubble">Yes please, and what if it doesn't arrive?</div>
+              <div class="msg-time">10:43 AM</div>
+            </div>
+          </div>
+
+          <div class="msg agent">
+            <div class="msg-avatar" style="background:#E8F1FA;color:#1A56DB;">AI</div>
+            <div>
+              <div class="msg-bubble">
+                Here's your tracking link: <a href="#" style="color:#1A56DB;font-weight:600;">BlueDart Track → BD9912847561</a><br><br>
+                If your order doesn't arrive by May 15, our policy covers a free reship or full refund. Just message us — I can start that process for you directly here. No forms needed.
+              </div>
+              <div class="msg-time">10:43 AM</div>
+            </div>
+          </div>
+
+          <div style="text-align:center;padding:8px 0;">
+            <div style="display:inline-flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-soft);background:var(--surface);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">
+              <span style="width:8px;height:8px;border-radius:50%;background:#10B981;display:inline-block;animation:pulse 1.5s infinite;"></span>
+              AI is responding…
+            </div>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-area">
+          <div class="input-hints">
+            <div class="hint-chip">Send tracking link</div>
+            <div class="hint-chip">Offer reship</div>
+            <div class="hint-chip">Escalate to human</div>
+            <div class="hint-chip">Mark resolved</div>
+          </div>
+          <div class="chat-input-row">
+            <textarea class="chat-input-box" rows="1" placeholder="Type a message or let the AI handle it…"></textarea>
+            <button class="send-btn"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== DASHBOARD SCREEN ========== -->
+<div id="tab-dashboard" class="canvas">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p>AI agent performance — today, May 13 2026</p>
+  </div>
+  <div class="dashboard-layout">
+    
+    <div class="metrics-row">
+      <div class="stat-card">
+        <div class="stat-label">Conversations Today</div>
+        <div class="stat-value">147</div>
+        <div class="stat-delta delta-up">↑ 12% vs yesterday</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">AI Resolution Rate</div>
+        <div class="stat-value">68%</div>
+        <div class="stat-delta delta-up">↑ 4pp this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Escalation Rate</div>
+        <div class="stat-value">11%</div>
+        <div class="stat-delta delta-up">↓ 3pp (target &lt;15%)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg. Resolution Time</div>
+        <div class="stat-value">74s</div>
+        <div class="stat-delta delta-up">↓ 18s vs last week</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Volume chart -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Conversation Volume (Today)</div>
+          <span class="badge badge-gray">Hourly</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-bar-group">
+            <div class="chart-bar" style="height:30%;background:#BFDBFE;"></div>
+            <div class="chart-bar" style="height:20%;background:#BFDBFE;"></div>
+            <div class="chart-bar" style="height:45%;background:#BFDBFE;"></div>
+            <div class="chart-bar" style="height:60%;background:#3B82F6;"></div>
+            <div class="chart-bar" style="height:80%;background:#3B82F6;"></div>
+            <div class="chart-bar" style="height:100%;background:#1D4ED8;"></div>
+            <div class="chart-bar" style="height:85%;background:#3B82F6;"></div>
+            <div class="chart-bar" style="height:65%;background:#3B82F6;"></div>
+            <div class="chart-bar" style="height:50%;background:#BFDBFE;"></div>
+          </div>
+          <div class="chart-labels">
+            <div class="chart-label">9am</div><div class="chart-label">10am</div><div class="chart-label">11am</div>
+            <div class="chart-label">12pm</div><div class="chart-label">1pm</div><div class="chart-label">2pm</div>
+            <div class="chart-label">3pm</div><div class="chart-label">4pm</div><div class="chart-label">5pm</div>
+          </div>
+          <div style="margin-top:1rem;font-size:0.75rem;color:var(--text-soft);">Peak: 2pm (23 conversations). AI resolved 18 of 23 without escalation.</div>
+        </div>
+      </div>
+
+      <!-- Workflow breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Workflow Breakdown</div>
+          <span class="badge badge-green">Live</span>
+        </div>
+        <div class="card-body">
+          <div class="donut-wrap">
+            <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#E5E7EB" stroke-width="16"/>
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#3B82F6" stroke-width="16" stroke-dasharray="120 181" stroke-dashoffset="0" stroke-linecap="round"/>
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#10B981" stroke-width="16" stroke-dasharray="72 229" stroke-dashoffset="-120" stroke-linecap="round"/>
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#F59E0B" stroke-width="16" stroke-dasharray="54 247" stroke-dashoffset="-192" stroke-linecap="round"/>
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#8B5CF6" stroke-width="16" stroke-dasharray="35 265" stroke-dashoffset="-246" stroke-linecap="round"/>
+              <text x="60" y="56" text-anchor="middle" font-size="18" font-weight="700" fill="#111827">147</text>
+              <text x="60" y="70" text-anchor="middle" font-size="9" fill="#6B7280">total</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#3B82F6;"></div><span>Order Status <strong>40%</strong></span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#10B981;"></div><span>Returns <strong>24%</strong></span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#F59E0B;"></div><span>Product Info <strong>18%</strong></span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6;"></div><span>Policy Q&amp;A <strong>12%</strong></span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#E5E7EB;"></div><span>Escalated <strong>6%</strong></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent conversations table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Conversations</div>
+        <button style="font-size:0.78rem;padding:5px 12px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;color:var(--text-mid);">View All</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Customer</th><th>Workflow</th><th>Status</th><th>Resolution</th><th>Duration</th><th>CSAT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Priya Rao</strong><br><span style="font-size:0.72rem;color:var(--text-soft);">priya.rao@email.com</span></td><td><span class="badge badge-blue">Order Status</span></td><td><span class="badge badge-green">In Progress</span></td><td>—</td><td>2m 14s</td><td>—</td></tr>
+          <tr><td><strong>Vikram Nair</strong><br><span style="font-size:0.72rem;color:var(--text-soft);">vnair@gmail.com</span></td><td><span class="badge badge-amber">Return Init</span></td><td><span class="badge badge-green">Resolved</span></td><td>AI Self-Serve</td><td>1m 42s</td><td>⭐ 5.0</td></tr>
+          <tr><td><strong>Deepa Gupta</strong><br><span style="font-size:0.72rem;color:var(--text-soft);">deepa.g@hotmail.com</span></td><td><span class="badge badge-blue">Order Status</span></td><td><span class="badge badge-green">Resolved</span></td><td>AI Self-Serve</td><td>58s</td><td>⭐ 4.8</td></tr>
+          <tr><td><strong>Rohan Sharma</strong><br><span style="font-size:0.72rem;color:var(--text-soft);">rohans@work.in</span></td><td><span class="badge badge-gray">Other</span></td><td><span class="badge badge-red">Escalated</span></td><td>Human Agent</td><td>3m 5s</td><td>⭐ 3.2</td></tr>
+          <tr><td><strong>Arjun Kumar</strong><br><span style="font-size:0.72rem;color:var(--text-soft);">arjun.k@email.com</span></td><td><span class="badge badge-amber">Return Init</span></td><td><span class="badge badge-blue">In Progress</span></td><td>—</td><td>4m 18s</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== POLICY SCREEN ========== -->
+<div id="tab-policy" class="canvas">
+  <div class="page-header">
+    <h1>Policy Store</h1>
+    <p>Structured policy documents that ground AI responses — no hallucinations</p>
+  </div>
+  <div class="policy-layout">
+    <div class="card" style="height:fit-content;">
+      <div class="card-body" style="padding:1rem;">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-soft);margin-bottom:0.75rem;font-weight:600;">Policy Sections</div>
+        <div class="policy-nav-item active"><i class="fas fa-rotate-left"></i> Returns & Refunds</div>
+        <div class="policy-nav-item"><i class="fas fa-truck"></i> Shipping</div>
+        <div class="policy-nav-item"><i class="fas fa-shield-halved"></i> Warranty</div>
+        <div class="policy-nav-item"><i class="fas fa-circle-question"></i> FAQ Edge Cases</div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-soft);margin-bottom:0.5rem;font-weight:600;">Status</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:0.78rem;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-soft);">Last indexed</span><span style="color:var(--text-dark);font-weight:500;">May 13, 2026</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-soft);">Chunks</span><span style="color:var(--text-dark);font-weight:500;">84 vectors</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-soft);">Store</span><span style="color:var(--success);font-weight:500;">Upstash ✓</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Returns & Refunds Policy</div>
+        <div style="display:flex;gap:8px;">
+          <span class="badge badge-green"><i class="fas fa-circle"></i>&nbsp; Active</span>
+          <button style="font-size:0.78rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;">Edit</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:10px 14px;font-size:0.8rem;color:#065F46;margin-bottom:1.5rem;">
+          <i class="fas fa-robot"></i>&nbsp; This policy is chunked into 22 semantic vectors and retrieved by the AI agent for every returns-related query. The AI composes the final response but cannot deviate from this source.
+        </div>
+
+        <div class="policy-section">
+          <h3>Return Window</h3>
+          <div class="policy-row"><span class="policy-key">Standard return period</span><span class="policy-val">30 days from delivery</span></div>
+          <div class="policy-row"><span class="policy-key">Sale / discounted items</span><span class="policy-val">14 days from delivery</span></div>
+          <div class="policy-row"><span class="policy-key">Defective / wrong item</span><span class="policy-val">60 days, no questions</span></div>
+        </div>
+
+        <div class="policy-section">
+          <h3>Return Conditions</h3>
+          <div class="policy-row"><span class="policy-key">Item condition</span><span class="policy-val">Unused, tags attached</span></div>
+          <div class="policy-row"><span class="policy-key">Packaging</span><span class="policy-val">Original packaging preferred</span></div>
+          <div class="policy-row"><span class="policy-key">Non-returnable categories</span><span class="policy-val">Innerwear, customized items</span></div>
+        </div>
+
+        <div class="policy-section">
+          <h3>Refund Process</h3>
+          <div class="policy-row"><span class="policy-key">Refund method</span><span class="policy-val">Original payment method</span></div>
+          <div class="policy-row"><span class="policy-key">Processing time</span><span class="policy-val">5-7 business days after pickup</span></div>
+          <div class="policy-row"><span class="policy-key">Return shipping cost</span><span class="policy-val">Free (prepaid label provided)</span></div>
+        </div>
+
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:0.8rem;color:#1E40AF;margin-top:0.5rem;">
+          <i class="fas fa-magnifying-glass"></i>&nbsp; <strong>Test retrieval:</strong> "What's your return policy for sale items?" → Agent retrieves "Sale / discounted items: 14 days from delivery" with 0.94 confidence score.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ESCALATION SCREEN ========== -->
+<div id="tab-escalation" class="canvas">
+  <div class="page-header">
+    <h1>Escalation Queue</h1>
+    <p>Conversations the AI handed off — full context packaged for human agents</p>
+  </div>
+  <div class="escalation-layout">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Open Escalations (3)</div>
+        <div style="display:flex;gap:8px;">
+          <span class="badge badge-red">1 Urgent</span>
+          <span class="badge badge-blue">2 Normal</span>
+        </div>
+      </div>
+      <div>
+        <div class="escalation-queue-item urgent">
+          <div class="convo-avatar" style="background:#FEE2E2;color:#991B1B;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;">RS</div>
+          <div class="eq-info">
+            <div class="eq-name">Rohan Sharma <span class="badge badge-red" style="font-size:0.65rem;margin-left:4px;">URGENT</span></div>
+            <div class="eq-reason">Trigger: Repeated escalation request + high negative sentiment (0.12)</div>
+            <div style="margin-top:4px;font-size:0.75rem;color:var(--text-soft);">"This is absolutely unacceptable. I've been waiting 8 days…"</div>
+          </div>
+          <div class="eq-time">8m ago</div>
+        </div>
+
+        <div class="escalation-queue-item normal">
+          <div class="convo-avatar" style="background:#E8F1FA;color:#1A56DB;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;">MP</div>
+          <div class="eq-info">
+            <div class="eq-name">Meera Pillai</div>
+            <div class="eq-reason">Trigger: Unknown workflow class — bulk order inquiry (3 orders)</div>
+            <div style="margin-top:4px;font-size:0.75rem;color:var(--text-soft);">"I'm placing orders for my entire office team…"</div>
+          </div>
+          <div class="eq-time">22m ago</div>
+        </div>
+
+        <div class="escalation-queue-item normal">
+          <div class="convo-avatar" style="background:#F3F4F6;color:#374151;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;">KJ</div>
+          <div class="eq-info">
+            <div class="eq-name">Kiran Joshi</div>
+            <div class="eq-reason">Trigger: Requested human agent explicitly</div>
+            <div style="margin-top:4px;font-size:0.75rem;color:var(--text-soft);">"Can I speak to a real person please?"</div>
+          </div>
+          <div class="eq-time">41m ago</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context packet -->
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-header"><div class="card-title">Context Packet — Rohan Sharma</div></div>
+        <div class="card-body">
+          <div class="context-packet">
+            <h4>⚠️ Escalation Context (AI-Packaged)</h4>
+            <div class="context-row"><span class="context-k">Trigger</span><span class="context-v">Neg. sentiment × 3 msgs</span></div>
+            <div class="context-row"><span class="context-k">Sentiment Score</span><span class="context-v">0.12 / 1.0 (Critical)</span></div>
+            <div class="context-row"><span class="context-k">Order #</span><span class="context-v">#3947</span></div>
+            <div class="context-row"><span class="context-k">Issue</span><span class="context-v">8-day delivery delay</span></div>
+            <div class="context-row"><span class="context-k">Last AI Action</span><span class="context-v">Provided tracking link</span></div>
+            <div class="context-row"><span class="context-k">Attempts</span><span class="context-v">3 resolution attempts</span></div>
+          </div>
+          <div style="margin-top:1rem;font-size:0.78rem;color:var(--text-soft);background:var(--surface);border-radius:8px;padding:10px;">
+            <strong style="color:var(--text-dark);">Recommended action:</strong> Offer express reship or immediate refund. Customer has been a buyer for 2 years (4 orders). High LTV — retain with goodwill credit.
+          </div>
+          <div style="margin-top:1rem;display:flex;gap:8px;">
+            <button style="flex:1;padding:8px;background:var(--primary);color:white;border:none;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">Claim Conversation</button>
+            <button style="padding:8px 14px;border:1px solid var(--border);background:white;border-radius:8px;font-size:0.82rem;cursor:pointer;">View Full Transcript</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">Today's Escalation Stats</div></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:var(--surface);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:var(--text-dark);">11%</div><div style="font-size:0.72rem;color:var(--text-soft);margin-top:2px;">Escalation Rate</div></div>
+            <div style="background:var(--surface);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:var(--text-dark);">8m</div><div style="font-size:0.72rem;color:var(--text-soft);margin-top:2px;">Avg Wait Time</div></div>
+            <div style="background:#F0FDF4;border-radius:8px;padding:12px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:#065F46;">89%</div><div style="font-size:0.72rem;color:#047857;margin-top:2px;">AI Containment</div></div>
+            <div style="background:var(--surface);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:1.5rem;font-weight:700;color:var(--text-dark);">3</div><div style="font-size:0.72rem;color:var(--text-soft);margin-top:2px;">Open Now</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(name, btn) {
+  document.querySelectorAll('.canvas').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
