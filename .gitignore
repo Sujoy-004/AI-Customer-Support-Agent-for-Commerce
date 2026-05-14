@@ -1,0 +1,16 @@
+# Personal workspace manifests (not part of the project)
+SOVEREIGNTY.md
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# Dependency directories (if we start using npm, etc.)
+node_modules/
+.planning/
