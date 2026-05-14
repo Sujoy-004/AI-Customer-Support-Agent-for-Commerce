@@ -1,0 +1,9 @@
+.ksp-chat-widget {
+  --ksp-bg-canvas: #FDFBF7;
+  --ksp-border-hairline: 1px solid #1A1A1A;
+  --ksp-font-family: 'Berkeley Mono', monospace;
+  
+  background-color: var(--ksp-bg-canvas);
+  border: var(--ksp-border-hairline);
+  font-family: var(--ksp-font-family);
+}
