@@ -169,7 +169,7 @@ export class ChatWidget {
     }
   }
 
-  _toggle() {
+  _toggle(): void {
     this.state.isOpen = !this.state.isOpen;
     this.widget.classList.toggle('chat-widget--open', this.state.isOpen);
     this.toggleBtn.textContent = this.state.isOpen ? '[\u2212] Support' : '[+] Support';
@@ -179,15 +179,15 @@ export class ChatWidget {
     }
   }
 
-  open() {
+  open(): void {
     if (!this.state.isOpen) this._toggle();
   }
 
-  close() {
+  close(): void {
     if (this.state.isOpen) this._toggle();
   }
 
-  _setInputEnabled(enabled) {
+  _setInputEnabled(enabled: boolean): void {
     this.textarea.disabled = !enabled;
     this.sendBtn.disabled = !enabled;
     if (enabled) {
@@ -195,7 +195,7 @@ export class ChatWidget {
     }
   }
 
-  setProcessing(processing) {
+  setProcessing(processing: boolean): void {
     this.state.isProcessing = processing;
     this._setInputEnabled(!processing);
     if (processing) {
@@ -203,22 +203,22 @@ export class ChatWidget {
     }
   }
 
-  _updateSendButton() {
+  _updateSendButton(): void {
     const hasContent = this.textarea.value.trim().length > 0;
     this.sendBtn.classList.toggle('chat-input__send--active', hasContent);
   }
 
-  _autoGrow() {
+  _autoGrow(): void {
     this.textarea.style.height = 'auto';
     this.textarea.style.height = this.textarea.scrollHeight + 'px';
   }
 
-  _generateId() {
+  _generateId(): string {
     this._messageIdCounter += 1;
     return `msg-${Date.now()}-${this._messageIdCounter}`;
   }
 
-  _formatTimestamp(timestamp) {
+  _formatTimestamp(timestamp: number): string {
     const now = Date.now();
     const diffMs = now - timestamp;
     const diffSec = Math.floor(diffMs / 1000);
@@ -231,14 +231,14 @@ export class ChatWidget {
     return `${diffDay}d ago`;
   }
 
-  addMessage(msg) {
+  addMessage(msg: ChatMessage): ChatMessage {
     this.state.messages.push(msg);
     this._renderMessage(msg);
     this._scrollToBottom();
     return msg;
   }
 
-  _createMessage(text, role, status = 'delivered') {
+  _createMessage(text: string, role: ChatMessage['role'], status: ChatMessage['status'] = 'delivered'): ChatMessage {
     return {
       id: this._generateId(),
       role,
@@ -248,7 +248,7 @@ export class ChatWidget {
     };
   }
 
-  _renderMessage(msg) {
+  _renderMessage(msg: ChatMessage): void {
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble chat-bubble--${msg.role === 'user' ? 'user' : msg.role === 'agent' ? 'agent' : 'error'}`;
     bubble.dataset.messageId = msg.id;
@@ -262,15 +262,15 @@ export class ChatWidget {
       const header = document.createElement('div');
       header.className = 'chat-bubble__header';
 
-      const role = document.createElement('span');
-      role.className = 'chat-bubble__role';
-      role.textContent = msg.role === 'user' ? 'You' : 'Support';
+      const roleLabel = document.createElement('span');
+      roleLabel.className = 'chat-bubble__role';
+      roleLabel.textContent = msg.role === 'user' ? 'You' : 'Support';
 
       const time = document.createElement('time');
       time.className = 'chat-bubble__time';
       time.textContent = this._formatTimestamp(msg.timestamp);
 
-      header.appendChild(role);
+      header.appendChild(roleLabel);
       header.appendChild(time);
 
       const content = document.createElement('div');
@@ -290,7 +290,7 @@ export class ChatWidget {
     this.messageList.appendChild(bubble);
   }
 
-  _updateMessageStatus(messageId, newStatus) {
+  _updateMessageStatus(messageId: string, newStatus: ChatMessage['status']): void {
     const msg = this.state.messages.find(m => m.id === messageId);
     if (msg) {
       msg.status = newStatus;
@@ -302,11 +302,11 @@ export class ChatWidget {
     }
   }
 
-  _scrollToBottom() {
+  _scrollToBottom(): void {
     this.messageList.scrollTop = this.messageList.scrollHeight;
   }
 
-  async _sendMessage() {
+  async _sendMessage(): Promise<void> {
     const text = this.textarea.value.trim();
     if (!text || this.state.isProcessing) return;
 
@@ -322,11 +322,9 @@ export class ChatWidget {
     this.addMessage(msg);
 
     try {
-      // Process the message through our policy grounding and guardrails
       const agentResponse = await this._generateAgentResponse(text);
       this._updateMessageStatus(msg.id, 'delivered');
-      
-      // Add the agent's response
+
       const agentMsg = this._createMessage(agentResponse, 'agent');
       this.addMessage(agentMsg);
     } catch (err) {
@@ -343,137 +341,77 @@ export class ChatWidget {
   }
 
   /**
-   * Generate agent response with policy grounding and guardrails
+   * Handle policy-specific queries by looking up live policy data.
+   * Returns null if the query is not about store policies.
+   */
+  private async _handlePolicyQuery(query: string): Promise<string | null> {
+    const lower = query.toLowerCase();
+    const policies = await policyService.getAllPolicies();
+
+    if (lower.includes('shipping') || lower.includes('delivery')) {
+      return `Our shipping options are: ${policies.shipping.standard}, ${policies.shipping.express}, and ${policies.shipping.international}. Free shipping on orders over $${policies.shipping.freeShippingThreshold}.`;
+    }
+
+    if (lower.includes('warranty') || lower.includes('guarantee')) {
+      return `Our products come with ${policies.warranty.standardPeriod} covering ${policies.warranty.coverageDetails}.`;
+    }
+
+    if (lower.includes('return') || lower.includes('refund')) {
+      return `Our return policy allows returns within ${policies.returns.returnWindow}. ${policies.returns.refundMethod}.`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Generate agent response with policy grounding and guardrails.
+   * Pipeline: off-topic → catalog → policy → greeting → fallback.
    */
   async _generateAgentResponse(userQuery: string): Promise<string> {
-    // Step 1: Check if query is off-topic
+    const lowerQuery = userQuery.toLowerCase();
+
+    // Step 1: Off-topic check
     const offTopicResult = await offTopicDetector.detectOffTopic(userQuery);
-    
     if (offTopicResult.isOffTopic) {
-      // Generate polite refusal
       const refusalResponse = await refusalResponseService.generateRefusal(userQuery);
       if (refusalResponse) {
         return refusalResponse.message;
       }
       return "I'm here to help with questions about our store, products, policies, and orders. Please ask about something related to our store.";
     }
-    
-    // Step 2: Check for catalog intent (product availability, sizing, search)
+
+    // Step 2: Catalog intent detection (product availability, sizing, search)
     const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
     if (catalogResult.type !== 'not_catalog') {
-      // Update context for cross-turn queries
-      const context = this.conversationContext;
-      if (catalogResult.type === 'exact' && 'product' in catalogResult) {
-        context.set(catalogResult.product, {}, []);
-      } else if (catalogResult.type === 'partial' && 'product' in catalogResult) {
-        context.set(catalogResult.product, catalogResult.options || {}, []);
-      }
       return formatCatalogResponse(userQuery, catalogResult);
     }
 
-    // Step 3: Generate a basic response (in a real implementation, this would come from an LLM)
-    // For now, we'll generate a simple mock response based on the query
-    let basicResponse = this._generateMockResponse(userQuery);
-    
-    // Step 4: Ground the response in policy data
-    const groundingResult = await responseGrounder.groundResponse(userQuery, basicResponse);
-    
-    // Step 5: If response is not well grounded, improve it or provide a fallback
-    if (!groundingResult.isGrounded && groundingResult.confidence < 0.3) {
-      // Provide a helpful fallback that encourages policy-specific questions
-      return "I want to make sure I give you accurate information based on our store policies. Could you please rephrase your question to be more specific about our shipping, warranty, or return policies? For example, you could ask about our shipping rates, warranty coverage, or return window.";
-    }
-    
-    // Step 6: If we have grounding suggestions, incorporate them
-    if (groundingResult.suggestions.length > 0 && groundingResult.confidence < 0.7) {
-      // We could modify the response based on suggestions, but for now we'll return it as is
-      // since our mock responses are already reasonably grounded
-    }
-    
-    return basicResponse;
-  }
+    // Step 3: Policy query handling
+    const policyResponse = await this._handlePolicyQuery(userQuery);
+    if (policyResponse) return policyResponse;
 
-  /**
-   * Generate a mock response based on the user query
-   * In a real implementation, this would be replaced with actual LLM integration
-   */
-  private _generateMockResponse(query: string): string {
-    const lowerQuery = query.toLowerCase();
-    
-    // Shipping-related responses
-    if (lowerQuery.includes('shipping') || lowerQuery.includes('delivery') || 
-        lowerQuery.includes('ship')) {
-      if (lowerQuery.includes('standard') || lowerQuery.includes('regular')) {
-        return 'Standard shipping (5-7 business days): $5.99';
-      }
-      if (lowerQuery.includes('express') || lowerQuery.includes('fast')) {
-        return 'Express shipping (2-3 business days): $12.99';
-      }
-      if (lowerQuery.includes('international') || lowerQuery.includes('overseas')) {
-        return 'International shipping (7-14 business days): Calculated at checkout';
-      }
-      if (lowerQuery.includes('free')) {
-        return 'We offer free shipping on orders over $75';
-      }
-      return 'Our shipping options are: Standard (5-7 business days, $5.99), Express (2-3 business days, $12.99), and International (7-14 business days, calculated at checkout). Free shipping is available on orders over $75.';
+    // Step 4: Greeting
+    if (lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
+      return "Hello! I'm here to help with questions about our products, shipping, warranty, and return policies. How can I assist you today?";
     }
-    
-    // Warranty-related responses
-    if (lowerQuery.includes('warranty') || lowerQuery.includes('guarantee') || 
-        lowerQuery.includes('defect') || lowerQuery.includes('broken')) {
-      if (lowerQuery.includes('extended') || lowerQuery.includes('extension')) {
-        return 'We offer extended warranty options: 2-year extension for $19.99 or 3-year extension for $29.99';
-      }
-      if (lowerQuery.includes('claim') || lowerQuery.includes('process') || lowerQuery.includes('rma')) {
-        return 'To make a warranty claim, please contact support with your order number and issue description for an RMA';
-      }
-      return 'Our products come with a 1 year limited warranty that covers manufacturing defects and hardware failures under normal use. Extended options are available.';
-    }
-    
-    // Returns-related responses
-    if (lowerQuery.includes('return') || lowerQuery.includes('refund') || 
-        lowerQuery.includes('exchange')) {
-      if (lowerQuery.includes('window') || lowerQuery.includes('time') || lowerQuery.includes('days')) {
-        return 'Our return window is 30 days from delivery date';
-      }
-      if (lowerQuery.includes('condition') || lowerQuery.includes('original')) {
-        return 'Items must be in original condition with all accessories to be eligible for return';
-      }
-      if (lowerQuery.includes('refund') || lowerQuery.includes('money')) {
-        return 'Refunds are issued to the original payment method within 5-7 business days after we receive the return';
-      }
-      if (lowerQuery.includes('exchange')) {
-        return 'We offer free exchanges within 30 days, subject to availability';
-      }
-      if (lowerQuery.includes('restock') || lowerQuery.includes('fee')) {
-        return 'There is no restocking fee for returns in original condition';
-      }
-      return 'Our return policy allows returns within 30 days of delivery. Items must be in original condition with all accessories. Refunds are issued to the original payment method within 5-7 business days. We also offer free exchanges within 30 days.';
-    }
-    
-    // Greeting or general help
-    if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || 
-        lowerQuery.includes('help') || lowerQuery.includes('support')) {
-      return 'Hello! I\'m here to help you with questions about our products, shipping, warranty, and return policies. How can I assist you today?';
-    }
-    
-    // Default fallback response
-    return 'I\'m here to help with questions about our store products, policies, and orders. You can ask me about shipping options, warranty coverage, return procedures, or product availability.';
+
+    // Step 5: Fallback
+    return "I'm here to help with questions about our store products, policies, and orders. You can ask me about shipping options, warranty coverage, return procedures, or product availability.";
   }
 
   // Public method for sending simulated agent responses (used in tests)
-  simulateAgentResponse(text) {
+  simulateAgentResponse(text: string): ChatMessage {
     const msg = this._createMessage(text, 'agent');
     this.addMessage(msg);
     return msg;
   }
 
-  destroy() {
+  destroy(): void {
     this.toggleBtn.remove();
     this.widget.remove();
   }
 
-  _render() {
+  _render(): void {
     // Initial render — widget is ready, no welcome message per D-14
   }
 }
