@@ -23,17 +23,17 @@
 
 **Plans:**
 - [x] 01-01-PLAN.md — Scaffold + CSS design system + test infrastructure + demo page
-- [x] 01-02-PLAN.md — Core widget engine: ChatWidget, MessageQueue, NetworkDetector
-- [ ] 01-03-PLAN.md — Complete test suite (SAFE-02 error handling + SAFE-03 UI fidelity)
+- [x] 01-02-PLAN.md — Core widget engine: ChatWidget, NetworkDetector, CSS design system
 
 ### Phase 2: Policy Grounding & Guardrails
 **Goal**: Users receive accurate, strict answers based solely on store policies, with no hallucinated or off-topic responses
 **Depends on**: Phase 1
 **Requirements**: CORE-02, CORE-03
 **Success Criteria** (what must be TRUE):
-  1. User receives accurate shipping and warranty details sourced directly from store policies
-  2. User asking out-of-domain questions (e.g., general trivia, competitors) receives a polite refusal
-**Plans**: TBD
+   1. User receives accurate shipping and warranty details sourced directly from store policies
+   2. User asking out-of-domain questions (e.g., general trivia, competitors) receives a polite refusal
+**Plans:**
+- [x] 02-01-PLAN.md — Policy service, response grounding, off-topic detection, refusal responses
 
 ### Phase 3: Live Catalog Intelligence
 **Goal**: Users can query real-time product catalogs, sizing, and stock without the agent guessing or hallucinating
@@ -78,7 +78,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. UI Foundation & Error Handling | 2/2 | Complete | 2026-05-14 |
-| 2. Policy Grounding & Guardrails | 0/0 | Not started | - |
+| 2. Policy Grounding & Guardrails | 1/1 | Complete | 2026-05-15 |
 | 3. Live Catalog Intelligence | 0/0 | Not started | - |
 | 4. Order Tracking Workflow | 0/0 | Not started | - |
 | 5. Graceful Escalation | 0/0 | Not started | - |

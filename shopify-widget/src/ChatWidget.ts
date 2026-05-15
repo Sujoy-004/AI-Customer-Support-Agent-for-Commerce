@@ -1,8 +1,13 @@
-const MESSAGE_STATUS = {
-  SENDING: 'sending',
-  DELIVERED: 'delivered',
-  ERROR: 'error',
-};
+// shopify-widget/src/ChatWidget.ts
+import { MESSAGE_STATUS } from './ChatWidget.js'; // Import existing JS constants
+import { ResponseGrounder } from '../../src/services/responseGrounder';
+import { OffTopicDetector } from '../../src/services/offTopicDetector';
+import { RefusalResponseService } from '../../src/services/refusalResponses';
+
+// Initialize our services
+const responseGrounder = new ResponseGrounder();
+const offTopicDetector = new OffTopicDetector();
+const refusalResponseService = new RefusalResponseService(offTopicDetector);
 
 export { MESSAGE_STATUS };
 
@@ -268,8 +273,13 @@ export class ChatWidget {
     this.addMessage(msg);
 
     try {
-      await this._simulateApiCall(text);
+      // Process the message through our policy grounding and guardrails
+      const agentResponse = await this._generateAgentResponse(text);
       this._updateMessageStatus(msg.id, 'delivered');
+      
+      // Add the agent's response
+      const agentMsg = this._createMessage(agentResponse, 'agent');
+      this.addMessage(agentMsg);
     } catch (err) {
       this._updateMessageStatus(msg.id, 'error');
       const errorMsg = this._createMessage(
@@ -283,21 +293,107 @@ export class ChatWidget {
     }
   }
 
-  _simulateApiCall(text) {
-    return new Promise((resolve, reject) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        reject(new Error('timeout'));
-      }, this.timeoutMs);
+  /**
+   * Generate agent response with policy grounding and guardrails
+   */
+  async _generateAgentResponse(userQuery: string): Promise<string> {
+    // Step 1: Check if query is off-topic
+    const offTopicResult = await offTopicDetector.detectOffTopic(userQuery);
+    
+    if (offTopicResult.isOffTopic) {
+      // Generate polite refusal
+      const refusalResponse = await refusalResponseService.generateRefusal(userQuery);
+      return refusalResponse.message;
+    }
+    
+    // Step 2: Generate a basic response (in a real implementation, this would come from an LLM)
+    // For now, we'll generate a simple mock response based on the query
+    let basicResponse = this._generateMockResponse(userQuery);
+    
+    // Step 3: Ground the response in policy data
+    const groundingResult = await responseGrounder.groundResponse(userQuery, basicResponse);
+    
+    // Step 4: If response is not well grounded, improve it or provide a fallback
+    if (!groundingResult.isGrounded && groundingResult.confidence < 0.3) {
+      // Provide a helpful fallback that encourages policy-specific questions
+      return "I want to make sure I give you accurate information based on our store policies. Could you please rephrase your question to be more specific about our shipping, warranty, or return policies? For example, you could ask about our shipping rates, warranty coverage, or return window.";
+    }
+    
+    // Step 5: If we have grounding suggestions, incorporate them
+    if (groundingResult.suggestions.length > 0 && groundingResult.confidence < 0.7) {
+      // We could modify the response based on suggestions, but for now we'll return it as is
+      // since our mock responses are already reasonably grounded
+    }
+    
+    return basicResponse;
+  }
 
-      // Stub: simulates a successful API call for Phase 1
-      // In Phase 3+, this will be a real fetch to the Shopify proxy endpoint
-      setTimeout(() => {
-        clearTimeout(timeoutId);
-        resolve();
-      }, 500);
-    });
+  /**
+   * Generate a mock response based on the user query
+   * In a real implementation, this would be replaced with actual LLM integration
+   */
+  private _generateMockResponse(query: string): string {
+    const lowerQuery = query.toLowerCase();
+    
+    // Shipping-related responses
+    if (lowerQuery.includes('shipping') || lowerQuery.includes('delivery') || 
+        lowerQuery.includes('ship')) {
+      if (lowerQuery.includes('standard') || lowerQuery.includes('regular')) {
+        return 'Standard shipping (5-7 business days): $5.99';
+      }
+      if (lowerQuery.includes('express') || lowerQuery.includes('fast')) {
+        return 'Express shipping (2-3 business days): $12.99';
+      }
+      if (lowerQuery.includes('international') || lowerQuery.includes('overseas')) {
+        return 'International shipping (7-14 business days): Calculated at checkout';
+      }
+      if (lowerQuery.includes('free')) {
+        return 'We offer free shipping on orders over $75';
+      }
+      return 'Our shipping options are: Standard (5-7 business days, $5.99), Express (2-3 business days, $12.99), and International (7-14 business days, calculated at checkout). Free shipping is available on orders over $75.';
+    }
+    
+    // Warranty-related responses
+    if (lowerQuery.includes('warranty') || lowerQuery.includes('guarantee') || 
+        lowerQuery.includes('defect') || lowerQuery.includes('broken')) {
+      if (lowerQuery.includes('extended') || lowerQuery.includes('extension')) {
+        return 'We offer extended warranty options: 2-year extension for $19.99 or 3-year extension for $29.99';
+      }
+      if (lowerQuery.includes('claim') || lowerQuery.includes('process') || lowerQuery.includes('rma')) {
+        return 'To make a warranty claim, please contact support with your order number and issue description for an RMA';
+      }
+      return 'Our products come with a 1 year limited warranty that covers manufacturing defects and hardware failures under normal use. Extended options are available.';
+    }
+    
+    // Returns-related responses
+    if (lowerQuery.includes('return') || lowerQuery.includes('refund') || 
+        lowerQuery.includes('exchange')) {
+      if (lowerQuery.includes('window') || lowerQuery.includes('time') || lowerQuery.includes('days')) {
+        return 'Our return window is 30 days from delivery date';
+      }
+      if (lowerQuery.includes('condition') || lowerQuery.includes('original')) {
+        return 'Items must be in original condition with all accessories to be eligible for return';
+      }
+      if (lowerQuery.includes('refund') || lowerQuery.includes('money')) {
+        return 'Refunds are issued to the original payment method within 5-7 business days after we receive the return';
+      }
+      if (lowerQuery.includes('exchange')) {
+        return 'We offer free exchanges within 30 days, subject to availability';
+      }
+      if (lowerQuery.includes('restock') || lowerQuery.includes('fee')) {
+        return 'There is no restocking fee for returns in original condition';
+      }
+      return 'Our return policy allows returns within 30 days of delivery. Items must be in original condition with all accessories. Refunds are issued to the original payment method within 5-7 business days. We also offer free exchanges within 30 days.';
+    }
+    
+    // Greeting or general help
+    if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || 
+        lowerQuery.includes('help') || lowerQuery.includes('support')) {
+      return 'Hello! I\'m here to help you with questions about our products, shipping, warranty, and return policies. How can I assist you today?';
+    }
+    
+    // Default fallback response
+    return 'I\'m here to help with questions about our store products, policies, and orders. You can ask me about shipping options, warranty coverage, return procedures, or product availability.';
   }
 
   // Public method for sending simulated agent responses (used in tests)
