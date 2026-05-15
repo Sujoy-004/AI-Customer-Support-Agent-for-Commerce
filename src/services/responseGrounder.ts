@@ -163,7 +163,7 @@ export class ResponseGrounder {
           confidence += 0.15; // Partial credit
           sources.push('shipping.standard (approximate)');
         } else {
-          violations.append('Standard shipping details do not match policy');
+          violations.push('Standard shipping details do not match policy');
         }
       }
     }
@@ -180,7 +180,7 @@ export class ResponseGrounder {
           confidence += 0.15;
           sources.push('shipping.express (approximate)');
         } else {
-          violations.append('Express shipping details do not match policy');
+          violations.push('Express shipping details do not match policy');
         }
       }
     }
@@ -196,7 +196,7 @@ export class ResponseGrounder {
           confidence += 0.1;
           sources.push('shipping.international (approximate)');
         } else {
-          violations.append('International shipping details do not match policy');
+          violations.push('International shipping details do not match policy');
         }
       }
     }
@@ -213,7 +213,7 @@ export class ResponseGrounder {
         confidence += 0.05; // Vague free shipping mention
         sources.push('shipping.freeShippingThreshold (vague)');
       } else {
-        violations.append('Free shipping threshold does not match policy');
+        violations.push('Free shipping threshold does not match policy');
       }
     }
     
@@ -226,7 +226,7 @@ export class ResponseGrounder {
         confidence += 0.1;
         sources.push('shipping.processingTime (approximate)');
       } else {
-        violations.append('Processing time does not match policy');
+        violations.push('Processing time does not match policy');
       }
     }
     
@@ -234,13 +234,14 @@ export class ResponseGrounder {
     result.isGrounded = confidence >= 0.5;
     result.confidence = Math.min(confidence, 1.0);
     result.policySources = sources;
+    result.violations = violations;
     
     // Generate suggestions if not well grounded
     if (!result.isGrounded) {
       if (sources.length === 0) {
-        result.suggestions.append('Reference specific policy details from shipping policy');
+        result.suggestions.push('Reference specific policy details from shipping policy');
       } else {
-        result.suggestions.append('Increase specificity of policy references');
+        result.suggestions.push('Increase specificity of policy references');
       }
     }
     
@@ -271,7 +272,7 @@ export class ResponseGrounder {
           confidence += 0.15;
           sources.push('warranty.standardPeriod (approximate)');
         } else {
-          violations.append('Warranty period does not match policy');
+          violations.push('Warranty period does not match policy');
         }
       }
     }
@@ -291,7 +292,7 @@ export class ResponseGrounder {
         confidence += 0.1;
         sources.push('warranty.extendedOptions (approximate)');
       } else {
-        violations.append('Extended warranty options do not match policy');
+        violations.push('Extended warranty options do not match policy');
       }
     }
     
@@ -306,7 +307,7 @@ export class ResponseGrounder {
         confidence += 0.15;
         sources.push('warranty.coverageDetails (approximate)');
       } else {
-        violations.append('Coverage details do not match policy');
+        violations.push('Coverage details do not match policy');
       }
     }
     
@@ -321,7 +322,7 @@ export class ResponseGrounder {
         confidence += 0.15;
         sources.push('warranty.claimProcess (approximate)');
       } else {
-        violations.append('Claim process does not match policy');
+        violations.push('Claim process does not match policy');
       }
     }
     
@@ -329,13 +330,14 @@ export class ResponseGrounder {
     result.isGrounded = confidence >= 0.5;
     result.confidence = Math.min(confidence, 1.0);
     result.policySources = sources;
+    result.violations = violations;
     
     // Generate suggestions if not well grounded
     if (!result.isGrounded) {
       if (sources.length === 0) {
-        result.suggestions.append('Reference specific policy details from warranty policy');
+        result.suggestions.push('Reference specific policy details from warranty policy');
       } else {
-        result.suggestions.append('Increase specificity of policy references');
+        result.suggestions.push('Increase specificity of policy references');
       }
     }
     
@@ -366,7 +368,7 @@ export class ResponseGrounder {
           confidence += 0.15;
           sources.push('returns.returnWindow (approximate)');
         } else {
-          violations.append('Return window does not match policy');
+          violations.push('Return window does not match policy');
         }
       }
     }
@@ -382,7 +384,7 @@ export class ResponseGrounder {
         confidence += 0.15;
         sources.push('returns.conditionRequirements (approximate)');
       } else {
-        violations.append('Condition requirements do not match policy');
+        violations.push('Condition requirements do not match policy');
       }
     }
     
@@ -397,7 +399,7 @@ export class ResponseGrounder {
         confidence += 0.1;
         sources.push('returns.refundMethod (approximate)');
       } else {
-        violations.append('Refund method does not match policy');
+        violations.push('Refund method does not match policy');
       }
     }
     
@@ -411,7 +413,7 @@ export class ResponseGrounder {
         confidence += 0.1;
         sources.push('returns.exchangePolicy (approximate)');
       } else {
-        violations.append('Exchange policy does not match policy');
+        violations.push('Exchange policy does not match policy');
       }
     }
     
@@ -426,7 +428,7 @@ export class ResponseGrounder {
         confidence += 0.05;
         sources.push('returns.restockingFee (approximate)');
       } else {
-        violations.append('Restocking fee does not match policy');
+        violations.push('Restocking fee does not match policy');
       }
     }
     
@@ -434,13 +436,14 @@ export class ResponseGrounder {
     result.isGrounded = confidence >= 0.5;
     result.confidence = Math.min(confidence, 1.0);
     result.policySources = sources;
+    result.violations = violations;
     
     // Generate suggestions if not well grounded
     if (!result.isGrounded) {
       if (sources.length === 0) {
-        result.suggestions.append('Reference specific policy details from returns policy');
+        result.suggestions.push('Reference specific policy details from returns policy');
       } else {
-        result.suggestions.append('Increase specificity of policy references');
+        result.suggestions.push('Increase specificity of policy references');
       }
     }
     

@@ -34,40 +34,40 @@ export class OffTopicDetector {
     'shipping', 'delivery', 'ship', 'warranty', 'guarantee', 'return',
     'refund', 'exchange', 'policy', 'policies',
     
-    # Store-related
+    // Store-related
     'store', 'shop', 'shopify', 'order', 'purchase', 'buy', 'cart',
     'checkout', 'payment', 'invoice', 'receipt',
     
-    # Account-related
+    // Account-related
     'account', 'login', 'signin', 'signup', 'register', 'profile',
     'password', 'email', 'address',
     
-    # Support-related
+    // Support-related
     'support', 'help', 'issue', 'problem', 'question', 'inquiry',
     'contact', 'service', 'assist'
   ];
   
   // Topics that are clearly off-topic
   private readonly OFF_TOPIC_KEYWORDS = [
-    # General knowledge/trivia
+    // General knowledge/trivia
     'weather', 'news', 'politics', 'sports', 'celebrity', 'movie',
     'music', 'book', 'author', 'history', 'science', 'math',
     'geography', 'capital', 'population', 'language', 'translate',
     
-    # Competitors
+    // Competitors
     'amazon', 'ebay', 'walmart', 'target', 'best buy', 'competitor',
     'competition', 'compare', 'comparison', 'alternative',
     
-    # Personal advice
+    // Personal advice
     'advice', 'recommendation', 'suggestion', 'opinion', 'think',
     'believe', 'feel', 'relationship', 'dating', 'health', 'medical',
     'legal', 'lawyer', 'doctor', 'finance', 'investment', 'stock',
     
-    # Technical support (unless store-specific)
+    // Technical support (unless store-specific)
     'software', 'hardware', 'computer', 'phone', 'app', 'application',
     'website', 'browser', 'internet', 'wifi', 'router', 'troubleshoot',
     
-    # Inappropriate content
+    // Inappropriate content
     'adult', 'sex', 'naked', 'nude', 'violence', 'weapon', 'drug',
     'alcohol', 'cigarette', 'smoking', 'gambling', 'casino'
   ];
@@ -99,7 +99,7 @@ export class OffTopicDetector {
       return result;
     }
     
-    # Check for clearly off-topic keywords
+    // Check for clearly off-topic keywords
     const offTopicMatches = this.OFF_TOPIC_KEYWORDS.filter(keyword => 
       lowerQuery.includes(keyword)
     );
@@ -109,7 +109,7 @@ export class OffTopicDetector {
       result.confidence = Math.min(0.9, 0.5 + (offTopicMatches.length * 0.1));
       result.reasons.push(`Contains off-topic keywords: ${offTopicMatches.join(', ')}`);
       
-      # Add suggested topics based on what was detected
+      // Add suggested topics based on what was detected
       if (offTopicMatches.some(k => ['weather', 'news', 'sports'].includes(k))) {
         result.suggestedTopics.push('Ask about our latest products instead');
       }
@@ -121,25 +121,25 @@ export class OffTopicDetector {
       }
     }
     
-    # Check for on-topic keywords
+    // Check for on-topic keywords
     const onTopicMatches = this.ON_TOPIC_KEYWORDS.filter(keyword => 
       lowerQuery.includes(keyword)
     );
     
-    # If we have strong on-topic signals, it's likely not off-topic
+    // If we have strong on-topic signals, it's likely not off-topic
     if (onTopicMatches.length >= 2) {
       result.isOffTopic = false;
       result.confidence = Math.max(0.1, 0.5 - (onTopicMatches.length * 0.1));
-      # Clear previous off-topic decision if we have strong on-topic signals
+      // Clear previous off-topic decision if we have strong on-topic signals
       if (result.confidence < 0.3) {
         result.reasons = [];
         result.suggestedTopics = [];
       }
     }
     
-    # If no clear signals either way, check query characteristics
+    // If no clear signals either way, check query characteristics
     if (result.confidence >= 0.3 && result.confidence <= 0.7) {
-      # Very short queries might be unclear
+      // Very short queries might be unclear
       if (lowerQuery.length < 3) {
         result.isOffTopic = true;
         result.confidence = Math.max(result.confidence, 0.7);
@@ -147,7 +147,7 @@ export class OffTopicDetector {
         result.suggestedTopics.push('Please provide more details about what you need help with');
       }
       
-      # Queries with question words but no topic indicators
+      // Queries with question words but no topic indicators
       const questionWords = ['what', 'how', 'why', 'when', 'where', 'who'];
       const hasQuestionWord = questionWords.some(word => lowerQuery.startsWith(word + ' ') || 
                                                    lowerQuery.includes(' ' + word + ' '));
@@ -160,10 +160,10 @@ export class OffTopicDetector {
       }
     }
     
-    # Finalize confidence and ensure it's in valid range
+    // Finalize confidence and ensure it's in valid range
     result.confidence = Math.max(0, Math.min(1, result.confidence));
     
-    # Add default suggestions if needed
+    // Add default suggestions if needed
     if (result.isOffTopic && result.suggestedTopics.length === 0) {
       result.suggestedTopics.push(
         'Ask about our products',

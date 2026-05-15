@@ -5,6 +5,7 @@
  */
 
 import { OffTopicDetector, OffTopicResult } from './offTopicDetector';
+import { PolicyService } from './policyService';
 
 /**
  * Interface for refusal response options
@@ -52,7 +53,7 @@ export class RefusalResponseService {
   ): RefusalResponse {
     const lowerQuery = query.toLowerCase();
     
-    # Default polite refusal
+    // Default polite refusal
     let message = "I'm here to help with questions about our store, products, policies, and your orders. ";
     let suggestions = [
       "Ask about our products or collections",
@@ -61,7 +62,7 @@ export class RefusalResponseService {
       "Learn about our warranty coverage"
     ];
     
-    # Customize based on detected off-topic categories
+    // Customize based on detected off-topic categories
     if (offTopicResult.reasons.some(reason => 
         reason.toLowerCase().includes('weather') || 
         reason.toLowerCase().includes('news') || 
@@ -134,7 +135,7 @@ export class RefusalResponseService {
       ];
     }
     
-    # Ensure we have suggestions
+    // Ensure we have suggestions
     if (suggestions.length === 0) {
       suggestions = [
         "Ask about our products or collections",
@@ -144,7 +145,7 @@ export class RefusalResponseService {
       ];
     }
     
-    # Limit suggestions to top 4
+    // Limit suggestions to top 4
     suggestions = suggestions.slice(0, 4);
     
     return {
@@ -174,4 +175,4 @@ export class RefusalResponseService {
 /**
  * Default export for convenience
  */
-export default new RefusalResponseService(new OffTopicDetector(new (require('./policyService')).PolicyService()));
+export default new RefusalResponseService(new OffTopicDetector(new PolicyService()));

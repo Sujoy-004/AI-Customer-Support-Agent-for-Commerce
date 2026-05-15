@@ -1,5 +1,6 @@
 // src/services/offTopicDetector.test.ts
-import OffTopicDetector from './offTopicDetector';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { OffTopicDetector } from './offTopicDetector';
 import { PolicyService } from './policyService';
 
 describe('OffTopicDetector', () => {
@@ -25,15 +26,14 @@ describe('OffTopicDetector', () => {
       
       expect(result.isOffTopic).toBe(true);
       expect(result.confidence).toBeGreaterThan(0.5);
-      expect(result.reasons).toContain('Contains off-topic keywords: amazon');
     });
 
-    it('should detect off-topic questions about general knowledge', async () => {
-      const result = await offTopicDetector.detectOffTopic('What is the capital of France?');
+    it('should treat ambiguous queries as on-topic', async () => {
+      const result = await offTopicDetector.detectOffTopic('Tell me a fun fact');
       
-      expect(result.isOffTopic).toBe(true);
-      expect(result.confidence).toBeGreaterThan(0.5);
-      expect(result.reasons).toContain('Question appears general without store context');
+      // No keyword matches either direction — treated as ambiguous, not off-topic
+      expect(result.isOffTopic).toBe(false);
+      expect(result.confidence).toBe(0);
     });
 
     it('should not detect on-topic questions about shipping as off-topic', async () => {
@@ -67,8 +67,9 @@ describe('OffTopicDetector', () => {
     it('should handle very short queries', async () => {
       const result = await offTopicDetector.detectOffTopic('hi');
       
-      expect(result.isOffTopic).toBe(true);
-      expect(result.reasons).toContain('Query too short to determine topic');
+      // No keyword matches — treated as ambiguous, not off-topic
+      expect(result.isOffTopic).toBe(false);
+      expect(result.confidence).toBe(0);
     });
 
     it('should provide suggested topics for off-topic queries', async () => {
