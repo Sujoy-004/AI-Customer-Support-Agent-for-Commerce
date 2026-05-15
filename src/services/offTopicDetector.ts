@@ -28,6 +28,7 @@ export class OffTopicDetector {
     'product', 'item', 'merchandise', 'goods', 'catalog', 'inventory',
     'size', 'sizing', 'fit', 'dimension', 'weight', 'color', 'style',
     'material', 'fabric', 'brand', 'model', 'sku', 'price', 'cost',
+    'stock', 'available', 'backorder', 'restock',
     'discount', 'sale', 'promotion', 'coupon', 'deal',
     
     // Policy-related (from policy service)
@@ -61,7 +62,7 @@ export class OffTopicDetector {
     // Personal advice
     'advice', 'recommendation', 'suggestion', 'opinion', 'think',
     'believe', 'feel', 'relationship', 'dating', 'health', 'medical',
-    'legal', 'lawyer', 'doctor', 'finance', 'investment', 'stock',
+    'legal', 'lawyer', 'doctor', 'finance', 'investment',
     
     // Technical support (unless store-specific)
     'software', 'hardware', 'computer', 'phone', 'app', 'application',
