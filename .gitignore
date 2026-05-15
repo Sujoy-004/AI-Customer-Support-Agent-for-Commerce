@@ -77,3 +77,8 @@ graphify-out/cost.json
 SOVEREIGNTY.md
 raw/
 scratch/
+
+# ==============================
+# OpenCode config (generated)
+# ==============================
+opencode.json

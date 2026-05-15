@@ -295,10 +295,11 @@ A "Store-Native" Shopify AI customer support agent (Track 4) built using the Ant
 - **Logging**: Appropriate levels for operational insight
 - **Testing**: High test coverage for shared utilities
 ### Git Operations
-- **Atomic Commits**: One logical change per commit
-- **Commit Messages**: Clear, conventional format
+- **Atomic Commits**: One logical change per commit — never batch unrelated changes
+- **Commit Messages**: Write like a human. No conventional-commits tags (`feat:`, `fix:`, `docs:`). Just say what changed and why in plain English. Short first line, details after if needed
 - **Branch Naming**: Feature/bugfix/hotfix prefixes
 - **Merge Strategies**: Prefer rebase for clean history
+- **Auto-commit**: After every atomic change (new file, edited function, passing test), commit immediately with a humane message before moving to the next task
 ### Testing Utilities
 - **Test Helpers**: Shared setup/teardown functions
 - **Mock Factories**: Consistent mock creation patterns
@@ -480,3 +481,13 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 > Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- On session start, if `graphify-out/` exists, read `GRAPH_REPORT.md` before exploring the codebase

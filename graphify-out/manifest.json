@@ -1,0 +1,22 @@
+{
+  "shopify-widget\\vitest.config.ts": 1778783254.264522,
+  "shopify-widget\\src\\ChatWidget.ts": 1778790828.7711358,
+  "shopify-widget\\src\\core\\NetworkDetector.ts": 1778793406.3645868,
+  "shopify-widget\\src\\test\\setup.js": 1778783254.2636888,
+  "shopify-widget\\tests\\NetworkDetector.test.ts": 1778793377.7067015,
+  "src\\services\\offTopicDetector.test.ts": 1778813668.05086,
+  "src\\services\\offTopicDetector.ts": 1778813197.7056003,
+  "src\\services\\policyService.test.ts": 1778791626.4843712,
+  "src\\services\\policyService.ts": 1778791235.5043268,
+  "src\\services\\refusalResponses.test.ts": 1778813668.7194817,
+  "src\\services\\refusalResponses.ts": 1778813302.9237168,
+  "src\\services\\responseGrounder.test.ts": 1778813334.8296058,
+  "src\\services\\responseGrounder.ts": 1778813288.2261658,
+  "src\\services\\types.ts": 1778791195.8702788,
+  "AGENTS.md": 1778814376.4334185,
+  "APPFLOW.md": 1778783254.231522,
+  "CHANGELOG.md": 1778580763.6381323,
+  "DESIGN.md": 1778783254.2354536,
+  "HACKATHON_DETAILS.md": 1778580763.6381323,
+  "stderr.txt": 1778783254.2657132
+}
