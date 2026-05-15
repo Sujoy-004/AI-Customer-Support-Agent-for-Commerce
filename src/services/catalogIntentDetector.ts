@@ -174,8 +174,9 @@ export class CatalogIntentDetector {
     },
     product_search: {
       includes: [
-        'have', 'carry', 'sell', 'product', 'looking for',
-        'got any', 'do you', 'can i get', 'is there', 'offer', 'show'
+        'carry', 'sell', 'product', 'looking for',
+        'got any', 'do you have', 'do you carry',
+        'can i get', 'is there', 'offer', 'show'
       ],
       excludes: ['return', 'refund', 'warranty']
     }
@@ -514,7 +515,10 @@ export class CatalogIntentDetector {
 
     let remaining = lowerQuery;
     for (const word of titleLower.split(/\s+/)) {
-      remaining = remaining.replace(word, '');
+      if (word.length > 1) {
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        remaining = remaining.replace(regex, '');
+      }
     }
     remaining = remaining.trim().replace(/\s+/g, ' ');
 

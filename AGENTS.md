@@ -4,6 +4,44 @@
 
 Talk to me like that git warning. Short sentences. Plain words. No fancy talk. Say what's happening and why in the simplest way possible. Don't dumb down the thinking — just make the output easy to read. One or two sentences is usually enough. If I ask for detail, give it. Otherwise, keep it tight.
 
+## Critical Must-Haves (Hackathon Audit — May 2026)
+
+These are non-negotiable. Everything else can wait.
+
+**4 mandatory workflows — 1 built, 3 to go:**
+- Product Intelligence (Phase 3) — NOT built. Execute immediately.
+- Policy Execution (Phase 2) — Built ✓
+- Active Workflows: order tracking (Phase 4) + return initiation (Phase 6) — NOT started.
+- Graceful Handoff (Phase 5) — NOT started.
+
+**4 mandatory docs (25% of score):**
+- `PRODUCT_DOC.md` — NOT created. Write during/after executing each phase.
+- `TECHNICAL_DOC.md` — NOT created. Must show AI/deterministic boundary and failure handling.
+- `DECISION_LOG.md` — NOT created. Log every "considered X, chose Y, because Z."
+- `README.md` — NOT created. Setup and overview.
+
+**3 mandatory tools — zero evidence of use:**
+- Superpowers — not integrated anywhere. Must use.
+- Context7 — not integrated anywhere. Must use.
+- Antigravity Skills — installed but unused in plans. Must use.
+
+**Testing gaps:**
+- Playwright NOT set up — only Vitest exists. E2E tests are required.
+- `e2e/` directory does not exist. Create it.
+- Current test coverage (~376 lines across 5 files) is too thin. Target 80%+.
+
+**Git warning:**
+- `.planning/` and `.opencode/` are in `.gitignore`. Judges won't see your planning artifacts or plugin code if they're not committed. Fix before submission.
+
+**Priority order for remaining work:**
+1. Execute Phase 3 (catalog — already planned and decided)
+2. Write docs alongside each phase execution (don't leave them for the end)
+3. Set up Playwright + E2E tests
+4. Integrate Superpowers, Context7, Antigravity Skills
+5. Execute Phases 4-6
+6. Fix .gitignore for submission
+7. Record demo video
+
 ## Critical Setup
 - **Primary workspace**: Work in repository root, not `.opencode/` subdirectory
 - **Main entry point**: `.opencode/index.ts` (TypeScript)
