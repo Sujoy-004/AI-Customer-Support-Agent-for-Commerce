@@ -1,7 +1,7 @@
 // src/services/catalogIntentDetector.ts
 import { CatalogService } from './catalogService';
 import type { Product, Variant, StockInfo } from './types';
-import { SIZE_SYNONYMS, COLOR_SYNONYMS, MATERIAL_SYNONYMS } from './mockCatalogData';
+import { getSynonymTableForOption } from './synonymResolver';
 
 export type CatalogIntent = 'stock_check' | 'sizing_inquiry' | 'product_search' | 'variant_lookup';
 
@@ -131,21 +131,8 @@ function summarizeStock(variants: Variant[]): string {
   return parts.length > 0 ? `Stock: ${parts.join(', ')}.` : '';
 }
 
-function getSynonymTableForOption(optionName: string): Record<string, string[]> {
-  const lower = optionName.toLowerCase();
-  if (lower.includes('size') || lower.includes('shoe size')) return SIZE_SYNONYMS;
-  if (lower.includes('color') || lower.includes('colour')) return COLOR_SYNONYMS;
-  if (lower.includes('material') || lower.includes('fabric')) return MATERIAL_SYNONYMS;
-  return {};
-}
-
-function normalizeOptionValue(value: string, synonymTable: Record<string, string[]>): string | null {
-  const lower = value.toLowerCase().trim();
-  for (const [canonical, synonyms] of Object.entries(synonymTable)) {
-    if (canonical.toLowerCase() === lower) return canonical;
-    if (synonyms.some(s => s.toLowerCase() === lower)) return canonical;
-  }
-  return null;
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export class CatalogIntentDetector {
@@ -203,7 +190,6 @@ export class CatalogIntentDetector {
     }
 
     const detectedIntent = this.detectIntent(lowerQuery);
-
     const searchResults = await this.searchProducts(query);
 
     const contextProduct = this.context?.product ?? null;
@@ -235,6 +221,7 @@ export class CatalogIntentDetector {
       };
     }
 
+    // Select target product from context or search results
     let targetProduct: Product;
     let baseIntent: CatalogIntent;
     let accumulatedOptions: Record<string, string>;
@@ -249,20 +236,13 @@ export class CatalogIntentDetector {
       accumulatedOptions = {};
     }
 
-    const newOptions = this.extractOptions(targetProduct, lowerQuery);
+    // Phase 2: Extract and merge options
+    const mergedOptions = this._mergeOptions(targetProduct, lowerQuery, accumulatedOptions);
 
-    const mergedOptions: Record<string, string> = {};
-    for (const key of Object.keys(accumulatedOptions)) {
-      mergedOptions[key] = accumulatedOptions[key];
-    }
-    for (const [key, value] of Object.entries(newOptions)) {
-      mergedOptions[key] = value;
-    }
-
+    // If multiple results and no options yet, show search list
     const requiredOptionNames = targetProduct.options.map(o => o.name);
     const resolvedOptionNames = Object.keys(mergedOptions);
     const fullyResolvedCount = requiredOptionNames.filter(n => resolvedOptionNames.includes(n)).length;
-    const totalRequired = requiredOptionNames.length;
 
     if (searchResults.length > 1 && !canUseContext && fullyResolvedCount === 0 && baseIntent === 'product_search') {
       return {
@@ -273,97 +253,135 @@ export class CatalogIntentDetector {
       };
     }
 
+    // Phase 3: Resolve variant
+    return this._resolveVariant(targetProduct, mergedOptions, baseIntent);
+  }
+
+  /**
+   * Phase 1 helper: Match products against query.
+   * Runs intent detection and product search in parallel.
+   */
+  private _matchProduct(
+    query: string,
+    lowerQuery: string
+  ): { intent: CatalogIntent | null } {
+    const detectedIntent = this.detectIntent(lowerQuery);
+    return { intent: detectedIntent };
+  }
+
+  /**
+   * Phase 2 helper: Extract new options from query and merge with existing context.
+   */
+  private _mergeOptions(
+    product: Product,
+    lowerQuery: string,
+    existingOptions: Record<string, string>
+  ): Record<string, string> {
+    const newOptions = this.extractOptions(product, lowerQuery);
+    const merged: Record<string, string> = { ...existingOptions };
+    for (const [key, value] of Object.entries(newOptions)) {
+      merged[key] = value;
+    }
+    return merged;
+  }
+
+  /**
+   * Phase 3 helper: Resolve the variant given product and extracted options.
+   * Returns exact match, partial match with candidates, product_only, or ambiguous.
+   */
+  private async _resolveVariant(
+    product: Product,
+    options: Record<string, string>,
+    intent: CatalogIntent
+  ): Promise<ResolvedQuery> {
+    const requiredOptionNames = product.options.map(o => o.name);
+    const resolvedOptionNames = Object.keys(options);
+    const fullyResolvedCount = requiredOptionNames.filter(n => resolvedOptionNames.includes(n)).length;
+    const totalRequired = requiredOptionNames.length;
+
+    // No options resolved → show product info
     if (fullyResolvedCount === 0) {
-      this.setContext(targetProduct, baseIntent, {});
+      this.setContext(product, intent, {});
       return {
         type: 'product_only',
-        intent: baseIntent,
-        product: targetProduct,
-        variants: targetProduct.variants
+        intent,
+        product,
+        variants: product.variants
       };
     }
 
-    const variantResolution = await this.catalogService.checkVariantByOptions(
-      targetProduct.id,
-      mergedOptions
-    );
+    // Try exact variant match
+    const variantResolution = await this.catalogService.checkVariantByOptions(product.id, options);
 
+    // Fully resolved all required options
     if (variantResolution && fullyResolvedCount >= totalRequired) {
-      this.setContext(targetProduct, 'variant_lookup', mergedOptions);
+      this.setContext(product, 'variant_lookup', options);
       return {
         type: 'exact',
         intent: 'variant_lookup',
-        product: targetProduct,
+        product,
         variant: variantResolution.variant,
         stock: variantResolution.variant.inventory
       };
     }
 
+    // Partial match — variant resolution found but not all options specified
     if (variantResolution && fullyResolvedCount > 0 && fullyResolvedCount < totalRequired) {
-      const candidates = targetProduct.variants.filter(v => {
-        for (const [key, value] of Object.entries(mergedOptions)) {
+      const candidates = product.variants.filter(v => {
+        for (const [key, value] of Object.entries(options)) {
           const vOpt = v.options[key];
           if (!vOpt || vOpt.toLowerCase() !== value.toLowerCase()) return false;
         }
         return true;
       });
 
-      this.setContext(targetProduct, baseIntent, mergedOptions);
+      this.setContext(product, intent, { ...options });
       return {
         type: 'partial',
-        intent: baseIntent,
-        product: targetProduct,
-        options: mergedOptions,
+        intent,
+        product,
+        options: { ...options },
         candidates
       };
     }
 
+    // Variant not resolved by checkVariantByOptions — try direct filter
     const unresolvedOptions: Record<string, string[]> = {};
-    for (const opt of targetProduct.options) {
+    for (const opt of product.options) {
       if (!resolvedOptionNames.includes(opt.name)) {
         unresolvedOptions[opt.name] = opt.values;
       }
     }
 
     if (Object.keys(unresolvedOptions).length > 0 && fullyResolvedCount > 0) {
-      const candidates = targetProduct.variants.filter(v => {
-        for (const [key, value] of Object.entries(mergedOptions)) {
+      const candidates = product.variants.filter(v => {
+        for (const [key, value] of Object.entries(options)) {
           const vOpt = v.options[key];
-          if (!vOpt || vOpt.toLowerCase() !== value.toLowerCase()) {
-            return false;
-          }
+          if (!vOpt || vOpt.toLowerCase() !== value.toLowerCase()) return false;
         }
         return true;
       });
 
-      this.setContext(targetProduct, baseIntent, mergedOptions);
+      this.setContext(product, intent, { ...options });
       return {
         type: 'partial',
-        intent: baseIntent,
-        product: targetProduct,
-        options: mergedOptions,
+        intent,
+        product,
+        options: { ...options },
         candidates
       };
     }
 
-    if (Object.keys(unresolvedOptions).length > 0 && fullyResolvedCount === 0) {
-      return {
-        type: 'ambiguous',
-        intent: baseIntent,
-        message: buildAmbiguousMessage(targetProduct, unresolvedOptions),
-        possibleOptions: unresolvedOptions
-      };
-    }
-
+    // Fallback — show ambiguous with all option values
     const allOptions: Record<string, string[]> = {};
-    for (const opt of targetProduct.options) {
+    for (const opt of product.options) {
       allOptions[opt.name] = opt.values;
     }
 
     return {
       type: 'ambiguous',
-      intent: baseIntent,
-      message: buildAmbiguousMessage(targetProduct, allOptions),
+      intent,
+      message: buildAmbiguousMessage(product, allOptions),
       possibleOptions: allOptions
     };
   }
@@ -534,7 +552,7 @@ export class CatalogIntentDetector {
 
   private textContainsWord(text: string, word: string): boolean {
     if (word.length <= 1) {
-      const regex = new RegExp(`(?:^|\\s)${word}(?=\\s|$|[\\.!\\?,\\;:])`, 'i');
+      const regex = new RegExp(`(?:^|\\s)${escapeRegex(word)}(?=\\s|$|[\\.!\\?,\\;:])`, 'i');
       return regex.test(text);
     }
     return text.includes(word);

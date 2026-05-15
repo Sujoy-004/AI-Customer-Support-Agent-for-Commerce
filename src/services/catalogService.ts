@@ -7,32 +7,7 @@ import {
   VariantResolution
 } from './types';
 
-import { SIZE_SYNONYMS, COLOR_SYNONYMS, MATERIAL_SYNONYMS } from './mockCatalogData';
-
-function normalizeOptionValue(
-  userValue: string,
-  synonymTable: Record<string, string[]>
-): string | null {
-  const lower = userValue.toLowerCase().trim();
-  for (const [canonical, synonyms] of Object.entries(synonymTable)) {
-    if (canonical.toLowerCase() === lower) return canonical;
-    if (synonyms.some(s => s.toLowerCase() === lower)) return canonical;
-  }
-  return null;
-}
-
-function resolveSynonyms(
-  optionName: string,
-  value: string
-): string | null {
-  const lower = value.toLowerCase().trim();
-  const tables = [SIZE_SYNONYMS, COLOR_SYNONYMS, MATERIAL_SYNONYMS];
-  for (const table of tables) {
-    const result = normalizeOptionValue(lower, table);
-    if (result) return result;
-  }
-  return null;
-}
+import { normalizeOptionValue } from './synonymResolver';
 
 export class CatalogService {
   private dataSource: CatalogDataSource;
@@ -119,7 +94,7 @@ export class CatalogService {
 
     const resolvedOptions: Record<string, string> = {};
     for (const [optName, optValue] of Object.entries(options)) {
-      const resolved = resolveSynonyms(optName, optValue);
+      const resolved = normalizeOptionValue(optValue);
       if (resolved) {
         resolvedOptions[optName] = resolved;
       } else {
@@ -134,7 +109,7 @@ export class CatalogService {
         const variantLower = variantValue.toLowerCase();
         const valueLower = value.toLowerCase();
         if (variantLower !== valueLower) {
-          const resolvedFromVariant = resolveSynonyms(key, variantValue);
+          const resolvedFromVariant = normalizeOptionValue(variantValue);
           if (!resolvedFromVariant || resolvedFromVariant.toLowerCase() !== valueLower) {
             return false;
           }
