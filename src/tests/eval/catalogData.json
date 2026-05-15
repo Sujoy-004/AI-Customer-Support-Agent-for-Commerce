@@ -1,0 +1,22 @@
+[
+  { "query": "is the classic hoodie in stock", "expectedIntent": "stock_check", "expectedType": "product_only" },
+  { "query": "is the denim jacket available", "expectedIntent": "stock_check", "expectedType": "product_only" },
+  { "query": "will you restock the running shoes", "expectedIntent": "stock_check", "expectedType": "product_only" },
+  { "query": "how many classic hoodies do you have", "expectedIntent": "stock_check", "expectedType": "product_only" },
+  { "query": "what sizes does the classic hoodie come in", "expectedIntent": "sizing_inquiry", "expectedType": "product_only" },
+  { "query": "does the denim jacket fit true to size", "expectedIntent": "sizing_inquiry", "expectedType": "product_only" },
+  { "query": "what size options are there for the wool scarf", "expectedIntent": "sizing_inquiry", "expectedType": "partial" },
+  { "query": "is the leather belt one size fits all", "expectedIntent": "sizing_inquiry", "expectedType": "partial" },
+  { "query": "I am looking for a hoodie", "expectedIntent": "product_search", "expectedType": "product_only" },
+  { "query": "do you have a leather belt", "expectedIntent": "product_search", "expectedType": "partial" },
+  { "query": "show me your running shoes", "expectedIntent": "product_search", "expectedType": "product_only" },
+  { "query": "what products do you have", "expectedIntent": "product_search", "expectedType": "search_results" },
+  { "query": "classic hoodie in black", "expectedIntent": "product_search", "expectedType": "partial" },
+  { "query": "classic hoodie medium black", "expectedIntent": "sizing_inquiry", "expectedType": "partial" },
+  { "query": "denim jacket in size large in blue", "expectedIntent": "variant_lookup", "expectedType": "exact" },
+  { "query": "running shoes in size 10", "expectedIntent": "sizing_inquiry", "expectedType": "partial" },
+  { "query": "in black", "expectedIntent": "product_search", "expectedType": "partial", "contextQuery": "classic hoodie" },
+  { "query": "what about large", "expectedIntent": "product_search", "expectedType": "partial", "contextQuery": "classic hoodie" },
+  { "query": "is the classic hoodie in stock and can I return it", "expectedIntent": "product_search", "expectedType": "product_only" },
+  { "query": "do you have any accessories", "expectedIntent": "product_search", "expectedType": "search_results" }
+]

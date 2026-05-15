@@ -1,37 +1,24 @@
 // src/services/mockCatalogData.ts
 import { Product, ProductOption, Variant, StockInfo, ProductImage, CatalogDataSource } from './types';
+import {
+  COLOR_SYNONYM_TABLE,
+  SIZE_SYNONYM_TABLE,
+  MATERIAL_SYNONYM_TABLE,
+} from '../config/synonyms/index';
 
-// ==============================
-// Synonym tables for variant resolution
-// ==============================
+function buildSynonymRecord(
+  table: Array<{ canonical: string; aliases: string[] }>
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const entry of table) {
+    result[entry.canonical] = entry.aliases;
+  }
+  return result;
+}
 
-export const SIZE_SYNONYMS: Record<string, string[]> = {
-  'Extra Small': ['xs', 'x-small', 'x small'],
-  'Small': ['s', 'sm'],
-  'Medium': ['m', 'md', 'med'],
-  'Large': ['l', 'lg'],
-  'Extra Large': ['xl', 'x-large', 'x large'],
-  'XX-Large': ['xxl', '2xl', '2x', 'xx large']
-};
-
-export const COLOR_SYNONYMS: Record<string, string[]> = {
-  'Blue': ['navy', 'navy blue', 'royal', 'sky blue'],
-  'Black': ['jet black', 'onyx', 'obsidian'],
-  'Gray': ['grey', 'charcoal', 'heather gray', 'silver'],
-  'White': ['cream', 'ivory', 'off white'],
-  'Red': ['burgundy', 'maroon', 'crimson'],
-  'Green': ['olive', 'forest', 'sage', 'emerald'],
-  'Brown': ['tan', 'khaki', 'beige', 'camel']
-};
-
-export const MATERIAL_SYNONYMS: Record<string, string[]> = {
-  'Cotton': ['cotton', 'pure cotton'],
-  'Polyester': ['poly', 'polyester blend'],
-  'Leather': ['genuine leather', 'real leather'],
-  'Wool': ['wool', 'merino wool'],
-  'Canvas': ['canvas', 'cotton canvas'],
-  'Nylon': ['nylon', 'polyamide']
-};
+export const SIZE_SYNONYMS: Record<string, string[]> = buildSynonymRecord(SIZE_SYNONYM_TABLE);
+export const COLOR_SYNONYMS: Record<string, string[]> = buildSynonymRecord(COLOR_SYNONYM_TABLE);
+export const MATERIAL_SYNONYMS: Record<string, string[]> = buildSynonymRecord(MATERIAL_SYNONYM_TABLE);
 
 export const ALL_SYNONYMS: Record<string, string[]> = {
   ...SIZE_SYNONYMS,
@@ -324,6 +311,8 @@ function buildMockProducts(): Product[] {
     })
   ];
 }
+
+export const MOCK_PRODUCTS: Product[] = buildMockProducts();
 
 // ==============================
 // Mock data source implementation

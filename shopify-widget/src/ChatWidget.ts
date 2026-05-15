@@ -1,22 +1,60 @@
 // shopify-widget/src/ChatWidget.ts
-import { MESSAGE_STATUS } from './ChatWidget.js'; // Import existing JS constants
-import { ResponseGrounder } from '../../src/services/responseGrounder';
-import { OffTopicDetector } from '../../src/services/offTopicDetector';
+import responseGrounder from '../../src/services/responseGrounder';
+import offTopicDetector from '../../src/services/offTopicDetector';
+import { PolicyService } from '../../src/services/policyService';
 import { RefusalResponseService } from '../../src/services/refusalResponses';
 import { CatalogIntentDetector, formatCatalogResponse } from '../../src/services/catalogIntentDetector';
 import { CatalogService } from '../../src/services/catalogService';
 import { MockCatalogDataSource } from '../../src/services/mockCatalogData';
 
 // Initialize our services
-const responseGrounder = new ResponseGrounder();
-const offTopicDetector = new OffTopicDetector();
 const refusalResponseService = new RefusalResponseService(offTopicDetector);
+const policyService = new PolicyService();
 
-export { MESSAGE_STATUS };
+// ── Type interfaces ──────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'agent' | 'error';
+  text: string;
+  timestamp: number;
+  status: 'sending' | 'delivered' | 'error';
+}
+
+export interface ChatWidgetOptions {
+  container?: HTMLElement;
+  endpoint?: string;
+  timeoutMs?: number;
+  catalogIntentDetector?: CatalogIntentDetector;
+  catalogService?: CatalogService;
+}
+
+export interface ChatWidgetState {
+  isOpen: boolean;
+  isOnline: boolean;
+  isProcessing: boolean;
+  messages: ChatMessage[];
+}
+
+// ── Widget class ─────────────────────────────────────────────────
 
 export class ChatWidget {
-  constructor(options = {}) {
-    this.container = options.container || document.getElementById('ai-support-widget');
+  private container: HTMLElement;
+  private endpoint: string;
+  private timeoutMs: number;
+  private state: ChatWidgetState;
+  private _catalogIntentDetector!: CatalogIntentDetector;
+  private toggleBtn!: HTMLButtonElement;
+  private widget!: HTMLDivElement;
+  private offlineBanner!: HTMLDivElement;
+  private messageList!: HTMLDivElement;
+  private inputContainer!: HTMLDivElement;
+  private textarea!: HTMLTextAreaElement;
+  private sendBtn!: HTMLButtonElement;
+  private _messageIdCounter = 0;
+
+  constructor(options: ChatWidgetOptions = {}) {
+    this.container = options.container || document.getElementById('ai-support-widget') as HTMLElement;
     this.endpoint = options.endpoint || '/apps/support-agent/chat';
     this.timeoutMs = options.timeoutMs || 10000;
 
@@ -26,8 +64,6 @@ export class ChatWidget {
       isProcessing: false,
       messages: [],
     };
-
-    this._messageIdCounter = 0;
 
     // Catalog services — optionally injectable for tests
     if (options.catalogIntentDetector) {
@@ -118,7 +154,7 @@ export class ChatWidget {
     window.addEventListener('offline', () => this._handleNetworkChange(false));
   }
 
-  _handleNetworkChange(isOnline) {
+  _handleNetworkChange(isOnline: boolean): void {
     this.state.isOnline = isOnline;
     if (!isOnline) {
       this.offlineBanner.hidden = false;
@@ -275,6 +311,7 @@ export class ChatWidget {
     if (!text || this.state.isProcessing) return;
 
     if (!this.state.isOnline) {
+      this.setProcessing(false);
       return;
     }
 
@@ -315,16 +352,23 @@ export class ChatWidget {
     if (offTopicResult.isOffTopic) {
       // Generate polite refusal
       const refusalResponse = await refusalResponseService.generateRefusal(userQuery);
-      return refusalResponse.message;
+      if (refusalResponse) {
+        return refusalResponse.message;
+      }
+      return "I'm here to help with questions about our store, products, policies, and orders. Please ask about something related to our store.";
     }
     
     // Step 2: Check for catalog intent (product availability, sizing, search)
     const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
-    if (catalogResult.type !== 'not_catalog' && catalogResult.type !== 'context_expired') {
+    if (catalogResult.type !== 'not_catalog') {
+      // Update context for cross-turn queries
+      const context = this.conversationContext;
+      if (catalogResult.type === 'exact' && 'product' in catalogResult) {
+        context.set(catalogResult.product, {}, []);
+      } else if (catalogResult.type === 'partial' && 'product' in catalogResult) {
+        context.set(catalogResult.product, catalogResult.options || {}, []);
+      }
       return formatCatalogResponse(userQuery, catalogResult);
-    }
-    if (catalogResult.type === 'context_expired') {
-      return catalogResult.message;
     }
 
     // Step 3: Generate a basic response (in a real implementation, this would come from an LLM)
