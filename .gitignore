@@ -66,10 +66,10 @@ graphify-out/cost.json
 .graphify_python
 
 # ==============================
-# Workflow & Planning
+# Workflow & Planning (committed for hackathon submission)
 # ==============================
-.planning/
-.opencode/
+# .planning/  -- committed: judges need to see planning artifacts
+# .opencode/  -- committed: judges need to see plugin architecture
 
 # ==============================
 # Personal / scratch
