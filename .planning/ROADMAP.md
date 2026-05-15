@@ -40,9 +40,12 @@
 **Depends on**: Phase 2
 **Requirements**: CORE-01
 **Success Criteria** (what must be TRUE):
-  1. User can ask if a specific variant is in stock and get a real-time answer
-  2. User is informed correctly when an item is out of stock instead of a hallucinated availability
-**Plans**: TBD
+   1. User can ask if a specific variant is in stock and get a real-time answer
+   2. User is informed correctly when an item is out of stock instead of a hallucinated availability
+
+**Plans:**
+- [ ] 03-01-PLAN.md — Catalog Service Layer: types, mock data, product/variant/stock resolution
+- [ ] 03-02-PLAN.md — Catalog Integration & Intent Detection: ChatWidget pipeline, intent routing
 
 ### Phase 4: Order Tracking Workflow
 **Goal**: Users can securely authenticate and retrieve the current status of their past orders
@@ -79,7 +82,7 @@
 |-------|----------------|--------|-----------|
 | 1. UI Foundation & Error Handling | 2/2 | Complete | 2026-05-14 |
 | 2. Policy Grounding & Guardrails | 1/1 | Complete | 2026-05-15 |
-| 3. Live Catalog Intelligence | 0/0 | Not started | - |
+| 3. Live Catalog Intelligence | 0/2 | Planning | - |
 | 4. Order Tracking Workflow | 0/0 | Not started | - |
 | 5. Graceful Escalation | 0/0 | Not started | - |
 | 6. Return Initiation Workflow | 0/0 | Not started | - |
