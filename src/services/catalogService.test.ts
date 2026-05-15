@@ -519,4 +519,81 @@ describe('error handling', () => {
 
     await expect(svc.checkStock('var-1')).rejects.toThrow('Network error');
   });
+
+  it('should throw when loadProducts fails in checkVariantByOptions', async () => {
+    const errorDs: CatalogDataSource = {
+      async loadProducts(): Promise<Product[]> {
+        throw new Error('Database connection failed');
+      }
+    };
+    const svc = new CatalogService(errorDs);
+
+    await expect(
+      svc.checkVariantByOptions('prod-1', { Size: 'M' })
+    ).rejects.toThrow('Database connection failed');
+  });
+});
+
+describe('searchProducts edge cases', () => {
+  const mockProducts: Product[] = [
+    {
+      id: 'prod-1',
+      title: 'Classic Hoodie',
+      description: 'A comfortable cotton hoodie',
+      type: 'clothing',
+      priceRange: { min: 49.99, max: 59.99 },
+      options: [],
+      variants: [],
+      images: [],
+      tags: ['hoodie', 'featured']
+    },
+    {
+      id: 'prod-2',
+      title: 'Canvas Tote',
+      description: 'Sturdy canvas tote bag',
+      type: 'accessories',
+      priceRange: { min: 24.99, max: 24.99 },
+      options: [],
+      variants: [],
+      images: [],
+      tags: ['bag', 'everyday']
+    }
+  ];
+
+  it('should return all products when tags array is empty', async () => {
+    const ds = createMockDataSource(mockProducts);
+    const svc = new CatalogService(ds);
+
+    const results = await svc.searchProducts({ tags: [] });
+    expect(results).toHaveLength(2); // All products returned
+  });
+
+  it('should include products at exact minPrice boundary', async () => {
+    const ds = createMockDataSource(mockProducts);
+    const svc = new CatalogService(ds);
+
+    // Classic Hoodie min price is 49.99 — should be included at exact boundary
+    const results = await svc.searchProducts({ minPrice: 49.99 });
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe('prod-1');
+  });
+
+  it('should include products at exact maxPrice boundary', async () => {
+    const ds = createMockDataSource(mockProducts);
+    const svc = new CatalogService(ds);
+
+    // Canvas Tote max price is 24.99 — should be included at exact boundary
+    const results = await svc.searchProducts({ maxPrice: 24.99 });
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe('prod-2');
+  });
+
+  it('should exclude products below minPrice', async () => {
+    const ds = createMockDataSource(mockProducts);
+    const svc = new CatalogService(ds);
+
+    // Classic Hoodie min priceRange.min is 49.99, so 49.99 >= 50 is false → excluded
+    const results = await svc.searchProducts({ minPrice: 50 });
+    expect(results).toHaveLength(0);
+  });
 });

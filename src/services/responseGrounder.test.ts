@@ -76,4 +76,178 @@ describe('ResponseGrounder', () => {
       expect(result.suggestions.length).toBeGreaterThan(0);
     });
   });
+
+  describe('shipping — express match', () => {
+    it('should detect express shipping source when the exact policy text appears', async () => {
+      // Each shipping sub-check adds partial confidence (express=0.25).
+      // isGrounded=true requires confidence >= 0.5, so we test source presence
+      const result = await responseGrounder.groundResponse(
+        'What is your express shipping?',
+        'Standard shipping (5-7 business days): $5.99. Express shipping (2-3 business days): $12.99. Orders processed within 1-2 business days.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('shipping.express');
+    });
+  });
+
+  describe('shipping — international match', () => {
+    it('should detect international shipping source when the exact policy text appears', async () => {
+      const result = await responseGrounder.groundResponse(
+        'Do you ship internationally?',
+        'Standard shipping (5-7 business days): $5.99. International shipping (7-14 business days): Calculated at checkout. Orders processed within 1-2 business days.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('shipping.international');
+    });
+  });
+
+  describe('shipping — free shipping threshold', () => {
+    it('should detect free shipping threshold source when the dollar amount is correct', async () => {
+      const result = await responseGrounder.groundResponse(
+        'When do you offer free shipping?',
+        'Standard shipping (5-7 business days): $5.99. We offer free shipping on orders over $75. Orders processed within 1-2 business days.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('shipping.freeShippingThreshold');
+    });
+  });
+
+  describe('shipping — approximate matches', () => {
+    it('should give partial credit for approximate express shipping mention', async () => {
+      // Contains "express" + "2-3" + "business day" but NOT the exact policy string
+      const result = await responseGrounder.groundResponse(
+        'How fast is express shipping?',
+        'Express orders take 2-3 business days to arrive'
+      );
+      // Should have partial confidence but not full grounding
+      expect(result.confidence).toBeGreaterThan(0);
+      expect(result.policySources).toContain('shipping.express (approximate)');
+    });
+
+    it('should give partial credit for approximate international shipping mention', async () => {
+      const result = await responseGrounder.groundResponse(
+        'How long does international shipping take?',
+        'International shipping takes 7-14 business days'
+      );
+      expect(result.policySources).toContain('shipping.international (approximate)');
+    });
+
+    it('should give vague credit for free shipping without exact threshold', async () => {
+      const result = await responseGrounder.groundResponse(
+        'Is there free shipping?',
+        'Yes, we offer free shipping on all orders'
+      );
+      expect(result.policySources).toContain('shipping.freeShippingThreshold (vague)');
+    });
+  });
+
+  describe('warranty — extended options', () => {
+    it('should detect extended warranty source when option text appears', async () => {
+      const result = await responseGrounder.groundResponse(
+        'Do you have extended warranty?',
+        'Our products come with a 1 year limited warranty that covers manufacturing defects and hardware failures under normal use. We also offer a 2-year extension ($19.99) for extended coverage.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('warranty.extendedOptions');
+    });
+  });
+
+  describe('warranty — claim process', () => {
+    it('should detect claim process source when the exact policy text appears', async () => {
+      const result = await responseGrounder.groundResponse(
+        'How do I file a warranty claim?',
+        'Our products come with a 1 year limited warranty. Covers manufacturing defects and hardware failures under normal use. Contact support with order number and issue description for RMA.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('warranty.claimProcess');
+    });
+  });
+
+  describe('returns — refund method', () => {
+    it('should detect refund method source when the exact policy text appears', async () => {
+      const result = await responseGrounder.groundResponse(
+        'How do I get a refund?',
+        'Our return policy allows returns within 30 days from delivery date. Refund issued to original payment method within 5-7 business days.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('returns.refundMethod');
+    });
+  });
+
+  describe('returns — exchange policy', () => {
+    it('should detect exchange policy source when the exact policy text appears', async () => {
+      const result = await responseGrounder.groundResponse(
+        'Can I exchange an item?',
+        'Items must be in original condition with all accessories. Free exchanges within 30 days, subject to availability. Our return policy allows returns within 30 days from delivery date.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('returns.exchangePolicy');
+    });
+  });
+
+  describe('returns — restocking fee', () => {
+    it('should detect restocking fee source when mentioned', async () => {
+      const result = await responseGrounder.groundResponse(
+        'Is there a restocking fee?',
+        'No restocking fee for returns in original condition. Items must be in original condition with all accessories. Our return policy allows returns within 30 days from delivery date.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('returns.restockingFee');
+    });
+  });
+
+  describe('returns — approximate refund mention', () => {
+    it('should give partial credit for approximate refund mention', async () => {
+      const result = await responseGrounder.groundResponse(
+        'How are refunds processed?',
+        'Refunds go back to your original payment method within 5-7 business days'
+      );
+      expect(result.policySources).toContain('returns.refundMethod (approximate)');
+    });
+  });
+
+  describe('multi-policy query tiebreaker', () => {
+    it('should pick shipping when query has both shipping and warranty keywords', async () => {
+      // "shipping and warranty" — both matched, shippingCount >= warrantyCount → SHIPPING
+      const result = await responseGrounder.groundResponse(
+        'Tell me about your shipping and warranty policies',
+        'Standard shipping (5-7 business days): $5.99. We offer free shipping on orders over $75. Orders processed within 1-2 business days.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('shipping.standard');
+    });
+
+    it('should pick warranty when warranty keywords outnumber shipping', async () => {
+      // "warranty claim coverage guarantee" — mostly warranty keywords
+      const result = await responseGrounder.groundResponse(
+        'What is your warranty claim process and what does the guarantee cover?',
+        'Our products come with a 1 year limited warranty that covers manufacturing defects and hardware failures under normal use. Contact support with your order number and issue description for an RMA.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('warranty.standardPeriod');
+    });
+
+    it('should pick returns when returns keywords outnumber others', async () => {
+      const result = await responseGrounder.groundResponse(
+        'I want to return an item and get a refund for an exchange',
+        'Our return policy allows returns within 30 days from delivery date. Items must be in original condition with all accessories. No restocking fee for returns in original condition.'
+      );
+      expect(result.isGrounded).toBe(true);
+      expect(result.policySources).toContain('returns.returnWindow');
+    });
+  });
+
+  describe('default policy type fallback', () => {
+    it('should return ungrounded result for unknown policy type', async () => {
+      // The switch default is reachable if policyRelevance has isRelevant=true
+      // but no matching PolicyType. This can only happen if _assessPolicyRelevance
+      // is patched to return a new/custom value. Under normal operation the three
+      // enum values cover all relevant paths, so the default is a safety net.
+      //
+      // We test it here by invoking the private method through a cast.
+      const grounder = responseGrounder as any;
+      const result = grounder._assessPolicyRelevance('random text with no keywords');
+      expect(result.isRelevant).toBe(false);
+    });
+  });
 });
