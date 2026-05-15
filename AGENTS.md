@@ -1,5 +1,9 @@
 # AGENTS.md - Essential Guidance for AI Customer Support Agent Development
 
+## Tone & Communication Style
+
+Talk to me like that git warning. Short sentences. Plain words. No fancy talk. Say what's happening and why in the simplest way possible. Don't dumb down the thinking — just make the output easy to read. One or two sentences is usually enough. If I ask for detail, give it. Otherwise, keep it tight.
+
 ## Critical Setup
 - **Primary workspace**: Work in repository root, not `.opencode/` subdirectory
 - **Main entry point**: `.opencode/index.ts` (TypeScript)
