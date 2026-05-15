@@ -3,6 +3,9 @@ import { MESSAGE_STATUS } from './ChatWidget.js'; // Import existing JS constant
 import { ResponseGrounder } from '../../src/services/responseGrounder';
 import { OffTopicDetector } from '../../src/services/offTopicDetector';
 import { RefusalResponseService } from '../../src/services/refusalResponses';
+import { CatalogIntentDetector, formatCatalogResponse } from '../../src/services/catalogIntentDetector';
+import { CatalogService } from '../../src/services/catalogService';
+import { MockCatalogDataSource } from '../../src/services/mockCatalogData';
 
 // Initialize our services
 const responseGrounder = new ResponseGrounder();
@@ -25,6 +28,15 @@ export class ChatWidget {
     };
 
     this._messageIdCounter = 0;
+
+    // Catalog services — optionally injectable for tests
+    if (options.catalogIntentDetector) {
+      this._catalogIntentDetector = options.catalogIntentDetector;
+    } else {
+      const catalogService = options.catalogService || new CatalogService(new MockCatalogDataSource());
+      this._catalogIntentDetector = new CatalogIntentDetector(catalogService);
+    }
+
     this._init();
   }
 
@@ -306,20 +318,29 @@ export class ChatWidget {
       return refusalResponse.message;
     }
     
-    // Step 2: Generate a basic response (in a real implementation, this would come from an LLM)
+    // Step 2: Check for catalog intent (product availability, sizing, search)
+    const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
+    if (catalogResult.type !== 'not_catalog' && catalogResult.type !== 'context_expired') {
+      return formatCatalogResponse(userQuery, catalogResult);
+    }
+    if (catalogResult.type === 'context_expired') {
+      return catalogResult.message;
+    }
+
+    // Step 3: Generate a basic response (in a real implementation, this would come from an LLM)
     // For now, we'll generate a simple mock response based on the query
     let basicResponse = this._generateMockResponse(userQuery);
     
-    // Step 3: Ground the response in policy data
+    // Step 4: Ground the response in policy data
     const groundingResult = await responseGrounder.groundResponse(userQuery, basicResponse);
     
-    // Step 4: If response is not well grounded, improve it or provide a fallback
+    // Step 5: If response is not well grounded, improve it or provide a fallback
     if (!groundingResult.isGrounded && groundingResult.confidence < 0.3) {
       // Provide a helpful fallback that encourages policy-specific questions
       return "I want to make sure I give you accurate information based on our store policies. Could you please rephrase your question to be more specific about our shipping, warranty, or return policies? For example, you could ask about our shipping rates, warranty coverage, or return window.";
     }
     
-    // Step 5: If we have grounding suggestions, incorporate them
+    // Step 6: If we have grounding suggestions, incorporate them
     if (groundingResult.suggestions.length > 0 && groundingResult.confidence < 0.7) {
       // We could modify the response based on suggestions, but for now we'll return it as is
       // since our mock responses are already reasonably grounded
