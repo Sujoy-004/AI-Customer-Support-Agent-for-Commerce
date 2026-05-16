@@ -9,6 +9,13 @@ build/
 *.d.ts.map
 
 # ==============================
+# Build artifacts (compiled JS copies)
+# ==============================
+shopify-widget/src/shopify-widget/
+shopify-widget/src/src/
+test-results/
+
+# ==============================
 # Dependencies
 # ==============================
 .eslintcache
@@ -78,12 +85,3 @@ SOVEREIGNTY.md
 raw/
 scratch/
 
-# ==============================
-# OpenCode config (generated)
-# ==============================
-opencode.json
-.opencode/
-.planning/
-.vscode/
-coverage/
-e2e/
