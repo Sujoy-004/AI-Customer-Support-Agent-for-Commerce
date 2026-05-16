@@ -248,3 +248,92 @@ Source: `e2e/playwright.config.ts` (config), `e2e/specs/catalogQuery.spec.ts` (3
 Production deployment will move to a Shopify App backend with a REST/GraphQL API, keeping the widget as a thin DOM client.
 
 **Tradeoff accepted for hackathon.** The `CatalogDataSource` interface and `PolicyService`'s async design make the migration to server-side straightforward — swap the data source implementation.
+
+---
+
+## 2026-05-16: Combined Order Card — Rich HTML + Timeline + Text Summary (Phase 4)
+
+**Considered:**
+- Rich HTML order card only (visual card with status badge, tracking number, ETA)
+- Text summary only (structured text like catalog responses)
+- Visual timeline only (progress steps with current step highlighted)
+- **Chose: All three combined** — rich HTML card that includes a visual timeline progress component plus structured text summary
+
+**Chose:** Dedicated `OrderCard` DOM component class with `render()` method. Shows: order ID, purchased items summary, current status with timeline step highlight, carrier + tracking number, estimated delivery date. No price breakdown or shipping address on the card.
+
+**Because:** The success criteria say "natively rendered in the chat UI" — a rich card with timeline provides a better UX than plain text, matching the visual quality expected from a store's order status page. The dedicated component approach (vs inline HTML) follows good separation of concerns and makes the card testable and reusable for Phase 6 (return initiation). Combining all three formats means users get both the quick visual scan (timeline) and the detailed information (text summary) in one bubble.
+
+**Tradeoff:** Requires upgrading the widget's message renderer to support rich HTML cards (current widget only does plain text bubbles). More DOM complexity than text-only.
+
+---
+
+## 2026-05-16: Order Number + Email Authentication (Phase 4)
+
+**Considered:**
+- Order number only — simplest, treats it like a public lookup
+- Order number + email/zip — user provides both, system validates match
+- Magic link / email verification — most secure but adds complexity outside chat flow
+
+**Chose:** Order number + email (or zip) for identity validation. Both single-message format supported ("Track order #1234 for email@example.com") and conversational multi-turn fallback (chat asks for order number first, then email).
+
+**Because:** This is a browser-side chat widget with no backend — true "secure authentication" is limited. Order number + email matches Shopify's own order lookup pattern and is familiar to users. Supporting both single-message and multi-turn means power users can paste everything at once while new users get a guided experience.
+
+**Tradeoff:** Not truly "secure" — email is not a strong authenticator. Acceptable for hackathon scope. A production version would use Shopify's Storefront API tokens or OAuth.
+
+---
+
+## 2026-05-16: Mock Order Data Source with Full Shopify Model (Phase 4)
+
+**Considered:**
+- Basic 3-status orders (Pending, Shipped, Delivered)
+- Full timeline with 6 statuses (Confirmed→Processing→Shipped→In Transit→Out for Delivery→Delivered)
+- Full set including edge cases: Cancelled, Returned, On Hold
+
+**Chose:** Full Shopify-like order model with 9 statuses including edge cases. Follows Phase 3 pattern: `OrderDataSource` interface → `MockOrderDataSource` implementation. Full order fields: orderId, status, items[], total, shippingAddress, email, fulfillmentStatus, financialStatus, line items with price/quantity, trackingNumber, carrier, estimatedDelivery, createdAt, notes. Full tracking timeline events per order.
+
+**Because:** Phase 6 (return initiation) depends on Phase 4 — having edge case statuses (Cancelled, Returned, On Hold) means Phase 6 can reuse the same order data without rework. The full Shopify model ensures the order data is realistic enough for demo purposes. Following the Phase 3 `CatalogDataSource` pattern exactly means developers familiar with the catalog code can work on orders with zero learning curve.
+
+**Tradeoff:** More mock data to maintain. The full model includes fields (shippingAddress, financialStatus) that aren't displayed on the order card but are available for future use.
+
+---
+
+## 2026-05-16: Order Pipeline Priority — Before Catalog (Phase 4)
+
+**Considered:**
+- Order detection after catalog (catalog runs first, then order)
+- Order detection before catalog (after off-topic check, order runs first)
+
+**Chose:** Order intent detection runs after off-topic check, BEFORE catalog detection in the ChatWidget pipeline. New `OrderService` + `OrderIntentDetector` + `formatOrderResponse()` — parallels the CatalogService pattern exactly.
+
+**Because:** CatalogIntentDetector already has `EXCLUSION_KEYWORDS` routing 'order status'/'tracking' away from catalog. But there's a race condition risk: if order detection comes after catalog, a query like "track my order of a hoodie" could trigger catalog matching on "hoodie" before order detection gets a chance. Running order first avoids this entirely. The new `OrderIntentDetector` class mirrors `CatalogIntentDetector`'s pattern: keyword groups with includes/excludes, structured parsing, specific error messages per failure type.
+
+**Tradeoff:** Slightly more pipeline steps for catalog queries (passes through order detection first). Negligible since both are deterministic keyword checks.
+
+---
+
+## 2026-05-16: Specific Error Messages with Corrective Prompts (Phase 4)
+
+**Considered:**
+- Generic error message for all failures
+- Specific messages per failure type
+- Specific messages + prompt to retry
+
+**Chose:** Specific error messages per failure type (order not found, email mismatch, service unavailable) followed by a corrective prompt: "Order #1234 wasn't found. Would you like to try a different order number or check your email?"
+
+**Because:** A generic "couldn't find that order" is frustrating — the user doesn't know what to do next. Specific messages tell them exactly what went wrong, and the corrective prompt keeps the conversation flowing instead of dead-ending. This pattern is common in good conversational UX (Shopify's own order lookup does this).
+
+**Tradeoff:** Slightly more code paths to handle. Requires the OrderService to distinguish between "order not found" and "email doesn't match".
+
+---
+
+## 2026-05-16: Full Tracking Timeline Events (Phase 4)
+
+**Considered:**
+- Carrier + tracking number + ETA only
+- Full tracking timeline with events
+
+**Chose:** Full tracking timeline events rendered within the order card. Each order has a sequence of events: "May 14: Order placed", "May 15: Shipped", "May 17: Arrived at sort facility", "May 22: Estimated delivery". The timeline is a visual component within the OrderCard, not separate messages.
+
+**Because:** A full timeline tells a story — the user can see the entire journey of their order at a glance. "Shipped" with a tracking number is just a status; a timeline with dates and milestones is a narrative. This also makes the order card more visually rich, matching the "natively rendered" requirement from the success criteria.
+
+**Tradeoff:** Each mock order needs a realistic timeline of events. More mock data to maintain. Timeline rendering adds visual complexity to the OrderCard component.

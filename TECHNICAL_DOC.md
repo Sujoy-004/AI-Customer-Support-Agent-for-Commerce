@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Technical Document: AI Customer Support Agent for Commerce
 
-> **Last updated:** 2026-05-15
+> **Last updated:** 2026-05-16
 > **Repository:** AI Customer Support Agent for Commerce (Track 4)
 
 ## 1. Architecture Overview
@@ -18,32 +18,37 @@ The system uses a browser-side layered architecture. All services run in the use
 ├─────────────────────────────────────────────────────────────┤
 │                   Orchestration Layer                         │
 │  ChatWidget._generateAgentResponse()                          │
-│  └─ Pipeline: OffTopicDetector → CatalogIntentDetector →      │
-│     PolicyService → Greeting → Fallback                       │
+│  └─ Pipeline: OffTopicDetector → OrderIntentDetector →        │
+│     CatalogIntentDetector → PolicyService → Greeting →        │
+│     Fallback                                                   │
 ├─────────────────────────────────────────────────────────────┤
 │                   Service Layer                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐  │
-│  │ PolicyService │  │ CatalogService│  │ ResponseGrounder   │  │
-│  │ (policies)    │  │ (products)   │  │ (grounding check)  │  │
-│  └──────────────┘  └──────────────┘  └────────────────────┘  │
-│  ┌──────────────────┐ ┌────────────────────────────────────┐  │
-│  │OffTopicDetector   │ │CatalogIntentDetector               │  │
-│  │(off-topic guard)  │ │(intent classification + parsing)   │  │
-│  └──────────────────┘ └────────────────────────────────────┘  │
-│  ┌──────────────────────┐                                     │
-│  │RefusalResponseService│                                     │
-│  │(polite refusals)     │                                     │
-│  └──────────────────────┘                                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │ PolicyService │  │CatalogService│  │ OrderService  │       │
+│  │ (policies)    │  │ (products)   │  │ (orders)      │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│  ┌──────────────────────┐ ┌────────────────────────────────┐ │
+│  │ ResponseGrounder     │ │ CatalogIntentDetector          │ │
+│  │ (grounding check)    │ │ (intent + parsing)             │ │
+│  └──────────────────────┘ └────────────────────────────────┘ │
+│  ┌──────────────────┐ ┌──────────────────────────────────┐   │
+│  │OffTopicDetector   │ │OrderIntentDetector               │   │
+│  │(off-topic guard)  │ │(order intent + parsing)          │   │
+│  └──────────────────┘ └──────────────────────────────────┘   │
+│  ┌──────────────────────┐ ┌───────────────────────────────┐  │
+│  │RefusalResponseService│ │ OrderCard                     │  │
+│  │(polite refusals)     │ │ (DOM component for orders)    │  │
+│  └──────────────────────┘ └───────────────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │                   Data Layer                                  │
 │  ┌────────────────────┐  ┌────────────────────────────┐       │
-│  │MockCatalogDataSource│  │ConversationContextManager   │       │
-│  │(7 products, 52 var.)│  │(5min/3turn expiry)         │       │
+│  │MockCatalogDataSource│  │MockOrderDataSource          │       │
+│  │(7 products, 52 var.)│  │(orders with 9 statuses)    │       │
 │  └────────────────────┘  └────────────────────────────┘       │
-│  ┌────────────────────────────────────────┐                    │
-│  │ Synonym Config (colors.ts, sizes.ts,   │                    │
-│  │                materials.ts)           │                    │
-│  └────────────────────────────────────────┘                    │
+│  ┌────────────────────┐  ┌────────────────────────────────┐   │
+│  │ConversationContext │  │ Synonym Config (colors.ts,     │   │
+│  │Manager (5min/3turn)│  │  sizes.ts, materials.ts)      │   │
+│  └────────────────────┘  └────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -53,24 +58,28 @@ The system uses a browser-side layered architecture. All services run in the use
 |-------|-----------|-----------|----------------|
 | Presentation | `shopify-widget/src/` | `ChatWidget.ts` | DOM rendering, event handling, message state |
 | Orchestration | `ChatWidget.ts` | `_generateAgentResponse()` | Routes queries through service pipeline |
-| Services | `src/services/` | `policyService.ts`, `catalogService.ts`, `offTopicDetector.ts`, `responseGrounder.ts`, `refusalResponses.ts`, `catalogIntentDetector.ts` | Domain logic — policies, catalog, guardrails |
-| Data | `src/services/` | `mockCatalogData.ts`, `conversationContext.ts`, `cacheManager.ts` | Data sources, caching, context management |
+| Services | `src/services/` | `policyService.ts`, `catalogService.ts`, `orderService.ts`, `offTopicDetector.ts`, `responseGrounder.ts`, `refusalResponses.ts`, `catalogIntentDetector.ts`, `orderIntentDetector.ts` | Domain logic — policies, catalog, orders, guardrails |
+| Data | `src/services/` | `mockCatalogData.ts`, `mockOrderData.ts`, `conversationContext.ts`, `cacheManager.ts` | Data sources, caching, context management |
 | Config | `src/config/synonyms/` | `colors.ts`, `sizes.ts`, `materials.ts` | Synonym maps for natural language → canonical values |
 
 ### 1.3 Key Files and Their Roles
 
 | File | Lines | Role |
 |------|-------|------|
-| `shopify-widget/src/ChatWidget.ts` | 417 | Main widget — DOM creation, message pipeline, event handling |
+| `shopify-widget/src/ChatWidget.ts` | 417+ | Main widget — DOM creation, order support now in pipeline |
+| `shopify-widget/src/OrderCard.ts` | New | DOM component for rich order card with timeline |
 | `src/services/catalogService.ts` | 134 | Product search, variant resolution, stock check, caching |
 | `src/services/catalogIntentDetector.ts` | 637 | Intent classification, option extraction, cross-turn context |
+| `src/services/orderService.ts` | New | Order lookup, status resolution, tracking events |
+| `src/services/orderIntentDetector.ts` | New | Order intent detection with keyword groups + structured parsing |
 | `src/services/offTopicDetector.ts` | 184 | Keyword-based off-topic detection with confidence scoring |
 | `src/services/responseGrounder.ts` | 457 | Validates agent responses against actual policy data |
 | `src/services/refusalResponses.ts` | 178 | Generates contextual polite refusal messages |
 | `src/services/policyService.ts` | 93 | Policy data management with caching |
-| `src/services/types.ts` | 126 | All TypeScript interfaces and types |
+| `src/services/types.ts` | 126+ | All TypeScript interfaces — now includes Order, OrderStatus, TrackingEvent, OrderDataSource |
 | `src/services/synonymResolver.ts` | 69 | Maps aliases to canonical option values |
 | `src/services/mockCatalogData.ts` | 332 | 7 products with 52 variants, stock overrides |
+| `src/services/mockOrderData.ts` | New | Mock orders with 9 statuses, full timeline events |
 | `src/services/conversationContext.ts` | 49 | Cross-turn context manager |
 | `src/services/cacheManager.ts` | 33 | Generic TTL cache |
 
@@ -138,6 +147,7 @@ The `_generateAgentResponse` pipeline in ChatWidget.ts is a pure deterministic d
 
 ```
 → OffTopicDetector.detectOffTopic()       (keyword match)
+→ OrderIntentDetector.resolveOrderQuery() (keyword + structured parse)
 → CatalogIntentDetector.resolveQuery()    (keyword + structured parse) 
 → PolicyService.getAllPolicies()          (cached data lookup)
 → Greeting keywords                       (string includes)
@@ -221,7 +231,23 @@ What happens:
     → Currently suggestions are always empty (findSuggestions returns first 5 products)
 ```
 
-### 3.6 Context Expired
+### 3.6 Order Not Found / Auth Failure
+
+```
+Scenario: User provides order number that doesn't exist, or email doesn't match
+What happens:
+  OrderService.lookup(orderId, email):
+    → Checks order exists by ID
+    → If not found: returns { found: false, reason: 'not_found' }
+    → If found but email doesn't match: returns { found: false, reason: 'email_mismatch' }
+    → If found and email matches: returns { found: true, order }
+  OrderIntentDetector.resolveOrderQuery():
+    → If not_found: "I couldn't find order #1234. Please double-check the order number."
+    → If email_mismatch: "The email provided doesn't match order #1234. Can you try a different email?"
+    → Followed by corrective prompt: "Would you like to try again?"
+```
+
+### 3.7 Context Expired
 
 ```
 Scenario: User returns to chat after 5+ minutes or exceeds 3 turns
@@ -234,7 +260,7 @@ What happens:
     → Returns { type: 'context_expired', message: "Your previous product inquiry has expired..." }
 ```
 
-### 3.7 API Timeout
+### 3.8 API Timeout
 
 ```
 Scenario: _generateAgentResponse() takes longer than 10 seconds
@@ -370,6 +396,15 @@ User Input
 │ OffTopicDetector    │──── isOffTopic? ──► RefusalResponseService ──► Response
 └─────────────────────┘
     │ (not off-topic)
+    ▼
+┌──────────────────────────┐
+│ OrderIntentDetector      │──── order found ──► formatOrderResponse() ──► Response
+│ ├─ detectOrderIntent()   │
+│ ├─ parseOrderIdentifier()│
+│ ├─ validateEmail()       │
+│ └─ orderService.lookup() │
+└──────────────────────────┘
+    │ (not order-related)
     ▼
 ┌──────────────────────────┐
 │ CatalogIntentDetector    │──── not_catalog? ──► (continue to policy)

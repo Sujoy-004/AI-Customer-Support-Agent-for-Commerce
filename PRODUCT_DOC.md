@@ -3,7 +3,7 @@
 
 > **Track:** Kasparro Agentic Commerce Hackathon — Track 4
 > **Stack:** TypeScript, Vitest, Playwright, OpenCode Plugin System
-> **Status:** 3 of 6 phases complete (May 2026)
+> **Status:** 3 of 6 phases complete, Phase 4 context gathered (May 2026)
 
 ## What Problem Does This Solve?
 
@@ -54,8 +54,16 @@ This product takes a third path: **deterministic ground truth for everything ver
 - **Cross-turn context** — remembers last product across up to 3 turns, expiring after 5 minutes
 - **MockCatalogDataSource** — swappable data source interface (`CatalogDataSource`) with 7 products, 52 variants across clothing and accessories
 
-### Phase 4 — Order Tracking Workflow (NOT STARTED)
-Secure order status retrieval with fulfillment tracking. Planned but not yet implemented.
+### Phase 4 — Order Tracking Workflow (CONTEXT GATHERED)
+Secure order status retrieval with fulfillment tracking. Decisions captured, ready for planning.
+
+**Key decisions:**
+- **Order card** — Rich HTML card with visual timeline + text summary, rendered by a dedicated `OrderCard` component
+- **Authentication** — Order number + email (or zip) validation, supports both single-message and conversational multi-turn
+- **Data source** — `OrderDataSource` interface → `MockOrderDataSource`, full Shopify-like order model with 9 statuses including edge cases (Cancelled, Returned, On Hold)
+- **Pipeline** — Order detection runs after off-topic, before catalog. New `OrderService`, `OrderIntentDetector`, `formatOrderResponse()` parallel the catalog pattern
+- **Error handling** — Specific messages per failure type with corrective prompts
+- **Tracking** — Full timeline events (dates + milestones) rendered within the OrderCard
 
 ### Phase 5 — Graceful Escalation (NOT STARTED)
 Detect complex or frustrated intents and seamlessly hand off to human support. Planned but not yet implemented.
