@@ -3,7 +3,7 @@
 
 > **Track:** Kasparro Agentic Commerce Hackathon — Track 4
 > **Stack:** TypeScript, Vitest, Playwright, OpenCode Plugin System
-> **Status:** 3 of 6 phases complete, Phase 4 context gathered (May 2026)
+> **Status:** 4 of 6 phases complete (May 2026)
 
 ## What Problem Does This Solve?
 
@@ -54,16 +54,15 @@ This product takes a third path: **deterministic ground truth for everything ver
 - **Cross-turn context** — remembers last product across up to 3 turns, expiring after 5 minutes
 - **MockCatalogDataSource** — swappable data source interface (`CatalogDataSource`) with 7 products, 52 variants across clothing and accessories
 
-### Phase 4 — Order Tracking Workflow (CONTEXT GATHERED)
-Secure order status retrieval with fulfillment tracking. Decisions captured, ready for planning.
+### Phase 4 — Order Tracking Workflow (COMPLETE)
+Secure order status retrieval with fulfillment tracking. Rich HTML order card with visual timeline. Order number + email authentication. Multi-turn auth with 5min/3turn context expiry.
 
-**Key decisions:**
-- **Order card** — Rich HTML card with visual timeline + text summary, rendered by a dedicated `OrderCard` component
-- **Authentication** — Order number + email (or zip) validation, supports both single-message and conversational multi-turn
-- **Data source** — `OrderDataSource` interface → `MockOrderDataSource`, full Shopify-like order model with 9 statuses including edge cases (Cancelled, Returned, On Hold)
-- **Pipeline** — Order detection runs after off-topic, before catalog. New `OrderService`, `OrderIntentDetector`, `formatOrderResponse()` parallel the catalog pattern
-- **Error handling** — Specific messages per failure type with corrective prompts
-- **Tracking** — Full timeline events (dates + milestones) rendered within the OrderCard
+**Key files:**
+- **OrderService** (`src/services/orderService.ts`) — order lookup, status resolution, tracking events
+- **OrderIntentDetector** (`src/services/orderIntentDetector.ts`) — keyword-based order intent detection with structured parsing
+- **OrderResponseFormatter** (`src/services/orderResponseFormatter.ts`) — formats order responses with order card HTML
+- **OrderCard** (`shopify-widget/src/OrderCard.ts`) — DOM component for rich order card with visual timeline
+- **MockOrderDataSource** (`src/services/mockOrderData.ts`) — mock orders with 9 statuses, full timeline events
 
 ### Phase 5 — Graceful Escalation (NOT STARTED)
 Detect complex or frustrated intents and seamlessly hand off to human support. Planned but not yet implemented.
@@ -97,9 +96,9 @@ The critical differentiator: **Phase 3 (catalog queries) uses ZERO LLM calls.** 
 5. **Multi-turn refinement** — "classic hoodie" → "in black" → "what about large" (cross-turn context)
 6. **Policy queries** — "what's your return policy?" → grounded policy response
 7. **Off-topic refusal** — "what's the weather?" → polite refusal with redirect suggestions
+8. **Order tracking** — "track order #1234 for email@example.com" → rich order card with timeline
 
 ### Planned (Not Yet Implemented)
-8. **Order tracking** — secure order status retrieval
 9. **Return initiation** — in-chat return submission
 10. **Graceful handoff** — human agent escalation
 
@@ -134,11 +133,9 @@ There is **no welcome message**. The widget opens to an empty message area. This
 
 1. **Browser-side only** — All services run in the browser. The `_generateAgentResponse` pipeline in ChatWidget calls local services, not a server API. This means every page load creates new service instances. A production deployment would move services to a Shopify App backend.
 2. **Mock data** — Catalog and policy data are mock implementations. `CatalogDataSource` and `PolicyService` have interfaces ready for live API connections but no Shopify Admin API client has been written yet.
-3. **No order tracking** (Phase 4) — Customers cannot yet look up order status in-chat.
-4. **No return initiation** (Phase 6) — The most common support workflow is not yet automated.
-5. **No human handoff** (Phase 5) — Complex or escalated cases have no escape hatch to a human agent.
-6. **No persistent conversation history** — Context expires after 5 minutes or 3 turns; no long-term session storage.
-7. **ResponseGrounder in ChatWidget.ts** has a known issue: it's instantiated without a PolicyService argument, which causes non-catalog responses to crash at the grounding step. This is a pre-existing bug noted in STATE.md.
+3. **No return initiation** (Phase 6) — The most common support workflow is not yet automated.
+4. **No human handoff** (Phase 5) — Complex or escalated cases have no escape hatch to a human agent.
+5. **No persistent conversation history** — Context expires after 5 minutes or 3 turns; no long-term session storage.
 
 ## Future Roadmap
 
@@ -148,7 +145,7 @@ There is **no welcome message**. The widget opens to an empty message area. This
 | 1. UI Foundation | Complete | ChatWidget, NetworkDetector, CSS design system |
 | 2. Policy Grounding | Complete | PolicyService, OffTopicDetector, ResponseGrounder |
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
-| 4. Order Tracking | Not started | Order status workflow |
+| 4. Order Tracking | Complete | OrderService, OrderCard, multi-turn auth |
 | 5. Graceful Escalation | Not started | Human handoff |
 | 6. Return Initiation | Not started | In-chat return workflow |
 

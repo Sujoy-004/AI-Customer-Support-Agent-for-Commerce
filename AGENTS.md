@@ -8,11 +8,12 @@ Talk to me like that git warning. Short sentences. Plain words. No fancy talk. S
 
 These are non-negotiable. Everything else can wait.
 
-**4 mandatory workflows — 2 in progress, 2 to go:**
-- Product Intelligence (Phase 3) — In progress. Catalog intent detector + ChatWidget integration done.
+**4 mandatory workflows — 4 complete (Phases 1-4), 2 to go:**
 - Policy Execution (Phase 2) — Built ✓
-- Active Workflows: order tracking (Phase 4) + return initiation (Phase 6) — NOT started.
-- Graceful Handoff (Phase 5) — NOT started.
+- Product Intelligence (Phase 3) — Built ✓
+- Order Tracking Workflow (Phase 4) — Built ✓
+- Graceful Handoff (Phase 5) — NOT started
+- Return Initiation Workflow (Phase 6) — NOT started
 
 **4 mandatory docs (25% of score):**
 - `PRODUCT_DOC.md` — Created. Update during/after each phase.
@@ -31,8 +32,8 @@ These are non-negotiable. Everything else can wait.
 - Current test coverage: 72.54% lines, 66.44% branches. Target 80%+.
 
 **Priority order for remaining work:**
-1. Execute Phase 4 (order tracking) and Phase 6 (return initiation) — Active workflows
-2. Execute Phase 5 (graceful handoff)
+1. Execute Phase 5 (graceful handoff)
+2. Execute Phase 6 (return initiation)
 3. Improve test coverage to 80%+
 4. Record demo video
 

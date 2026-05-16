@@ -66,20 +66,21 @@ The system uses a browser-side layered architecture. All services run in the use
 
 | File | Lines | Role |
 |------|-------|------|
-| `shopify-widget/src/ChatWidget.ts` | 417+ | Main widget — DOM creation, order support now in pipeline |
-| `shopify-widget/src/OrderCard.ts` | New | DOM component for rich order card with timeline |
+| `shopify-widget/src/ChatWidget.ts` | 440+ | Main widget — DOM creation, order support in pipeline |
+| `shopify-widget/src/OrderCard.ts` | ~120 | DOM component for rich order card with timeline |
 | `src/services/catalogService.ts` | 134 | Product search, variant resolution, stock check, caching |
 | `src/services/catalogIntentDetector.ts` | 637 | Intent classification, option extraction, cross-turn context |
-| `src/services/orderService.ts` | New | Order lookup, status resolution, tracking events |
-| `src/services/orderIntentDetector.ts` | New | Order intent detection with keyword groups + structured parsing |
+| `src/services/orderService.ts` | ~85 | Order lookup, status resolution, tracking events |
+| `src/services/orderIntentDetector.ts` | ~350 | Order intent detection with keyword groups + structured parsing |
+| `src/services/orderResponseFormatter.ts` | ~80 | Formats order responses with order card HTML |
 | `src/services/offTopicDetector.ts` | 184 | Keyword-based off-topic detection with confidence scoring |
 | `src/services/responseGrounder.ts` | 457 | Validates agent responses against actual policy data |
 | `src/services/refusalResponses.ts` | 178 | Generates contextual polite refusal messages |
 | `src/services/policyService.ts` | 93 | Policy data management with caching |
-| `src/services/types.ts` | 126+ | All TypeScript interfaces — now includes Order, OrderStatus, TrackingEvent, OrderDataSource |
+| `src/services/types.ts` | 160+ | All TypeScript interfaces — includes Order, OrderStatus, TrackingEvent, OrderDataSource |
 | `src/services/synonymResolver.ts` | 69 | Maps aliases to canonical option values |
 | `src/services/mockCatalogData.ts` | 332 | 7 products with 52 variants, stock overrides |
-| `src/services/mockOrderData.ts` | New | Mock orders with 9 statuses, full timeline events |
+| `src/services/mockOrderData.ts` | ~200 | Mock orders with 9 statuses, full timeline events |
 | `src/services/conversationContext.ts` | 49 | Cross-turn context manager |
 | `src/services/cacheManager.ts` | 33 | Generic TTL cache |
 
@@ -201,8 +202,9 @@ What happens:
     → If confidence < 0.5: isGrounded = false
     → Reports specific violations (e.g., "Standard shipping details do not match policy")
     → Suggests corrections ("Reference specific policy details from shipping policy")
-  Note: Currently ResponseGrounder is imported in ChatWidget but its output is not
-  used to block or modify responses — this is a known gap.
+   Note: ResponseGrounder was previously imported but unused. As of May 16, 2026,
+   it is now wired into the `_generateAgentResponse()` pipeline as the final
+   validation step — all responses pass through grounding before being returned.
 ```
 
 ### 3.4 Network Offline
@@ -275,12 +277,12 @@ What happens:
 ### 4.1 Test Architecture
 
 ```
-TypeScript Source ─→ Vitest (unit/integration) ─→ 201 tests, 10 files
-Browser Widget   ─→ Playwright (E2E)          ─→ 3 spec files
+TypeScript Source ─→ Vitest (unit/integration) ─→ 254 tests, 13 suites
+Browser Widget   ─→ Playwright (E2E)          ─→ 3 spec files (11 tests)
 Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 ```
 
-### 4.2 Test Files (10 total)
+### 4.2 Test Files (13 suites + 3 E2E specs)
 
 | Test File | Tests | Scope |
 |-----------|-------|-------|
@@ -291,6 +293,9 @@ Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 | `src/services/catalogService.test.ts` | ~599 lines | Product search, variant resolution, caching, error handling |
 | `src/services/catalogIntentDetector.test.ts` | ~428 lines | Intent detection, exact/partial/ambiguous, context expiry |
 | `src/services/mockCatalogData.test.ts` | ~332 lines | Variant counts across all 7 products |
+| `src/services/orderService.test.ts` | New | Order lookup, auth validation, status resolution |
+| `src/services/orderIntentDetector.test.ts` | New | Order intent detection, multi-turn auth flow, context expiry |
+| `src/services/orderResponseFormatter.test.ts` | New | Order response formatting, error messages |
 | `shopify-widget/tests/ChatWidget.integration.test.ts` | Integration | End-to-end widget + service integration |
 | `shopify-widget/tests/NetworkDetector.test.ts` | Unit | Network state detection |
 | `src/tests/eval/catalogIntelligence.eval.test.ts` | ~20 eval scenarios | Scenario-based eval for catalog queries |

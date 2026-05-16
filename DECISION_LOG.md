@@ -337,3 +337,33 @@ Production deployment will move to a Shopify App backend with a REST/GraphQL API
 **Because:** A full timeline tells a story — the user can see the entire journey of their order at a glance. "Shipped" with a tracking number is just a status; a timeline with dates and milestones is a narrative. This also makes the order card more visually rich, matching the "natively rendered" requirement from the success criteria.
 
 **Tradeoff:** Each mock order needs a realistic timeline of events. More mock data to maintain. Timeline rendering adds visual complexity to the OrderCard component.
+
+---
+
+## 2026-05-16: ResponseGrounder Wired into ChatWidget Pipeline (Post-Phase-4 Fix)
+
+**Considered:**
+- Leave ResponseGrounder as imported dead code in ChatWidget (it was created but never called in the pipeline)
+- Wire it into `_generateAgentResponse()` as the final validation step before returning a response
+- Remove ResponseGrounder entirely
+
+**Chose:** Wired ResponseGrounder into the ChatWidget pipeline as a grounding validation step. The grounded response is now the actual output sent to the user.
+
+**Because:** The original implementation imported ResponseGrounder but never used its output — every response bypassed grounding. This meant policy contradictions in catalog responses or fallback text would not be caught. The fix is minimal: call `groundResponse()` on the pipeline output and return the grounded version. This closes a correctness gap that existed since Phase 2.
+
+**Tradeoff:** Slightly more processing per response (~2ms). Grounding confidence thresholds may need tuning if false positives appear in production.
+
+---
+
+## 2026-05-16: On-Hold Timeline Shows Paused Steps (Phase 4 Refinement)
+
+**Considered:**
+- Hide timeline entirely for `on_hold` orders (no status display)
+- Show completed steps but dim future steps with a "Paused" indicator at the current step
+- Show full timeline with all steps but mark current as "On Hold"
+
+**Chose:** Show completed steps up to the current position with filled circles, then a distinct "Paused" indicator at the current step with an amber color (`#b8860b`), followed by dimmed future steps. The timeline visually communicates "your order is paused" rather than "your order is progressing".
+
+**Because:** Users whose orders are on hold need to see where the hold happened in the fulfillment process. A hidden timeline would be confusing ("is my order lost?"). A full timeline with "On Hold" status marker provides the clearest signal: "You got to this point, and it's stopped here." The amber color distinguishes it from cancelled (red) and active (green) states.
+
+**Tradeoff:** Adds another visual state to the OrderCard component. Three distinct timeline styles (active, cancelled, on-hold) means more CSS and rendering branches.
