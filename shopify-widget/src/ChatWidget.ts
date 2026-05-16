@@ -127,7 +127,7 @@ export class ChatWidget {
 
     this.textarea = document.createElement('textarea');
     this.textarea.className = 'chat-input__textarea';
-    this.textarea.placeholder = 'Type a message...';
+    this.textarea.placeholder = 'Ask about your order, products, or policies...';
     this.textarea.rows = 1;
 
     this.sendBtn = document.createElement('button');

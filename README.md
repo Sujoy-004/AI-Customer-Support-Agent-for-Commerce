@@ -1,9 +1,9 @@
 <!-- generated-by: gsd-doc-writer -->
 # AI Customer Support Agent for Commerce
 
-A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Deeply integrated into live store data — catalog, sizing, stock — with deterministic guardrails and zero hallucination risk.
+A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Deeply integrated into live store data — catalog, sizing, stock, orders — with deterministic guardrails and zero hallucination risk.
 
-Not a generic FAQ wrapper. Executes active workflows.
+Not a generic FAQ wrapper. Executes active workflows: product lookup, stock checks, policy answers, and order tracking.
 
 ## Prerequisites
 
@@ -16,10 +16,10 @@ Not a generic FAQ wrapper. Executes active workflows.
 # Install dependencies
 npm install
 
-# Run unit and integration tests (201 tests, Vitest)
+# Run unit and integration tests
 npx vitest run
 
-# Run E2E browser tests (Playwright)
+# Run E2E browser tests
 npx playwright test --config=e2e/playwright.config.ts
 
 # Open the widget demo page
@@ -31,18 +31,23 @@ open shopify-widget/index.html
 ```
 ├── shopify-widget/          # Browser widget (ChatWidget DOM rendering)
 │   ├── src/ChatWidget.ts    # Main widget class — pipeline, events, DOM
+│   ├── src/orderCard.ts     # Order status HTML card renderer
 │   └── tests/               # Widget integration tests
 ├── src/
 │   ├── services/            # All core services
 │   │   ├── catalogService.ts          # Product search, stock, variants
 │   │   ├── catalogIntentDetector.ts   # Intent classification + parsing
+│   │   ├── orderService.ts            # Order lookup by ID/email/number
+│   │   ├── orderIntentDetector.ts     # Order intent + email/number extraction
+│   │   ├── orderResponseFormatter.ts  # Order query → formatted response
+│   │   ├── mockOrderData.ts           # Mock orders for testing
 │   │   ├── offTopicDetector.ts        # Off-topic guard
 │   │   ├── responseGrounder.ts        # Policy grounding check
 │   │   ├── refusalResponses.ts        # Polite refusal messages
 │   │   ├── policyService.ts           # Policy data management
 │   │   ├── mockCatalogData.ts         # 7 products, 52 variants (mock)
 │   │   ├── synonymResolver.ts         # Canonical → alias mapping
-│   │   ├── conversationContext.ts      # 5min/3turn context manager
+│   │   ├── conversationContext.ts     # 5min/3turn context manager
 │   │   ├── cacheManager.ts            # Generic TTL cache
 │   │   └── types.ts                   # All TypeScript definitions
 │   ├── config/synonyms/     # Size, color, material synonym tables
@@ -50,9 +55,9 @@ open shopify-widget/index.html
 ├── e2e/                     # Playwright E2E tests
 │   ├── playwright.config.ts
 │   └── specs/
-│       ├── catalogQuery.spec.ts    # 3 tests
-│       ├── offTopic.spec.ts        # 4 tests
-│       └── stockCheck.spec.ts      # 4 tests
+│       ├── catalogQuery.spec.ts    # Catalog query tests
+│       ├── offTopic.spec.ts        # Off-topic detection tests
+│       └── stockCheck.spec.ts      # Stock check tests
 ├── .opencode/               # OpenCode plugin config (dev tooling)
 ├── .planning/               # GSD planning artifacts
 ├── vitest.config.ts         # Vitest configuration
@@ -67,9 +72,12 @@ Three-layer browser-side architecture. All services run in the browser — no ba
 ```
 User query → OffTopicDetector → CatalogIntentDetector → PolicyService → Response
               (keyword guard)    (catalog + intent parsing)   (policy lookup)
+              │
+              └→ OrderIntentDetector → OrderService → OrderCard
+                 (order intent)       (order lookup)  (HTML card)
 
-Catalog queries use ZERO LLM calls — every product lookup, stock check,
-and variant resolution goes through deterministic keyword + structured parsing.
+Catalog and order queries use ZERO LLM calls — every product lookup, stock check,
+variant resolution, and order tracking goes through deterministic keyword + structured parsing.
 ```
 
 ### Pipeline Flow
@@ -82,7 +90,10 @@ OffTopicDetector ── off-topic? ──► RefusalResponseService ──► po
   │ (on-topic)
   ▼
 CatalogIntentDetector ── catalog? ──► formatCatalogResponse() ──► product info
-  │ (not catalog)
+  │
+  ├─ not catalog ──► OrderIntentDetector ──► OrderService ──► order status
+  │                   (order intent)         (lookup + email)
+  │
   ▼
 PolicyService ── policy? ──► grounded policy response
   │ (not policy)
@@ -99,9 +110,10 @@ Greeting check / Fallback text
 
 ## Testing
 
-- **201 tests** across 10 Vitest test files (unit + integration)
-- **3 E2E spec files** with Playwright (11 browser test scenarios)
+- **11 unit/integration test files** (Vitest) — covering catalog, policy, order, and guard services
+- **3 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks
 - **Eval suite** — 20 scenario-based catalog intelligence evals
+- **Coverage**: 72.54% lines, 66.44% branches (target: 80%+)
 
 ```bash
 # Run all Vitest tests
@@ -121,16 +133,16 @@ npx playwright test --config=e2e/playwright.config.ts
 | 1. UI Foundation | Complete | ChatWidget, NetworkDetector, CSS design system |
 | 2. Policy Grounding | Complete | PolicyService, OffTopicDetector, ResponseGrounder |
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
-| 4. Order Tracking | Not started | Secure order status workflow |
-| 5. Graceful Escalation | Not started | Human handoff |
-| 6. Return Initiation | Not started | In-chat return submission |
+| 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
+| 5. Graceful Handoff | Pending | Human agent handoff |
+| 6. Return Initiation | Pending | In-chat return submission |
 
 ## Key Technologies
 
 - **TypeScript** — strict mode, discriminated unions, ES modules
-- **Vitest** — unit and integration tests (201 tests)
+- **Vitest** — unit and integration tests (11 test files)
 - **Playwright** — E2E browser tests (3 spec files)
-- **OpenCode Plugin System** — development tooling (TDD, code review, verification)
+- **OpenCode + GSD** — development workflow engine (planning, execution, verification)
 
 ## Product Decisions
 

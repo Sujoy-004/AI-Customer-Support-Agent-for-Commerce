@@ -1,4 +1,4 @@
-import type { Order, OrderStatus } from './types';
+import type { Order, OrderStatus, OrderDataSource } from './types';
 
 function buildMockOrders(): Order[] {
   return [

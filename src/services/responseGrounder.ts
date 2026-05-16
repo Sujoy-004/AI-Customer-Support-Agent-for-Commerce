@@ -4,8 +4,8 @@
  * Validates answers against policy data to prevent hallucinations
  */
 
-import { PolicyService, PolicyData } from './policyService';
-import { PolicyType } from './types';
+import { PolicyService } from './policyService';
+import { PolicyType, PolicyData } from './types';
 
 /**
  * Interface for grounding validation results
@@ -279,7 +279,7 @@ export class ResponseGrounder {
     
     // Check for extended warranty options
     if (lowerResponse.includes('extended') || lowerResponse.includes('extension')) {
-      const hasExtended = warrantyPolicy.extendedOptions.some(option => 
+      const hasExtended = warrantyPolicy.extendedOptions.some((option: string) => 
         lowerResponse.includes(option.toLowerCase()) || 
         option.toLowerCase().includes(lowerResponse)
       );

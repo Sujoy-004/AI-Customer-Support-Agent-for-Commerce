@@ -29,7 +29,7 @@ export class RefusalResponseService {
   /**
    * Generate a polite refusal response for an off-topic query
    */
-  async generateRefusal(query: string): Promise<RefusalResponse> {
+  async generateRefusal(query: string): Promise<RefusalResponse | null> {
     // Get off-topic analysis
     const offTopicResult = await this.offTopicDetector.detectOffTopic(query);
     

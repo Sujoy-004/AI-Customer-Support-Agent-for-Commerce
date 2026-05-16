@@ -8,6 +8,9 @@
 </head>
 <body style="margin:0; background:#fdfcfc; font-family: 'JetBrains Mono', monospace; padding:24px;">
   <div id="ai-support-widget"></div>
-  <script type="module" src="src/ChatWidget.js"></script>
+  <script type="module">
+    import { ChatWidget } from './src/shopify-widget/src/ChatWidget.js';
+    new ChatWidget();
+  </script>
 </body>
 </html>

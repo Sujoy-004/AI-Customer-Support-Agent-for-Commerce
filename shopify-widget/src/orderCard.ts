@@ -19,15 +19,15 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 function getStatusColor(status: OrderStatus): string {
   switch (status) {
     case 'cancelled':
-      return '#dc2626';
+      return 'var(--color-status-cancelled)';
     case 'returned':
-      return '#7c3aed';
+      return 'var(--color-status-returned)';
     case 'on_hold':
-      return '#d97706';
+      return 'var(--color-status-on-hold)';
     case 'delivered':
-      return '#16a34a';
+      return 'var(--color-status-delivered)';
     default:
-      return '#2563eb';
+      return 'var(--color-status-processing)';
   }
 }
 
@@ -79,19 +79,19 @@ function renderTimeline(status: OrderStatus): string {
     const isLast = index === activeSteps.length - 1;
 
     return `
-        <div class="timeline-step ${cls}" style="display:flex;align-items:center;${isFirst ? '' : 'margin-top:4px'}">
-            <div style="width:16px;height:16px;border-radius:50%;${cls === 'timeline-done' ? 'background:#16a34a' : cls === 'timeline-current' ? 'background:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,0.2)' : cls === 'timeline-paused' ? 'background:#d97706;animation:pulse 2s infinite' : 'background:#d1d5db'};flex-shrink:0;margin-right:8px;"></div>
-          <span style="${cls === 'timeline-upcoming' || cls === 'timeline-paused' ? 'color:#9ca3af' : 'color:#111'}">${label}</span>
+        <div class="timeline-step ${cls}" style="display:flex;align-items:center;${isFirst ? '' : 'margin-top:var(--space-xs)'}">
+            <div style="width:16px;height:16px;border-radius:50%;${cls === 'timeline-done' ? 'background:var(--color-status-delivered)' : cls === 'timeline-current' ? 'background:var(--color-status-processing);box-shadow:0 0 0 3px rgba(37,99,235,0.2)' : cls === 'timeline-paused' ? 'background:var(--color-status-on-hold);animation:pulse 2s infinite' : 'background:var(--color-ash)'};flex-shrink:0;margin-right:var(--space-xs);"></div>
+          <span style="${cls === 'timeline-upcoming' || cls === 'timeline-paused' ? 'color:var(--color-ash)' : 'color:var(--color-ink')}">${label}</span>
         </div>`;
   }).join('');
 }
 
 function renderItemsSummary(order: Order): string {
-  if (order.items.length === 0) return '';
+  if (order.items.length === 0) return '<div class="empty-state">No items in this order</div>';
   return order.items.map(item =>
-    `        <div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0">
-          <span>${item.title} ${item.variantTitle} x${item.quantity}</span>
-        </div>`
+    `        <div style="display:flex;justify-content:space-between;font-size:var(--font-size-caption);padding:var(--space-xs) 0">
+      <span>${item.title} ${item.variantTitle} x${item.quantity}</span>
+    </div>`
   ).join('\n');
 }
 
@@ -104,30 +104,30 @@ export class OrderCard {
     const emoji = getStatusEmoji(o.status);
     const isFailed = !isActiveStatus(o.status);
 
-    return `<div class="order-card" style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;font-family:system-ui,-apple-system,sans-serif;max-width:400px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <strong style="font-size:16px">Order #${o.orderNumber}</strong>
-    <span style="background:${color}15;color:${color};padding:4px 10px;border-radius:12px;font-size:13px;font-weight:600">${emoji} ${STATUS_LABELS[o.status]}</span>
+    return `<div class="order-card" style="border:1px solid var(--color-hairline-strong);border-radius:var(--radius-sm);padding:var(--space-lg);font-family:var(--font-mono);max-width:400px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md)">
+    <strong style="font-size:var(--font-size-lg);font-weight:var(--font-weight-bold)">Order #${o.orderNumber}</strong>
+    <span style="background:${color}15;color:${color};padding:var(--space-xs) var(--space-sm);border-radius:var(--radius-sm);font-size:var(--font-size-caption);font-weight:var(--font-weight-bold)">${emoji} ${STATUS_LABELS[o.status]}</span>
   </div>
 
-  ${o.items.length > 0 ? `<div style="border-top:1px solid #eee;padding-top:8px;margin-bottom:8px">
+  ${o.items.length > 0 ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-bottom:var(--space-sm)">
 ${renderItemsSummary(o)}
   </div>` : ''}
 
-  ${o.trackingNumber && o.carrier ? `<div style="border-top:1px solid #eee;padding-top:8px;margin-bottom:8px;font-size:13px">
+  ${o.trackingNumber && o.carrier ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-bottom:var(--space-sm);font-size:var(--font-size-caption)">
     <div><strong>${o.carrier}</strong> — ${o.trackingNumber}</div>
-    ${o.estimatedDelivery ? `<div style="color:#666;margin-top:2px">Estimated delivery: ${o.estimatedDelivery}</div>` : ''}
+    ${o.estimatedDelivery ? `<div style="color:var(--color-mute);margin-top:var(--space-xs)">Estimated delivery: ${o.estimatedDelivery}</div>` : ''}
   </div>` : ''}
 
-  ${o.status === 'on_hold' ? `<div style="border-top:1px solid #eee;padding-top:8px;margin-bottom:8px">
-    <div style="font-size:12px;color:#d97706;font-weight:600;margin-bottom:4px">&#x23F3; On Hold — progress paused</div>
+  ${o.status === 'on_hold' ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-bottom:var(--space-sm)">
+    <div style="font-size:var(--font-size-xs);color:var(--color-status-on-hold);font-weight:var(--font-weight-bold);margin-bottom:var(--space-xs)">&#x23F3; On Hold — progress paused</div>
   </div>` : ''}
-  ${!isFailed ? `<div style="border-top:1px solid #eee;padding-top:8px">
-    <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Tracking Progress</div>
+  ${!isFailed ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm)">
+    <div style="font-size:var(--font-size-xs);font-weight:var(--font-weight-bold);color:var(--color-mute);margin-bottom:var(--space-xs);text-transform:uppercase;letter-spacing:0.5px">Tracking Progress</div>
 ${renderTimeline(o.status)}
   </div>` : ''}
 
-  ${o.notes ? `<div style="border-top:1px solid #eee;padding-top:8px;margin-top:8px;font-size:13px;color:#666">
+  ${o.notes ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-top:var(--space-sm);font-size:var(--font-size-caption);color:var(--color-mute)">
     <em>${o.notes}</em>
   </div>` : ''}
 </div>`;
