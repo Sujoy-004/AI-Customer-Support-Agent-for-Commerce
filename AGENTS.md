@@ -4,38 +4,37 @@
 
 Talk to me like that git warning. Short sentences. Plain words. No fancy talk. Say what's happening and why in the simplest way possible. Don't dumb down the thinking — just make the output easy to read. One or two sentences is usually enough. If I ask for detail, give it. Otherwise, keep it tight.
 
-## Critical Must-Haves (Hackathon Audit — May 2026)
+## Critical Must-Haves (Updated — May 16, 2026)
 
 These are non-negotiable. Everything else can wait.
 
-**4 mandatory workflows — 1 built, 3 to go:**
-- Product Intelligence (Phase 3) — NOT built. Execute immediately.
+**4 mandatory workflows — 2 in progress, 2 to go:**
+- Product Intelligence (Phase 3) — In progress. Catalog intent detector + ChatWidget integration done.
 - Policy Execution (Phase 2) — Built ✓
 - Active Workflows: order tracking (Phase 4) + return initiation (Phase 6) — NOT started.
 - Graceful Handoff (Phase 5) — NOT started.
 
 **4 mandatory docs (25% of score):**
-- `PRODUCT_DOC.md` — NOT created. Write during/after executing each phase.
-- `TECHNICAL_DOC.md` — NOT created. Must show AI/deterministic boundary and failure handling.
-- `DECISION_LOG.md` — NOT created. Log every "considered X, chose Y, because Z."
-- `README.md` — NOT created. Setup and overview.
+- `PRODUCT_DOC.md` — Created. Update during/after each phase.
+- `TECHNICAL_DOC.md` — Created. Shows AI/deterministic boundary and failure handling.
+- `DECISION_LOG.md` — Created. Logs every "considered X, chose Y, because Z."
+- `README.md` — Created. Setup and overview.
 
 **3 mandatory tools — ECC integrations removed:**
 - Superpowers — ECC integration removed.
 - Context7 — ECC integration removed.
 - Antigravity Skills — ECC integration removed.
 
-**Testing gaps:**
-- Playwright NOT set up — only Vitest exists. E2E tests are required.
-- `e2e/` directory does not exist. Create it.
-- Current test coverage (~376 lines across 5 files) is too thin. Target 80%+.
+**Testing status:**
+- Playwright SET UP — Both Vitest and Playwright configured. E2E test specs exist in `e2e/`.
+- `e2e/` directory EXISTS with test specs (catalogQuery, offTopic, stockCheck).
+- Current test coverage: 72.54% lines, 66.44% branches. Target 80%+.
 
 **Priority order for remaining work:**
-1. Execute Phase 3 (catalog — already planned and decided)
-2. Write docs alongside each phase execution (don't leave them for the end)
-3. Set up Playwright + E2E tests
-4. Execute Phases 4-6
-5. Record demo video
+1. Execute Phase 4 (order tracking) and Phase 6 (return initiation) — Active workflows
+2. Execute Phase 5 (graceful handoff)
+3. Improve test coverage to 80%+
+4. Record demo video
 
 ## Setup
 
@@ -82,6 +81,10 @@ Full list in `.opencode/command/` — each `.md` file is a slash command.
 - **Test command**: `npm test`
 - **Test structure**: Unit tests alongside source, E2E in `e2e/` directory
 - **Frameworks**: Vitest (unit/integration), Playwright (E2E)
+- **Run unit/integration**: `npx vitest run`
+- **Run E2E**: `npx playwright test`
+- **Run with coverage**: `npx vitest run --coverage`
+- **Current coverage**: 72.54% lines, 66.44% branches
 
 ## Code Conventions
 
