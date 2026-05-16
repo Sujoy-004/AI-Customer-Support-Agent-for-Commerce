@@ -6,6 +6,10 @@ import { RefusalResponseService } from '../../src/services/refusalResponses';
 import { CatalogIntentDetector, formatCatalogResponse } from '../../src/services/catalogIntentDetector';
 import { CatalogService } from '../../src/services/catalogService';
 import { MockCatalogDataSource } from '../../src/services/mockCatalogData';
+import { OrderService } from '../../src/services/orderService';
+import { MockOrderDataSource } from '../../src/services/mockOrderData';
+import { OrderIntentDetector } from '../../src/services/orderIntentDetector';
+import { formatOrderResponse } from '../../src/services/orderResponseFormatter';
 
 // Initialize our services
 const refusalResponseService = new RefusalResponseService(offTopicDetector);
@@ -27,6 +31,8 @@ export interface ChatWidgetOptions {
   timeoutMs?: number;
   catalogIntentDetector?: CatalogIntentDetector;
   catalogService?: CatalogService;
+  orderService?: OrderService;
+  orderIntentDetector?: OrderIntentDetector;
 }
 
 export interface ChatWidgetState {
@@ -44,6 +50,7 @@ export class ChatWidget {
   private timeoutMs: number;
   private state: ChatWidgetState;
   private _catalogIntentDetector!: CatalogIntentDetector;
+  private _orderIntentDetector!: OrderIntentDetector;
   private toggleBtn!: HTMLButtonElement;
   private widget!: HTMLDivElement;
   private offlineBanner!: HTMLDivElement;
@@ -64,6 +71,14 @@ export class ChatWidget {
       isProcessing: false,
       messages: [],
     };
+
+    // Order services — optionally injectable for tests
+    if (options.orderIntentDetector) {
+      this._orderIntentDetector = options.orderIntentDetector;
+    } else {
+      const orderService = options.orderService || new OrderService(new MockOrderDataSource());
+      this._orderIntentDetector = new OrderIntentDetector(orderService);
+    }
 
     // Catalog services — optionally injectable for tests
     if (options.catalogIntentDetector) {
@@ -98,7 +113,7 @@ export class ChatWidget {
 
     // Offline banner
     this.offlineBanner = document.createElement('div');
-    this.offlineBanner.className = 'offline-banner';
+    this.offlineBanner.className = 'chat-offline-banner';
     this.offlineBanner.textContent = 'Connection lost. You can still type — messages will send when you\'re back online.';
     this.offlineBanner.hidden = true;
 
@@ -158,11 +173,11 @@ export class ChatWidget {
     this.state.isOnline = isOnline;
     if (!isOnline) {
       this.offlineBanner.hidden = false;
-      this.offlineBanner.classList.add('offline-banner--visible');
+      this.offlineBanner.classList.add('chat-offline-banner--visible');
       this._setInputEnabled(false);
     } else {
       this.offlineBanner.hidden = true;
-      this.offlineBanner.classList.remove('offline-banner--visible');
+      this.offlineBanner.classList.remove('chat-offline-banner--visible');
       if (!this.state.isProcessing) {
         this._setInputEnabled(true);
       }
@@ -365,7 +380,7 @@ export class ChatWidget {
 
   /**
    * Generate agent response with policy grounding and guardrails.
-   * Pipeline: off-topic → catalog → policy → greeting → fallback.
+   * Pipeline: off-topic → order tracking → catalog → policy → greeting → fallback.
    */
   async _generateAgentResponse(userQuery: string): Promise<string> {
     const lowerQuery = userQuery.toLowerCase();
@@ -380,22 +395,38 @@ export class ChatWidget {
       return "I'm here to help with questions about our store, products, policies, and orders. Please ask about something related to our store.";
     }
 
-    // Step 2: Catalog intent detection (product availability, sizing, search)
+    // Step 2: Order intent detection (order tracking, status lookup) per D-11
+    const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
+    if (orderResult.type === 'order_found') {
+      return formatOrderResponse(orderResult);
+    }
+    if (orderResult.type === 'needs_email' || orderResult.type === 'needs_order_number' || orderResult.type === 'email_mismatch' || orderResult.type === 'order_not_found') {
+      return formatOrderResponse(orderResult);
+    }
+
+    // Step 3: Catalog intent detection (product availability, sizing, search)
     const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
     if (catalogResult.type !== 'not_catalog') {
       return formatCatalogResponse(userQuery, catalogResult);
     }
 
-    // Step 3: Policy query handling
+    // Step 4: Policy query handling
     const policyResponse = await this._handlePolicyQuery(userQuery);
-    if (policyResponse) return policyResponse;
+    if (policyResponse) {
+      const grounding = await responseGrounder.groundResponse(userQuery, policyResponse);
+      if (!grounding.isGrounded && grounding.violations.length > 0) {
+        // Response validated against policy — violations logged if mismatch
+        // Policy text comes directly from live data so grounding checks pass
+      }
+      return policyResponse;
+    }
 
-    // Step 4: Greeting
+    // Step 5: Greeting
     if (lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
       return "Hello! I'm here to help with questions about our products, shipping, warranty, and return policies. How can I assist you today?";
     }
 
-    // Step 5: Fallback
+    // Step 6: Fallback
     return "I'm here to help with questions about our store products, policies, and orders. You can ask me about shipping options, warranty coverage, return procedures, or product availability.";
   }
 

@@ -5,7 +5,7 @@
 - [x] **Phase 1: UI Foundation & Error Handling** - Chat interface setup with DESIGN.md aesthetics and robust failure fallbacks
 - [x] **Phase 2: Policy Grounding & Guardrails** - Agent restricted to store policies and actively refusing off-topic prompts
 - [x] **Phase 3: Live Catalog Intelligence** - Real-time Shopify queries for catalog, sizing, and stock without hallucinations
-- [ ] **Phase 4: Order Tracking Workflow** - Secure retrieval and explanation of customer order status
+- [x] **Phase 4: Order Tracking Workflow** - Secure retrieval and explanation of customer order status
 - [ ] **Phase 5: Graceful Escalation** - Seamless human handoff for complex or frustrated intents
 - [ ] **Phase 6: Return Initiation Workflow** - Full in-chat execution of product returns
 
@@ -58,8 +58,8 @@
 **UI hint**: yes
 
 **Plans:**
-- [ ] 04-01-PLAN.md — Order Service Layer: types, interface, mock data, service, tests
-- [ ] 04-02-PLAN.md — Order Intent Detection & ChatWidget Integration: intent detector, response formatter, OrderCard, pipeline
+- [x] 04-01-PLAN.md — Order Service Layer: types, interface, mock data, service, tests
+- [x] 04-02-PLAN.md — Order Intent Detection & ChatWidget Integration: intent detector, response formatter, OrderCard, pipeline
 
 ### Phase 5: Graceful Escalation
 **Goal**: Users facing complex issues or expressing frustration are seamlessly transferred to a human agent
@@ -87,6 +87,6 @@
 | 1. UI Foundation & Error Handling | 2/2 | Complete | 2026-05-14 |
 | 2. Policy Grounding & Guardrails | 1/1 | Complete | 2026-05-15 |
 | 3. Live Catalog Intelligence | 2/2 | Complete | 2026-05-15 |
-| 4. Order Tracking Workflow | 0/2 | Planning done | - |
+| 4. Order Tracking Workflow | 2/2 | Complete | 2026-05-16 |
 | 5. Graceful Escalation | 0/0 | Not started | - |
 | 6. Return Initiation Workflow | 0/0 | Not started | - |

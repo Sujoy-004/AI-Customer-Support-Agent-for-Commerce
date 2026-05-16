@@ -5,39 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kasparro Chat Widget Demo</title>
   <link rel="stylesheet" href="../src/ui/styles.css">
+  <link rel="stylesheet" href="../src/styles/widget.css">
 </head>
 <body>
 
-  <!-- Chat Widget Container -->
-  <div class="ksp-chat-widget" style="width: 350px; height: 500px; margin: 50px auto; display: flex; flex-direction: column;">
-    
-    <!-- Header -->
-    <div class="ksp-chat-header" style="padding: 15px; border-bottom: var(--ksp-border-hairline); font-weight: bold;">
-      Customer Support
-    </div>
+  <!-- Chat Widget Container (mount point for real ChatWidget) -->
+  <div id="ai-support-widget"></div>
 
-    <!-- Message List Area -->
-    <div class="ksp-chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
-      
-      <!-- Mock Agent Message -->
-      <div class="ksp-message ksp-message-agent" style="align-self: flex-start; background: #eee; padding: 10px; border-radius: 5px; max-width: 80%;">
-        Hello! How can I help you with your order today?
-      </div>
+  <script type="module">
+    import { ChatWidget } from '../src/ChatWidget.ts';
 
-      <!-- Mock User Message -->
-      <div class="ksp-message ksp-message-user" style="align-self: flex-end; background: #ccc; padding: 10px; border-radius: 5px; max-width: 80%;">
-        I want to check the status of my order #12345.
-      </div>
-
-    </div>
-
-    <!-- Input Area -->
-    <div class="ksp-chat-input-area" style="padding: 10px; border-top: var(--ksp-border-hairline); display: flex;">
-      <input type="text" placeholder="Type your message..." style="flex: 1; padding: 8px; border: 1px solid #ccc; font-family: inherit;">
-      <button style="margin-left: 5px; padding: 8px 15px; font-family: inherit; background: #1A1A1A; color: #fff; border: none; cursor: pointer;">Send</button>
-    </div>
-
-  </div>
+    const widget = new ChatWidget();
+    widget.open();
+  </script>
 
 </body>
 </html>

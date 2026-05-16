@@ -54,6 +54,7 @@ Use these instead of direct edits:
 | `/gsd-discuss-phase` | Surface assumptions before planning |
 | `/gsd-code-review` | Review changed files |
 | `/gsd-verify-work` | Verify phase goal achievement |
+| `/gsd-verfy-work` | Batch audit: verify goals + review code quality, no-fluff output |
 | `/gsd-progress` | Check progress, advance workflow |
 
 Full list in `.opencode/command/` — each `.md` file is a slash command.
@@ -93,6 +94,28 @@ Full list in `.opencode/command/` — each `.md` file is a slash command.
 - **Immutability**: Use spread operator, never mutate directly
 - **Error handling**: Try/catch with meaningful messages
 - **Comments**: Explain WHY, not WHAT
+
+## Parallel Multi-Agent Execution
+
+Break independent work into concurrent agents. This cuts execution time without cutting quality.
+
+**Rules:**
+- Identify independent work packages from the PLAN.md task list. If task A needs output from task B, they are NOT independent — run sequentially.
+- Launch independent packages simultaneously using the `task` tool with `subagent_type` appropriate to the work (gsd-executor, gsd-code-reviewer, etc).
+- Maximum 3 parallel agents at a time. More than that creates coordination overhead that cancels the speed gain.
+- Each agent must still produce testable code. No agent skips tests, lint, or typecheck.
+- After all parallel agents complete, run integration verification — parallel work may still conflict at boundaries.
+
+**How to identify independent work:**
+- No shared files (writes to different files = independent)
+- No shared interfaces/types (unless types are already committed)
+- Example: 04-01 (service layer) and 04-02 (ChatWidget) are NOT independent — 04-02 imports from 04-01. But within 04-01, writing `orderService.ts` and `orderService.test.ts` can run in parallel since the interface is defined by the plan.
+
+**Quality gates (same as sequential, non-negotiable):**
+1. Each agent runs `npm test` on its output
+2. Each agent runs lint/typecheck
+3. After merge, run full `npm test` to catch cross-agent regressions
+4. No parallel agent touches the same file — use `changed-files` to verify no overlap
 
 ## Verification
 

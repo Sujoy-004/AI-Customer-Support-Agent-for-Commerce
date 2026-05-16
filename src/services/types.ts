@@ -124,3 +124,54 @@ export interface VariantResolution {
 export interface CatalogDataSource {
   loadProducts(): Promise<Product[]>;
 }
+
+// ==============================
+// Order Types
+// ==============================
+
+export type OrderStatus =
+  | 'confirmed'
+  | 'processing'
+  | 'shipped'
+  | 'in_transit'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled'
+  | 'returned'
+  | 'on_hold';
+
+export interface TrackingEvent {
+  date: string;
+  description: string;
+  location: string;
+}
+
+export interface OrderLineItem {
+  productId: string;
+  title: string;
+  variantTitle: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  orderId: string;
+  orderNumber: number;
+  email: string;
+  createdAt: string;
+  status: OrderStatus;
+  items: OrderLineItem[];
+  fulfillmentStatus: string;
+  financialStatus: string;
+  trackingNumber: string;
+  carrier: string;
+  estimatedDelivery: string;
+  timeline: TrackingEvent[];
+  notes?: string;
+}
+
+export interface OrderDataSource {
+  getOrder(orderId: string): Promise<Order | null>;
+  getOrdersByEmail(email: string): Promise<Order[]>;
+  getOrderByNumber(orderNumber: number): Promise<Order | null>;
+}

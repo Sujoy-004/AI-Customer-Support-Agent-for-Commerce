@@ -76,4 +76,22 @@ describe('ChatWidget catalog integration', () => {
     expect(second).toContain('Classic Hoodie');
     expect(second).toContain('Size');
   });
+
+  describe('order tracking pipeline', () => {
+    it('should return order card HTML for order query with number and email', async () => {
+      const response = await widget._generateAgentResponse('track order #1001 for john@example.com');
+      expect(response).toContain('order-card');
+      expect(response).toContain('Order #1001');
+    });
+
+    it('should prompt for email when only order number given', async () => {
+      const response = await widget._generateAgentResponse('track my order');
+      expect(response).toContain('order number');
+    });
+
+    it('should return not_found message for non-existent order', async () => {
+      const response = await widget._generateAgentResponse('track order #9999 for nobody@example.com');
+      expect(response).toContain("wasn't found");
+    });
+  });
 });
