@@ -4,7 +4,8 @@
  * Handles shipping, warranty, and returns policies
  */
 
-import { PolicyType, PolicyData } from './types';
+import { PolicyType } from './types';
+import type { PolicyData } from './types';
 
 /**
  * Service class for managing store policies

@@ -1,7 +1,8 @@
 // src/services/policyService.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import policyServiceInstance from './policyService';
-import { PolicyData, PolicyType } from './types';
+import { PolicyType } from './types';
+import type { PolicyData } from './types';
 
 describe('PolicyService', () => {
   let policyService: typeof policyServiceInstance;

@@ -1,5 +1,5 @@
 // src/services/mockCatalogData.ts
-import { Product, ProductOption, Variant, StockInfo, ProductImage, CatalogDataSource } from './types';
+import type { Product, ProductOption, Variant, StockInfo, ProductImage, CatalogDataSource } from './types';
 import {
   COLOR_SYNONYM_TABLE,
   SIZE_SYNONYM_TABLE,

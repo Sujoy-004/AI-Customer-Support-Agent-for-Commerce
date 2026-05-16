@@ -5,7 +5,7 @@
  */
 
 import { PolicyService } from './policyService';
-import { PolicyType, PolicyData } from './types';
+import { PolicyType } from './types';
 
 /**
  * Interface for grounding validation results

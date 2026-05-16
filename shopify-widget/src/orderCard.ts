@@ -78,10 +78,21 @@ function renderTimeline(status: OrderStatus): string {
     const isFirst = index === 0;
     const isLast = index === activeSteps.length - 1;
 
+    const dotStyle = (() => {
+      if (cls === 'timeline-done') return 'background:var(--color-status-delivered)';
+      if (cls === 'timeline-current') return 'background:var(--color-status-processing);box-shadow:0 0 0 3px rgba(37,99,235,0.2)';
+      if (cls === 'timeline-paused') return 'background:var(--color-status-on-hold);animation:pulse 2s infinite';
+      return 'background:var(--color-ash)';
+    })();
+
+    const textColor = (cls === 'timeline-upcoming' || cls === 'timeline-paused')
+      ? 'var(--color-ash)'
+      : 'var(--color-ink)';
+
     return `
         <div class="timeline-step ${cls}" style="display:flex;align-items:center;${isFirst ? '' : 'margin-top:var(--space-xs)'}">
-            <div style="width:16px;height:16px;border-radius:50%;${cls === 'timeline-done' ? 'background:var(--color-status-delivered)' : cls === 'timeline-current' ? 'background:var(--color-status-processing);box-shadow:0 0 0 3px rgba(37,99,235,0.2)' : cls === 'timeline-paused' ? 'background:var(--color-status-on-hold);animation:pulse 2s infinite' : 'background:var(--color-ash)'};flex-shrink:0;margin-right:var(--space-xs);"></div>
-          <span style="${cls === 'timeline-upcoming' || cls === 'timeline-paused' ? 'color:var(--color-ash)' : 'color:var(--color-ink')}">${label}</span>
+            <div style="width:16px;height:16px;border-radius:50%;${dotStyle};flex-shrink:0;margin-right:var(--space-xs);"></div>
+          <span style="color:${textColor}">${label}</span>
         </div>`;
   }).join('');
 }

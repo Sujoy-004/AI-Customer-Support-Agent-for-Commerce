@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CatalogService } from './catalogService';
-import { Product, CatalogDataSource } from './types';
+import type { Product, CatalogDataSource } from './types';
 
 function createMockDataSource(products: Product[]): CatalogDataSource & { loadCount: number } {
   const data: CatalogDataSource & { loadCount: number } = {
