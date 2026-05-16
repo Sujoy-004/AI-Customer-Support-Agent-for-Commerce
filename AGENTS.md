@@ -44,19 +44,65 @@ These are non-negotiable. Everything else can wait.
 
 ## GSD Commands
 
-Use these instead of direct edits:
+Use these instead of direct edits. GSD is the engine — it powers parallel subagent execution, quality gates, testing enforcement, and code conventions. Every command below runs on GSD infrastructure.
+
+### Workflow Lifecycle — plan → execute → verify → ship
+
+| Command | When |
+|---------|------|
+| `/gsd-spec-phase` | Clarify WHAT with ambiguity scoring before planning |
+| `/gsd-discuss-phase` | Surface assumptions and decisions before planning |
+| `/gsd-plan-phase` | Create executable phase plans with task breakdown |
+| `/gsd-execute-phase` | Execute planned phase work with subagents |
+| `/gsd-verify-work` | Goal-backward verification that phase delivered |
+| `/gsd-code-review` | Review changed files for bugs and quality |
+| `/gsd-ship` | Create PR, run review, prepare for merge |
+
+### Quick Actions
 
 | Command | When |
 |---------|------|
 | `/gsd-quick` | Small fixes, doc updates, ad-hoc tasks |
-| `/gsd-debug` | Investigation and bug fixing |
-| `/gsd-execute-phase` | Planned phase work |
-| `/gsd-plan-phase` | Create phase plans |
-| `/gsd-discuss-phase` | Surface assumptions before planning |
-| `/gsd-code-review` | Review changed files |
-| `/gsd-verify-work` | Verify phase goal achievement |
-| `/gsd-verfy-work` | Batch audit: verify goals + review code quality, no-fluff output |
-| `/gsd-progress` | Check progress, advance workflow |
+| `/gsd-fast` | Trivial inline task (typo, config, rename) |
+| `/gsd-debug` | Systematic debugging with checkpoints |
+| `/gsd-capture` | Capture ideas, tasks, notes to proper destinations |
+
+### Discovery & Design
+
+| Command | When |
+|---------|------|
+| `/gsd-explore` | Socratic ideation before committing to artifacts |
+| `/gsd-spike` | Build experimental validation of an idea |
+| `/gsd-mvp-phase` | MVP-mode planning with SPIDR splitting |
+| `/gsd-map-codebase` | Parallel codebase analysis |
+
+### Testing & Quality
+
+| Command | When |
+|---------|------|
+| `/gsd-add-tests` | Generate unit+E2E tests for completed phases |
+| `/gsd-audit-uat` | Cross-phase UAT audit |
+| `/gsd-audit-fix` | Auto-fix audit findings |
+| `/gsd-validate-phase` | Fill Nyquist validation gaps retroactively |
+
+### Project Management
+
+| Command | When |
+|---------|------|
+| `/gsd-progress` | Check progress and advance the workflow |
+| `/gsd-stats` | Project statistics and timeline |
+| `/gsd-phase` | CRUD for ROADMAP phases |
+| `/gsd-new-milestone` | Start a new milestone cycle |
+| `/gsd-cleanup` | Archive completed milestone phases |
+
+### Docs & Context
+
+| Command | When |
+|---------|------|
+| `/gsd-docs-update` | Generate/verify all docs against live codebase |
+| `/gsd-thread` | Persistent context threads across sessions |
+| `/gsd-pause-work` | Create context handoff when pausing mid-phase |
+| `/gsd-resume-work` | Resume with full context restoration |
 
 Full list in `.opencode/command/` — each `.md` file is a slash command.
 
@@ -87,44 +133,31 @@ Full list in `.opencode/command/` — each `.md` file is a slash command.
 - **Run E2E**: `npx playwright test`
 - **Run with coverage**: `npx vitest run --coverage`
 - **Current coverage**: 72.54% lines, 66.44% branches
+- **GSD enforcement**: GSD's execute-phase and verify-work enforce these gates automatically
 
-## Code Conventions
+## Execution Rules
 
-- **Language**: TypeScript (strict mode)
-- **Naming**: camelCase variables/functions, PascalCase types/interfaces
-- **Immutability**: Use spread operator, never mutate directly
-- **Error handling**: Try/catch with meaningful messages
-- **Comments**: Explain WHY, not WHAT
+1. **GenZ commit messages only**: When pushing to GitHub, always use gen-Z terms in a humane way. No emojis. Keep it real.
+2. **Stop and ask on uncertainty**: If anything is unclear — command, prompt, requirement, whatever — stop and run a question-answer session with the user before proceeding.
 
-## Parallel Multi-Agent Execution
+## Engineering Rigor
 
-Break independent work into concurrent agents. This cuts execution time without cutting quality.
+No vibe coding. Every line is deliberate.
 
-**Rules:**
-- Identify independent work packages from the PLAN.md task list. If task A needs output from task B, they are NOT independent — run sequentially.
-- Launch independent packages simultaneously using the `task` tool with `subagent_type` appropriate to the work (gsd-executor, gsd-code-reviewer, etc).
-- Maximum 3 parallel agents at a time. More than that creates coordination overhead that cancels the speed gain.
-- Each agent must still produce testable code. No agent skips tests, lint, or typecheck.
-- After all parallel agents complete, run integration verification — parallel work may still conflict at boundaries.
+**When writing code:**
+- Write one logical unit at a time. Pause between each. Think through edge cases before moving on.
+- Cross-verify each line as it lands — does this type check? does this handle null? does this cover the edge case?
+- Do not dump blocks of code. If a function needs 30 lines, write it in 3 passes of 10 lines each with verification between.
 
-**How to identify independent work:**
-- No shared files (writes to different files = independent)
-- No shared interfaces/types (unless types are already committed)
-- Example: 04-01 (service layer) and 04-02 (ChatWidget) are NOT independent — 04-02 imports from 04-01. But within 04-01, writing `orderService.ts` and `orderService.test.ts` can run in parallel since the interface is defined by the plan.
+**When reviewing code:**
+- Read each line individually. Say what it does in plain words before approving it.
+- Flag anything that looks like "vibe code" — unused variables, shallow error handling, magic numbers, copy-paste patterns.
 
-**Quality gates (same as sequential, non-negotiable):**
-1. Each agent runs `npm test` on its output
-2. Each agent runs lint/typecheck
-3. After merge, run full `npm test` to catch cross-agent regressions
-4. No parallel agent touches the same file — use `changed-files` to verify no overlap
+**When debugging code:**
+- Form a hypothesis about ONE variable or ONE path at a time. Verify it before moving to the next.
+- Do not shotgun-guess. Do not rewrite whole functions hoping something sticks. Isolate the fault line by line.
 
-## Verification
-
-Before considering work complete:
-1. Run `npm test` to verify tests pass
-2. Check no secrets leaked (scan for API keys, tokens)
-3. Confirm all required documents exist and are updated
-4. Verify Shopify integration uses live data (no mocks)
+This applies to you and every subagent you spawn. No exceptions.
 
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
