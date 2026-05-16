@@ -82,3 +82,8 @@ scratch/
 # OpenCode config (generated)
 # ==============================
 opencode.json
+.opencode/
+.planning/
+.vscode/
+coverage/
+e2e/
