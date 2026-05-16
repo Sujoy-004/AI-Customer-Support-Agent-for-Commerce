@@ -85,3 +85,11 @@ SOVEREIGNTY.md
 raw/
 scratch/
 
+# ==============================
+# Planning & workflow (don't track)
+# ==============================
+.planning/
+.opencode/
+opencode.json
+e2e/
+
