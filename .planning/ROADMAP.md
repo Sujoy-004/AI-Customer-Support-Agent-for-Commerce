@@ -68,7 +68,11 @@
 **Success Criteria** (what must be TRUE):
   1. User explicitly requesting a human is immediately routed to the escalation flow
   2. User expressing frustration triggers an automatic offer to transfer to a human agent
-**Plans**: TBD
+**Plans**: 2 plans
+
+**Plans:**
+- [ ] 05-01-PLAN.md — Core escalation services: types, detector, state machine with localStorage
+- [ ] 05-02-PLAN.md — Queue/transfer/human agent simulators, ChatWidget pipeline integration, CSS
 
 ### Phase 6: Return Initiation Workflow
 **Goal**: Users can initiate and submit a valid return request completely within the conversation
@@ -88,5 +92,5 @@
 | 2. Policy Grounding & Guardrails | 1/1 | Complete | 2026-05-15 |
 | 3. Live Catalog Intelligence | 2/2 | Complete | 2026-05-15 |
 | 4. Order Tracking Workflow | 2/2 | Complete | 2026-05-16 |
-| 5. Graceful Escalation | 0/0 | Not started | - |
+| 5. Graceful Escalation | 0/2 | Planned | - |
 | 6. Return Initiation Workflow | 0/0 | Not started | - |
