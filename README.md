@@ -96,6 +96,9 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 ├── tsconfig.json            # Root TypeScript config
 ├── tsconfig.widget.json     # Widget-specific TS config
 ├── vitest.config.ts         # Vitest configuration
+├── PRODUCT_DOC.md           # Product document (hackathon requirement)
+├── TECHNICAL_DOC.md         # Technical document (hackathon requirement)
+├── DECISION_LOG.md          # Key decisions log
 ├── DESIGN.md                # Berkeley Mono design system spec
 ├── hackathon.md             # Hackathon rules & requirements
 └── package.json
@@ -197,6 +200,10 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 ## Screenshots
 
 *coming before 20th May 2026*
+
+## Contribution Note
+
+Solo participant. Product thinking, architecture, implementation, testing, and documentation all by one developer.
 
 ## Troubleshooting
 
