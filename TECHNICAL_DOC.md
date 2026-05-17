@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Technical Document: AI Customer Support Agent for Commerce
 
-> **Last updated:** 2026-05-16
+> **Last updated:** 2026-05-17
 > **Repository:** AI Customer Support Agent for Commerce (Track 4)
 
 ## 1. Architecture Overview
@@ -39,6 +39,10 @@ The system uses a browser-side layered architecture. All services run in the use
 │  │RefusalResponseService│ │ OrderCard                     │  │
 │  │(polite refusals)     │ │ (DOM component for orders)    │  │
 │  └──────────────────────┘ └───────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────┐            │
+│  │ ReturnService                               │            │
+│  │ (return intent, eligibility, submission)     │            │
+│  └──────────────────────────────────────────────┘            │
 │  ┌────────────────────────────┐ ┌─────────────────────────┐  │
 │  │EscalationDetector          │ │EscalationStateMachine   │  │
 │  │(handoff + frustration)     │ │(FSM + localStorage)     │  │
@@ -279,7 +283,20 @@ What happens:
     → Returns { type: 'context_expired', message: "Your previous product inquiry has expired..." }
 ```
 
-### 3.8 API Timeout
+### 3.9 Return Not Eligible
+
+```
+Scenario: User wants to return an item but order is not delivered
+What happens:
+  ReturnService.checkEligibility():
+    → OrderService.getOrderByNumber() fetches order
+    → Checks order status !== 'delivered'
+    → Returns { type: 'return_not_eligible', reason: 'not_delivered' }
+    → Message: "Order #1234 hasn't been delivered yet. Returns are only
+      available for delivered items."
+```
+
+### 3.10 API Timeout
 
 ```
 Scenario: _generateAgentResponse() takes longer than 10 seconds
@@ -318,6 +335,7 @@ Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 | `src/services/escalationQueueSimulator.test.ts` | New | Queue position 1-5, refresh, interval updates |
 | `src/services/escalationTransferHandler.test.ts` | New | 20s timeout, retry logic |
 | `src/services/escalationHumanAgent.test.ts` | New | 3-message canned script sequence |
+| `src/services/returnService.test.ts` | New | Return intent detection, eligibility checks, return submission |
 | `shopify-widget/tests/ChatWidget.integration.test.ts` | Integration | End-to-end widget + service integration |
 | `shopify-widget/tests/NetworkDetector.test.ts` | Unit | Network state detection |
 | `src/tests/eval/catalogIntelligence.eval.test.ts` | ~20 eval scenarios | Scenario-based eval for catalog queries |
@@ -440,6 +458,13 @@ User Input
 │ └─ orderService.lookup() │
 └──────────────────────────┘
     │ (not order-related)
+    ▼
+┌──────────────────────────┐
+│ ReturnService (Phase 6)  │──── return intent? ──► checkEligibility() ──► return response
+│ ├─ detectReturnIntent()  │──── needs order info ──► prompt for order/email
+│ └─ checkEligibility()    │
+└──────────────────────────┘
+    │ (not return)
     ▼
 ┌──────────────────────────┐
 │ CatalogIntentDetector    │──── not_catalog? ──► (continue to policy)

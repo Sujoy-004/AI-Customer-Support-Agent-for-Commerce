@@ -177,6 +177,34 @@ export interface OrderDataSource {
 }
 
 // ==============================
+// Return Types
+// ==============================
+
+export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+export interface ReturnRequest {
+  id: string;
+  orderNumber: number;
+  email: string;
+  items: { title: string; variantTitle: string; quantity: number; reason: string }[];
+  status: ReturnRequestStatus;
+  reason: string;
+  createdAt: string;
+}
+
+export type ReturnQuery =
+  | { type: 'return_intent'; message: string }
+  | { type: 'return_eligible'; orderNumber: number; items: { title: string; variantTitle: string }[] }
+  | { type: 'return_submitted'; returnRequest: ReturnRequest; message: string }
+  | { type: 'return_not_eligible'; message: string; reason: string }
+  | { type: 'not_return'; reason: string };
+
+export interface ReturnDataSource {
+  submitReturn(request: Omit<ReturnRequest, 'id' | 'createdAt'>): Promise<ReturnRequest>;
+  getReturnsByEmail(email: string): Promise<ReturnRequest[]>;
+}
+
+// ==============================
 // Escalation Types
 // ==============================
 

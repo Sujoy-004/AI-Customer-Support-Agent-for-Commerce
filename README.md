@@ -122,7 +122,7 @@ Greeting check / Fallback text
 - **18 unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, and guard services
 - **3 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks
 - **Eval suite** — 20 scenario-based catalog intelligence evals
-- **Coverage**: 313 tests passing
+- **Coverage**: 325 tests passing
 
 ```bash
 # Run all Vitest tests
@@ -144,7 +144,7 @@ npx playwright test --config=e2e/playwright.config.ts
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
 | 5. Graceful Handoff | Complete | EscalationDetector, StateMachine, queue, transfer, human agent |
-| 6. Return Initiation | Pending | In-chat return submission |
+| 6. Return Initiation | Complete | Return eligibility, item selection, in-chat submission |
 
 ## Key Technologies
 

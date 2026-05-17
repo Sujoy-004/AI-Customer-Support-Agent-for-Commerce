@@ -15,6 +15,7 @@ import { EscalationStateMachine } from '../../src/services/escalationStateMachin
 import { EscalationQueueSimulator } from '../../src/services/escalationQueueSimulator';
 import { EscalationTransferHandler } from '../../src/services/escalationTransferHandler';
 import { HumanAgentSimulator } from '../../src/services/escalationHumanAgent';
+import { ReturnService, MockReturnDataSource } from '../../src/services/returnService';
 import type { EscalationChatMessage } from '../../src/services/types';
 
 // Initialize our services
@@ -65,6 +66,7 @@ export class ChatWidget {
   private _escalationQueueSimulator: EscalationQueueSimulator | null = null;
   private _escalationTransferHandler: EscalationTransferHandler | null = null;
   private _humanAgentSimulator: HumanAgentSimulator | null = null;
+  private _returnService!: ReturnService;
   private toggleBtn!: HTMLButtonElement;
   private widget!: HTMLDivElement;
   private offlineBanner!: HTMLDivElement;
@@ -87,11 +89,11 @@ export class ChatWidget {
     };
 
     // Order services — optionally injectable for tests
+    const _orderService = options.orderService || new OrderService(new MockOrderDataSource());
     if (options.orderIntentDetector) {
       this._orderIntentDetector = options.orderIntentDetector;
     } else {
-      const orderService = options.orderService || new OrderService(new MockOrderDataSource());
-      this._orderIntentDetector = new OrderIntentDetector(orderService);
+      this._orderIntentDetector = new OrderIntentDetector(_orderService);
     }
 
     // Catalog services — optionally injectable for tests
@@ -101,6 +103,9 @@ export class ChatWidget {
       const catalogService = options.catalogService || new CatalogService(new MockCatalogDataSource());
       this._catalogIntentDetector = new CatalogIntentDetector(catalogService);
     }
+
+    // Return service — return initiation workflow (Phase 6)
+    this._returnService = new ReturnService(policyService, _orderService, new MockReturnDataSource());
 
     // Escalation services — optionally injectable for tests
     if (options.escalationDetector) {
@@ -552,10 +557,10 @@ export class ChatWidget {
     return null;
   }
 
-  /**
-   * Generate agent response with policy grounding and guardrails.
-   * Pipeline: off-topic → order tracking → catalog → policy → greeting → fallback.
-   */
+    /**
+     * Generate agent response with policy grounding and guardrails.
+     * Pipeline: off-topic → escalation → order tracking → return → catalog → policy → greeting → fallback.
+     */
   async _generateAgentResponse(userQuery: string): Promise<string> {
     const lowerQuery = userQuery.toLowerCase();
 
@@ -604,13 +609,41 @@ export class ChatWidget {
       return formatOrderResponse(orderResult);
     }
 
-    // Step 4: Catalog intent detection (product availability, sizing, search)
+    // Step 4: Return initiation (Phase 6)
+    if (this._returnService.detectReturnIntent(userQuery)) {
+      const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
+      if (orderResult.type === 'order_found') {
+        const eligibility = await this._returnService.checkEligibility(
+          orderResult.order.orderNumber,
+          orderResult.email,
+        );
+        if (eligibility.type === 'return_eligible') {
+          const itemsList = eligibility.items.map(i => `  - ${i.title} (${i.variantTitle})`).join('\n');
+          return `I can help you start a return for order #${eligibility.orderNumber}. Which item(s) would you like to return?\n\nItems in this order:\n${itemsList}\n\nPlease tell me which item and the reason for the return.`;
+        }
+        if (eligibility.type === 'return_not_eligible') {
+          return eligibility.message;
+        }
+      }
+      if (orderResult.type === 'needs_order_number') {
+        return "Sure, I can help with a return. What's your order number?";
+      }
+      if (orderResult.type === 'needs_email') {
+        return orderResult.message;
+      }
+      if (orderResult.type === 'email_mismatch' || orderResult.type === 'order_not_found') {
+        return orderResult.message;
+      }
+      return "I can help you start a return. Please provide your order number and email.";
+    }
+
+    // Step 5: Catalog intent detection (product availability, sizing, search)
     const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
     if (catalogResult.type !== 'not_catalog') {
       return formatCatalogResponse(userQuery, catalogResult);
     }
 
-    // Step 5: Policy query handling
+    // Step 6: Policy query handling
     const policyResponse = await this._handlePolicyQuery(userQuery);
     if (policyResponse) {
       const grounding = await responseGrounder.groundResponse(userQuery, policyResponse);
@@ -621,12 +654,12 @@ export class ChatWidget {
       return policyResponse;
     }
 
-    // Step 6: Greeting
+    // Step 7: Greeting
     if (lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
       return "Hello! I'm here to help with questions about our products, shipping, warranty, and return policies. How can I assist you today?";
     }
 
-    // Step 7: Fallback
+    // Step 8: Fallback
     return "I'm here to help with questions about our store products, policies, and orders. You can ask me about shipping options, warranty coverage, return procedures, or product availability.";
   }
 

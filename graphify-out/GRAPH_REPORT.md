@@ -1,526 +1,378 @@
-# Graph Report - C:\Users\KIIT0001\Documents\antigravity skills\AI Customer Support Agent for Commerce  (2026-05-16)
+# Graph Report - .  (2026-05-17)
 
 ## Corpus Check
-- 42 files · ~35,962 words
+- 101 files · ~59,272 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 227 nodes · 250 edges · 73 communities detected
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 15 edges (avg confidence: 0.8)
+- 375 nodes · 521 edges · 51 communities detected
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 41 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Community 0|Community 0]]
-- [[_COMMUNITY_Community 1|Community 1]]
-- [[_COMMUNITY_Community 2|Community 2]]
-- [[_COMMUNITY_Community 3|Community 3]]
-- [[_COMMUNITY_Community 4|Community 4]]
-- [[_COMMUNITY_Community 5|Community 5]]
-- [[_COMMUNITY_Community 6|Community 6]]
-- [[_COMMUNITY_Community 7|Community 7]]
-- [[_COMMUNITY_Community 8|Community 8]]
-- [[_COMMUNITY_Community 9|Community 9]]
-- [[_COMMUNITY_Community 10|Community 10]]
-- [[_COMMUNITY_Community 11|Community 11]]
-- [[_COMMUNITY_Community 12|Community 12]]
-- [[_COMMUNITY_Community 13|Community 13]]
-- [[_COMMUNITY_Community 14|Community 14]]
-- [[_COMMUNITY_Community 15|Community 15]]
-- [[_COMMUNITY_Community 16|Community 16]]
-- [[_COMMUNITY_Community 17|Community 17]]
-- [[_COMMUNITY_Community 18|Community 18]]
-- [[_COMMUNITY_Community 19|Community 19]]
-- [[_COMMUNITY_Community 20|Community 20]]
-- [[_COMMUNITY_Community 21|Community 21]]
-- [[_COMMUNITY_Community 22|Community 22]]
-- [[_COMMUNITY_Community 23|Community 23]]
-- [[_COMMUNITY_Community 24|Community 24]]
-- [[_COMMUNITY_Community 25|Community 25]]
-- [[_COMMUNITY_Community 26|Community 26]]
-- [[_COMMUNITY_Community 27|Community 27]]
-- [[_COMMUNITY_Community 28|Community 28]]
-- [[_COMMUNITY_Community 29|Community 29]]
-- [[_COMMUNITY_Community 30|Community 30]]
-- [[_COMMUNITY_Community 31|Community 31]]
-- [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 34|Community 34]]
-- [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Community 36|Community 36]]
-- [[_COMMUNITY_Community 37|Community 37]]
-- [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 39|Community 39]]
-- [[_COMMUNITY_Community 40|Community 40]]
-- [[_COMMUNITY_Community 41|Community 41]]
-- [[_COMMUNITY_Community 42|Community 42]]
-- [[_COMMUNITY_Community 43|Community 43]]
-- [[_COMMUNITY_Community 44|Community 44]]
-- [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 50|Community 50]]
-- [[_COMMUNITY_Community 51|Community 51]]
-- [[_COMMUNITY_Community 52|Community 52]]
-- [[_COMMUNITY_Community 53|Community 53]]
-- [[_COMMUNITY_Community 54|Community 54]]
-- [[_COMMUNITY_Community 55|Community 55]]
-- [[_COMMUNITY_Community 56|Community 56]]
-- [[_COMMUNITY_Community 57|Community 57]]
-- [[_COMMUNITY_Community 58|Community 58]]
-- [[_COMMUNITY_Community 59|Community 59]]
-- [[_COMMUNITY_Community 60|Community 60]]
-- [[_COMMUNITY_Community 61|Community 61]]
-- [[_COMMUNITY_Community 62|Community 62]]
-- [[_COMMUNITY_Community 63|Community 63]]
-- [[_COMMUNITY_Community 64|Community 64]]
-- [[_COMMUNITY_Community 65|Community 65]]
-- [[_COMMUNITY_Community 66|Community 66]]
-- [[_COMMUNITY_Community 67|Community 67]]
-- [[_COMMUNITY_Community 68|Community 68]]
-- [[_COMMUNITY_Community 69|Community 69]]
-- [[_COMMUNITY_Community 70|Community 70]]
-- [[_COMMUNITY_Community 71|Community 71]]
-- [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Chat Widget & UI|Chat Widget & UI]]
+- [[_COMMUNITY_Core Architecture & Services|Core Architecture & Services]]
+- [[_COMMUNITY_Catalog Intent Detection|Catalog Intent Detection]]
+- [[_COMMUNITY_Test Suite|Test Suite]]
+- [[_COMMUNITY_Order Tracking|Order Tracking]]
+- [[_COMMUNITY_Policy & Response Grounding|Policy & Response Grounding]]
+- [[_COMMUNITY_Catalog Search & Synonyms|Catalog Search & Synonyms]]
+- [[_COMMUNITY_Order Display|Order Display]]
+- [[_COMMUNITY_Coverage Sorter|Coverage Sorter]]
+- [[_COMMUNITY_Off-Topic Detection|Off-Topic Detection]]
+- [[_COMMUNITY_Coverage Prettify|Coverage Prettify]]
+- [[_COMMUNITY_Escalation State Machine|Escalation State Machine]]
+- [[_COMMUNITY_Escalation Queue|Escalation Queue]]
+- [[_COMMUNITY_Escalation Detection|Escalation Detection]]
+- [[_COMMUNITY_Project Concepts & Track|Project Concepts & Track]]
+- [[_COMMUNITY_Cache Management|Cache Management]]
+- [[_COMMUNITY_Conversation Context|Conversation Context]]
+- [[_COMMUNITY_Mock Order Data|Mock Order Data]]
+- [[_COMMUNITY_Context7 Integration|Context7 Integration]]
+- [[_COMMUNITY_Coverage Navigation|Coverage Navigation]]
+- [[_COMMUNITY_Network Detection|Network Detection]]
+- [[_COMMUNITY_Human Agent Simulation|Human Agent Simulation]]
+- [[_COMMUNITY_Superpowers Integration|Superpowers Integration]]
+- [[_COMMUNITY_Antigravity Integration|Antigravity Integration]]
+- [[_COMMUNITY_Globals Types|Globals Types]]
+- [[_COMMUNITY_Design System|Design System]]
+- [[_COMMUNITY_Coverage Reports|Coverage Reports]]
+- [[_COMMUNITY_Vitest Config|Vitest Config]]
+- [[_COMMUNITY_E2E Dev Server|E2E Dev Server]]
+- [[_COMMUNITY_Playwright Config|Playwright Config]]
+- [[_COMMUNITY_Playwright DOM Config|Playwright DOM Config]]
+- [[_COMMUNITY_E2E Catalog Query|E2E Catalog Query]]
+- [[_COMMUNITY_E2E DOM Snapshot|E2E DOM Snapshot]]
+- [[_COMMUNITY_E2E Off-Topic|E2E Off-Topic]]
+- [[_COMMUNITY_E2E Stock Check|E2E Stock Check]]
+- [[_COMMUNITY_Shopify Widget Vite|Shopify Widget Vite]]
+- [[_COMMUNITY_Colors JS Synonyms|Colors JS Synonyms]]
+- [[_COMMUNITY_Index JS Synonyms|Index JS Synonyms]]
+- [[_COMMUNITY_Materials JS Synonyms|Materials JS Synonyms]]
+- [[_COMMUNITY_Sizes JS Synonyms|Sizes JS Synonyms]]
+- [[_COMMUNITY_Integrations JS Index|Integrations JS Index]]
+- [[_COMMUNITY_Types JS|Types JS]]
+- [[_COMMUNITY_Colors TS Synonyms|Colors TS Synonyms]]
+- [[_COMMUNITY_Index TS Synonyms|Index TS Synonyms]]
+- [[_COMMUNITY_Materials TS Synonyms|Materials TS Synonyms]]
+- [[_COMMUNITY_Sizes TS Synonyms|Sizes TS Synonyms]]
+- [[_COMMUNITY_Integrations TS Index|Integrations TS Index]]
+- [[_COMMUNITY_Types TS|Types TS]]
+- [[_COMMUNITY_Escalation Transfer Handler|Escalation Transfer Handler]]
+- [[_COMMUNITY_Human Agent Simulator|Human Agent Simulator]]
+- [[_COMMUNITY_Phase 6 Return|Phase 6 Return]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `ChatWidget` - 27 edges
-2. `CatalogIntentDetector` - 19 edges
-3. `CatalogService` - 8 edges
-4. `ResponseGrounder` - 7 edges
-5. `g()` - 5 edges
-6. `getNthColumn()` - 5 edges
-7. `enableUI()` - 5 edges
-8. `CacheManager` - 5 edges
-9. `ConversationContextManager` - 5 edges
-10. `PolicyService` - 5 edges
+1. `ChatWidget` - 37 edges
+2. `CatalogIntentDetector` - 20 edges
+3. `Vitest Testing Framework` - 18 edges
+4. `OrderIntentDetector` - 11 edges
+5. `EscalationStateMachine` - 11 edges
+6. `CatalogService` - 9 edges
+7. `ResponseGrounder` - 8 edges
+8. `EscalationQueueSimulator` - 8 edges
+9. `CatalogIntentDetector` - 8 edges
+10. `EscalationDetector` - 7 edges
 
 ## Surprising Connections (you probably didn't know these)
-- None detected - all connections are within the same source files.
+- `SynonymResolver` --references--> `Color Synonym Config Table`  [INFERRED]
+  PRODUCT_DOC.md → src/config/synonyms/CHANGELOG.md
+- `SynonymResolver` --references--> `Size Synonym Config Table`  [INFERRED]
+  PRODUCT_DOC.md → src/config/synonyms/CHANGELOG.md
+- `SynonymResolver` --references--> `Material Synonym Config Table`  [INFERRED]
+  PRODUCT_DOC.md → src/config/synonyms/CHANGELOG.md
+- `AI Customer Support Agent for Commerce` --conceptually_related_to--> `Kasparro Agentic Commerce Hackathon`  [EXTRACTED]
+  README.md → hackathon.md
+- `AI Customer Support Agent for Commerce` --conceptually_related_to--> `Track 4: AI Customer Support Agent`  [EXTRACTED]
+  README.md → hackathon.md
+
+## Hyperedges (group relationships)
+- **Full Pipeline Flow** — offtopicdetector, escalationdetector, orderintentdetector, catalogintentdetector, policyservice, refusalresponseservice, chatwidget [EXTRACTED 1.00]
+- **Zero LLM Catalog Pipeline** — catalogintentdetector, catalogservice, synonymresolver, catalogdatasource, mockcatalogdatasource, resolvedquery [EXTRACTED 1.00]
+- **Escalation Workflow Subsystem** — escalationdetector, escalationstatemachine, escalationtransferhandler, humanagentsimulator, escalation_keyword_decision, escalation_statemachine_decision [EXTRACTED 1.00]
 
 ## Communities
 
-### Community 0 - "Community 0"
-Cohesion: 0.14
-Nodes (1): ChatWidget
+### Community 0 - "Chat Widget & UI"
+Cohesion: 0.1
+Nodes (2): ChatWidget, EscalationTransferHandler
 
-### Community 1 - "Community 1"
-Cohesion: 0.14
-Nodes (7): buildAmbiguousMessage(), CatalogIntentDetector, escapeRegex(), formatCatalogResponse(), formatStockBadge(), summarizeStock(), getSynonymTableForOption()
+### Community 1 - "Core Architecture & Services"
+Cohesion: 0.06
+Nodes (42): Browser-Side Services vs Server-Side API Decision, 2-Min Catalog Cache NEVER Cache Inventory Decision, CatalogDataSource Interface, CatalogIntentDetector, CatalogService, ChatWidget, ConversationContextManager, Cross-Turn Context 5min 3turn Decision (+34 more)
 
-### Community 2 - "Community 2"
+### Community 2 - "Catalog Intent Detection"
+Cohesion: 0.12
+Nodes (11): buildAmbiguousMessage(), CatalogIntentDetector, escapeRegex(), formatCatalogResponse(), formatStockBadge(), summarizeStock(), buildMockProducts(), buildProduct() (+3 more)
+
+### Community 3 - "Test Suite"
+Cohesion: 0.06
+Nodes (3): Playwright E2E Framework, Playwright E2E over Vitest-Only Decision, Vitest Testing Framework
+
+### Community 4 - "Order Tracking"
+Cohesion: 0.14
+Nodes (2): OrderIntentDetector, OrderService
+
+### Community 5 - "Policy & Response Grounding"
+Cohesion: 0.16
+Nodes (2): PolicyService, ResponseGrounder
+
+### Community 6 - "Catalog Search & Synonyms"
+Cohesion: 0.19
+Nodes (5): CatalogService, getSynonymTableForOption(), normalizeOptionValue(), resolveSynonyms(), tryResolveToken()
+
+### Community 7 - "Order Display"
+Cohesion: 0.27
+Nodes (9): getStatusColor(), getStatusEmoji(), getTimelineStatusClass(), isActiveStatus(), OrderCard, renderItemsSummary(), renderTimeline(), buildOrderResponse() (+1 more)
+
+### Community 8 - "Coverage Sorter"
 Cohesion: 0.27
 Nodes (11): addSortIndicators(), enableUI(), getNthColumn(), getTable(), getTableBody(), getTableHeader(), loadColumns(), loadData() (+3 more)
 
-### Community 3 - "Community 3"
-Cohesion: 0.21
-Nodes (2): PolicyService, ResponseGrounder
-
-### Community 4 - "Community 4"
-Cohesion: 0.22
-Nodes (4): CatalogService, normalizeOptionValue(), resolveSynonyms(), tryResolveToken()
-
-### Community 5 - "Community 5"
-Cohesion: 0.2
+### Community 9 - "Off-Topic Detection"
+Cohesion: 0.18
 Nodes (2): OffTopicDetector, RefusalResponseService
 
-### Community 6 - "Community 6"
+### Community 10 - "Coverage Prettify"
 Cohesion: 0.35
 Nodes (8): a(), B(), D(), g(), i(), k(), Q(), y()
 
-### Community 7 - "Community 7"
-Cohesion: 0.2
-Nodes (0): 
+### Community 11 - "Escalation State Machine"
+Cohesion: 0.25
+Nodes (2): createDefaultState(), EscalationStateMachine
 
-### Community 8 - "Community 8"
-Cohesion: 0.36
-Nodes (4): buildMockProducts(), buildProduct(), generateVariants(), MockCatalogDataSource
+### Community 12 - "Escalation Queue"
+Cohesion: 0.31
+Nodes (1): EscalationQueueSimulator
 
-### Community 9 - "Community 9"
-Cohesion: 0.53
-Nodes (4): enrichWithContext7(), getContext7RuntimeConfig(), getEnv(), safeFetch()
+### Community 13 - "Escalation Detection"
+Cohesion: 0.25
+Nodes (1): EscalationDetector
 
-### Community 10 - "Community 10"
-Cohesion: 0.4
+### Community 14 - "Project Concepts & Track"
+Cohesion: 0.25
+Nodes (8): AI Customer Support Agent for Commerce, Graphify Knowledge Graph Output, GSD Protocol, Kasparro Agentic Commerce Hackathon, OpenCode Plugin System, Store-Native Approach, Track 4: AI Customer Support Agent, Zero Hallucination Principle
+
+### Community 15 - "Cache Management"
+Cohesion: 0.33
 Nodes (1): CacheManager
 
-### Community 11 - "Community 11"
-Cohesion: 0.33
+### Community 16 - "Conversation Context"
+Cohesion: 0.29
 Nodes (1): ConversationContextManager
 
-### Community 12 - "Community 12"
+### Community 17 - "Mock Order Data"
+Cohesion: 0.48
+Nodes (2): buildMockOrders(), MockOrderDataSource
+
+### Community 18 - "Context7 Integration"
+Cohesion: 0.73
+Nodes (4): enrichWithContext7(), getContext7RuntimeConfig(), getEnv(), safeFetch()
+
+### Community 19 - "Coverage Navigation"
 Cohesion: 0.7
 Nodes (4): goToNext(), goToPrevious(), makeCurrent(), toggleClass()
 
-### Community 13 - "Community 13"
+### Community 20 - "Network Detection"
 Cohesion: 0.4
 Nodes (1): NetworkDetector
 
-### Community 14 - "Community 14"
-Cohesion: 0.67
-Nodes (0): 
+### Community 21 - "Human Agent Simulation"
+Cohesion: 0.4
+Nodes (1): HumanAgentSimulator
 
-### Community 15 - "Community 15"
-Cohesion: 1.0
+### Community 22 - "Superpowers Integration"
+Cohesion: 0.83
 Nodes (2): getSuperpowersRuntimeConfig(), isSuperpowersAvailable()
 
-### Community 16 - "Community 16"
-Cohesion: 1.0
-Nodes (0): 
+### Community 23 - "Antigravity Integration"
+Cohesion: 0.67
+Nodes (2): getActiveRuntimeSkills(), getRuntimeSkills()
 
-### Community 17 - "Community 17"
+### Community 24 - "Globals Types"
 Cohesion: 1.0
 Nodes (1): Response
 
-### Community 18 - "Community 18"
+### Community 25 - "Design System"
+Cohesion: 1.0
+Nodes (2): Berkeley Mono Typography, OpenCode Design System
+
+### Community 26 - "Coverage Reports"
+Cohesion: 1.0
+Nodes (2): Code Coverage Report, Sort Arrow Sprite
+
+### Community 27 - "Vitest Config"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 19 - "Community 19"
+### Community 28 - "E2E Dev Server"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 20 - "Community 20"
+### Community 29 - "Playwright Config"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 21 - "Community 21"
+### Community 30 - "Playwright DOM Config"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 22 - "Community 22"
+### Community 31 - "E2E Catalog Query"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 23 - "Community 23"
+### Community 32 - "E2E DOM Snapshot"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 24 - "Community 24"
+### Community 33 - "E2E Off-Topic"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 25 - "Community 25"
+### Community 34 - "E2E Stock Check"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 26 - "Community 26"
+### Community 35 - "Shopify Widget Vite"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 27 - "Community 27"
+### Community 36 - "Colors JS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 28 - "Community 28"
+### Community 37 - "Index JS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 29 - "Community 29"
+### Community 38 - "Materials JS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 30 - "Community 30"
+### Community 39 - "Sizes JS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 31 - "Community 31"
+### Community 40 - "Integrations JS Index"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 32 - "Community 32"
+### Community 41 - "Types JS"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 33 - "Community 33"
+### Community 42 - "Colors TS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 34 - "Community 34"
+### Community 43 - "Index TS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 35 - "Community 35"
+### Community 44 - "Materials TS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 36 - "Community 36"
+### Community 45 - "Sizes TS Synonyms"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 37 - "Community 37"
+### Community 46 - "Integrations TS Index"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 38 - "Community 38"
+### Community 47 - "Types TS"
 Cohesion: 1.0
-Nodes (1): AI Customer Support Agent for Commerce
+Nodes (0): 
 
-### Community 39 - "Community 39"
+### Community 48 - "Escalation Transfer Handler"
 Cohesion: 1.0
-Nodes (1): Kasparro Agentic Commerce Hackathon
+Nodes (1): EscalationTransferHandler
 
-### Community 40 - "Community 40"
+### Community 49 - "Human Agent Simulator"
 Cohesion: 1.0
-Nodes (1): Track 4: AI Customer Support Agent
+Nodes (1): HumanAgentSimulator
 
-### Community 41 - "Community 41"
+### Community 50 - "Phase 6 Return"
 Cohesion: 1.0
-Nodes (1): Store-Native Approach
+Nodes (1): Phase 6: Return Initiation Workflow
 
-### Community 42 - "Community 42"
-Cohesion: 1.0
-Nodes (1): Zero Hallucination Principle
-
-### Community 43 - "Community 43"
-Cohesion: 1.0
-Nodes (1): Shopify Integration
-
-### Community 44 - "Community 44"
-Cohesion: 1.0
-Nodes (1): GSD Protocol
-
-### Community 45 - "Community 45"
-Cohesion: 1.0
-Nodes (1): TDD-First Workflow
-
-### Community 46 - "Community 46"
-Cohesion: 1.0
-Nodes (1): Socratic Specification
-
-### Community 47 - "Community 47"
-Cohesion: 1.0
-Nodes (1): OpenCode Plugin System
-
-### Community 48 - "Community 48"
-Cohesion: 1.0
-Nodes (1): Graphify Knowledge Graph
-
-### Community 49 - "Community 49"
-Cohesion: 1.0
-Nodes (1): Intent Classification
-
-### Community 50 - "Community 50"
-Cohesion: 1.0
-Nodes (1): Entity Extraction
-
-### Community 51 - "Community 51"
-Cohesion: 1.0
-Nodes (1): LLM Processing
-
-### Community 52 - "Community 52"
-Cohesion: 1.0
-Nodes (1): Grounding Verification Layer
-
-### Community 53 - "Community 53"
-Cohesion: 1.0
-Nodes (1): Workflow Execution Engine
-
-### Community 54 - "Community 54"
-Cohesion: 1.0
-Nodes (1): Graceful Handoff Flow
-
-### Community 55 - "Community 55"
-Cohesion: 1.0
-Nodes (1): Order Status/Tracking Workflow
-
-### Community 56 - "Community 56"
-Cohesion: 1.0
-Nodes (1): Return Initiation Workflow
-
-### Community 57 - "Community 57"
-Cohesion: 1.0
-Nodes (1): Exchange Handling Workflow
-
-### Community 58 - "Community 58"
-Cohesion: 1.0
-Nodes (1): Hallucination Detection Mechanism
-
-### Community 59 - "Community 59"
-Cohesion: 1.0
-Nodes (1): TypeScript Strict Mode
-
-### Community 60 - "Community 60"
-Cohesion: 1.0
-Nodes (1): Antigravity Skills Stack
-
-### Community 61 - "Community 61"
-Cohesion: 1.0
-Nodes (1): Berkeley Mono Typography
-
-### Community 62 - "Community 62"
-Cohesion: 1.0
-Nodes (1): OpenCode Marketing Design System
-
-### Community 63 - "Community 63"
-Cohesion: 1.0
-Nodes (1): ASCII Block-Pixel Wordmark
-
-### Community 64 - "Community 64"
-Cohesion: 1.0
-Nodes (1): Hero TUI Mockup Component
-
-### Community 65 - "Community 65"
-Cohesion: 1.0
-Nodes (1): Apple HIG Semantic Color Palette
-
-### Community 66 - "Community 66"
-Cohesion: 1.0
-Nodes (1): Workspace Sovereignty Protocol
-
-### Community 67 - "Community 67"
-Cohesion: 1.0
-Nodes (1): Graphify Protocol
-
-### Community 68 - "Community 68"
-Cohesion: 1.0
-Nodes (1): Shopify API
-
-### Community 69 - "Community 69"
-Cohesion: 1.0
-Nodes (1): Context Retrieval Layer
-
-### Community 70 - "Community 70"
-Cohesion: 1.0
-Nodes (1): Input Processing Layer
-
-### Community 71 - "Community 71"
-Cohesion: 1.0
-Nodes (1): Response Formatting Layer
-
-### Community 72 - "Community 72"
-Cohesion: 1.0
-Nodes (1): Quality Check Layer
+## Ambiguous Edges - Review These
+- `Sort Arrow Sprite` → `Code Coverage Report`  [AMBIGUOUS]
+  coverage/sort-arrow-sprite.png · relation: references
 
 ## Knowledge Gaps
-- **36 isolated node(s):** `Response`, `AI Customer Support Agent for Commerce`, `Kasparro Agentic Commerce Hackathon`, `Track 4: AI Customer Support Agent`, `Store-Native Approach` (+31 more)
+- **34 isolated node(s):** `Response`, `Kasparro Agentic Commerce Hackathon`, `Track 4: AI Customer Support Agent`, `Zero Hallucination Principle`, `Store-Native Approach` (+29 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 16`** (2 nodes): `ChatWidget.integration.test.ts`, `createWidget()`
+- **Thin community `Globals Types`** (2 nodes): `globals.d.ts`, `Response`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 17`** (2 nodes): `globals.d.ts`, `Response`
+- **Thin community `Design System`** (2 nodes): `Berkeley Mono Typography`, `OpenCode Design System`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 18`** (2 nodes): `catalogService.test.ts`, `createMockDataSource()`
+- **Thin community `Coverage Reports`** (2 nodes): `Code Coverage Report`, `Sort Arrow Sprite`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 19`** (1 nodes): `vitest.config.ts`
+- **Thin community `Vitest Config`** (1 nodes): `vitest.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 20`** (1 nodes): `playwright.config.ts`
+- **Thin community `E2E Dev Server`** (1 nodes): `dev-server.mjs`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 21`** (1 nodes): `catalogQuery.spec.ts`
+- **Thin community `Playwright Config`** (1 nodes): `playwright.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 22`** (1 nodes): `offTopic.spec.ts`
+- **Thin community `Playwright DOM Config`** (1 nodes): `playwright.dom.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 23`** (1 nodes): `stockCheck.spec.ts`
+- **Thin community `E2E Catalog Query`** (1 nodes): `catalogQuery.spec.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 24`** (1 nodes): `vitest.config.ts`
+- **Thin community `E2E DOM Snapshot`** (1 nodes): `domSnapshot.spec.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 25`** (1 nodes): `setup.js`
+- **Thin community `E2E Off-Topic`** (1 nodes): `offTopic.spec.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 26`** (1 nodes): `NetworkDetector.test.ts`
+- **Thin community `E2E Stock Check`** (1 nodes): `stockCheck.spec.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 27`** (1 nodes): `colors.ts`
+- **Thin community `Shopify Widget Vite`** (1 nodes): `vite.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 28`** (1 nodes): `index.ts`
+- **Thin community `Colors JS Synonyms`** (1 nodes): `colors.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 29`** (1 nodes): `materials.ts`
+- **Thin community `Index JS Synonyms`** (1 nodes): `index.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 30`** (1 nodes): `sizes.ts`
+- **Thin community `Materials JS Synonyms`** (1 nodes): `materials.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 31`** (1 nodes): `index.ts`
+- **Thin community `Sizes JS Synonyms`** (1 nodes): `sizes.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 32`** (1 nodes): `mockCatalogData.test.ts`
+- **Thin community `Integrations JS Index`** (1 nodes): `index.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 33`** (1 nodes): `offTopicDetector.test.ts`
+- **Thin community `Types JS`** (1 nodes): `types.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 34`** (1 nodes): `policyService.test.ts`
+- **Thin community `Colors TS Synonyms`** (1 nodes): `colors.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 35`** (1 nodes): `refusalResponses.test.ts`
+- **Thin community `Index TS Synonyms`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 36`** (1 nodes): `responseGrounder.test.ts`
+- **Thin community `Materials TS Synonyms`** (1 nodes): `materials.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 37`** (1 nodes): `catalogIntelligence.eval.test.ts`
+- **Thin community `Sizes TS Synonyms`** (1 nodes): `sizes.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 38`** (1 nodes): `AI Customer Support Agent for Commerce`
+- **Thin community `Integrations TS Index`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 39`** (1 nodes): `Kasparro Agentic Commerce Hackathon`
+- **Thin community `Types TS`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 40`** (1 nodes): `Track 4: AI Customer Support Agent`
+- **Thin community `Escalation Transfer Handler`** (1 nodes): `EscalationTransferHandler`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (1 nodes): `Store-Native Approach`
+- **Thin community `Human Agent Simulator`** (1 nodes): `HumanAgentSimulator`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (1 nodes): `Zero Hallucination Principle`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 43`** (1 nodes): `Shopify Integration`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 44`** (1 nodes): `GSD Protocol`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 45`** (1 nodes): `TDD-First Workflow`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 46`** (1 nodes): `Socratic Specification`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 47`** (1 nodes): `OpenCode Plugin System`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 48`** (1 nodes): `Graphify Knowledge Graph`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 49`** (1 nodes): `Intent Classification`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 50`** (1 nodes): `Entity Extraction`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (1 nodes): `LLM Processing`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (1 nodes): `Grounding Verification Layer`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (1 nodes): `Workflow Execution Engine`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 54`** (1 nodes): `Graceful Handoff Flow`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 55`** (1 nodes): `Order Status/Tracking Workflow`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 56`** (1 nodes): `Return Initiation Workflow`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 57`** (1 nodes): `Exchange Handling Workflow`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 58`** (1 nodes): `Hallucination Detection Mechanism`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 59`** (1 nodes): `TypeScript Strict Mode`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 60`** (1 nodes): `Antigravity Skills Stack`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 61`** (1 nodes): `Berkeley Mono Typography`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 62`** (1 nodes): `OpenCode Marketing Design System`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 63`** (1 nodes): `ASCII Block-Pixel Wordmark`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 64`** (1 nodes): `Hero TUI Mockup Component`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 65`** (1 nodes): `Apple HIG Semantic Color Palette`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 66`** (1 nodes): `Workspace Sovereignty Protocol`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 67`** (1 nodes): `Graphify Protocol`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 68`** (1 nodes): `Shopify API`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 69`** (1 nodes): `Context Retrieval Layer`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (1 nodes): `Input Processing Layer`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (1 nodes): `Response Formatting Layer`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 72`** (1 nodes): `Quality Check Layer`
+- **Thin community `Phase 6 Return`** (1 nodes): `Phase 6: Return Initiation Workflow`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ChatWidget` connect `Community 0` to `Community 5`?**
-  _High betweenness centrality (0.072) - this node is a cross-community bridge._
-- **Why does `CatalogIntentDetector` connect `Community 1` to `Community 8`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **What connects `Response`, `AI Customer Support Agent for Commerce`, `Kasparro Agentic Commerce Hackathon` to the rest of the system?**
-  _36 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.14 - nodes in this community are weakly interconnected._
-- **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.14 - nodes in this community are weakly interconnected._
+- **What is the exact relationship between `Sort Arrow Sprite` and `Code Coverage Report`?**
+  _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
+- **Why does `formatCatalogResponse()` connect `Catalog Intent Detection` to `Chat Widget & UI`?**
+  _High betweenness centrality (0.096) - this node is a cross-community bridge._
+- **Why does `ChatWidget` connect `Chat Widget & UI` to `Policy & Response Grounding`?**
+  _High betweenness centrality (0.067) - this node is a cross-community bridge._
+- **What connects `Response`, `Kasparro Agentic Commerce Hackathon`, `Track 4: AI Customer Support Agent` to the rest of the system?**
+  _34 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Chat Widget & UI` be split into smaller, more focused modules?**
+  _Cohesion score 0.1 - nodes in this community are weakly interconnected._
+- **Should `Core Architecture & Services` be split into smaller, more focused modules?**
+  _Cohesion score 0.06 - nodes in this community are weakly interconnected._
+- **Should `Catalog Intent Detection` be split into smaller, more focused modules?**
+  _Cohesion score 0.12 - nodes in this community are weakly interconnected._

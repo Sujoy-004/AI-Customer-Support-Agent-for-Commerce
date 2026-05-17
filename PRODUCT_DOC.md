@@ -73,8 +73,8 @@ Secure order status retrieval with fulfillment tracking. Rich HTML order card wi
 - **ChatWidget integration** — Pipeline step 2 (after off-topic, before order), 5 system message bubble types (escalation-offer, frustration-offer, transferring, queue, connected)
 - **CSS** — 13 new classes + pulse animation keyframes
 
-### Phase 6 — Return Initiation Workflow (NOT STARTED)
-Full in-chat return initiation with eligibility checks against policy rules. Planned but not yet implemented.
+### Phase 6 — Return Initiation Workflow (COMPLETE)
+Full in-chat return initiation with eligibility checks against policy rules. Detects return intent from keywords, resolves order via shared OrderService, checks eligibility (order must be delivered, email must match), and supports multi-turn item selection and return submission.
 
 ## How Is It Different from Generic Chatbot Solutions?
 
@@ -152,7 +152,7 @@ There is **no welcome message**. The widget opens to an empty message area. This
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderCard, multi-turn auth |
 | 5. Graceful Escalation | Complete | Human handoff with queue, transfer, canned script |
-| 6. Return Initiation | Not started | In-chat return workflow |
+| 6. Return Initiation | Complete | Return eligibility, item selection, in-chat submission |
 
 ### Post-Hackathon
 - Live Shopify API integration (replacing mock data sources)
