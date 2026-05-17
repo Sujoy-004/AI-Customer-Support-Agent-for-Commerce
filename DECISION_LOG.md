@@ -469,3 +469,66 @@ Source: `shopify-widget/src/ChatWidget.ts` lines 572-596.
 **Tradeoff:** Queue position is not persisted across page refreshes. The `EscalationQueueSimulator` class exists but is unused (dead code, noted in review).
 
 Source: `shopify-widget/src/ChatWidget.ts` lines 708-709.
+
+---
+
+## 2026-05-17: Widget Bundle Format — IIFE Over ESM for Shopify Embedding
+
+**Considered:**
+- ES module bundle: `<script type="module" src="dist/widget.js">` — standard Vite library output
+- IIFE bundle: `<script src="dist/widget.js">` — self-executing function in global scope
+
+**Chose:** IIFE format via Vite library mode (`formats: ['iife']` in `vite.config.ts`).
+
+**Because:**
+- The widget must embed in any Shopify theme via a simple `<script>` tag — no module loader, no importmap
+- ES modules require `type="module"` which has CORS restrictions and fails in older Shopify themes
+- IIFE exposes `ChatWidget` as a global, callable via `new ChatWidget()` from any inline script
+- The default export must be set in the source (`export default class ChatWidget`) and rollup output (`exports: 'default'`) for IIFE to produce the correct global binding
+- Tested via `domSnapshot.spec.ts` — verifies the widget mounts successfully in a real browser
+
+**Tradeoff:** IIFE bundles are slightly larger (no tree-shaking across modules after bundling). The global namespace pollution is acceptable since `ChatWidget` is a unique name.
+
+Source: `shopify-widget/vite.config.ts` (lines 8-10), `shopify-widget/src/ChatWidget.ts` (default export), `e2e/specs/domSnapshot.spec.ts` (DOM capture test).
+
+---
+
+## 2026-05-17: E2E Assertion Fix — toContainText Over toBeVisible for Dynamic Content
+
+**Considered:**
+- `toBeVisible()` matcher for agent response content — checks only DOM visibility
+- `toContainText()` matcher — waits for text content to match, retries until timeout
+
+**Chose:** `toContainText()` for content assertions, `toBeVisible()` only for structural elements (chat window open/close).
+
+**Because:**
+- `toBeVisible()` on `.chat-bubble--agent` passes as soon as the bubble DOM element appears, but its text content may still be the placeholder/sending state
+- `toContainText('Classic Hoodie')` waits until the actual text content contains the expected string — handles async rendering correctly
+- Tests were flaky: sometimes passing when the agent said "Let me look that up..." (visible bubble, wrong content)
+- This fix made all 12 E2E tests consistently green
+
+**Tradeoff:** Slightly slower assertions (Playwright retries until timeout). Acceptable for test reliability.
+
+Source: `e2e/specs/catalogQuery.spec.ts`, `e2e/specs/stockCheck.spec.ts`.
+
+---
+
+## 2026-05-17: Playwright Config — Build Pipeline + No Reuse Server
+
+**Considered:**
+- Serve pre-built static files: `npx serve shopify-widget -l 3000` — fastest startup, but uses stale JS
+- Single serve with `reuseExistingServer: true` — serve once, reuse across test runs
+- Build pipeline + `reuseExistingServer: false` — rebuild widget on every test run
+
+**Chose:** Build pipeline (`tsc → vite build → serve`) with `reuseExistingServer: false`.
+
+**Because:**
+- The widget TypeScript source must be compiled before it can be served to the browser
+- `reuseExistingServer: false` ensures every Playwright run gets a fresh widget build — no stale output
+- The full pipeline runs in ~20s (tsc: 5s, vite build: 3s, serve: instant, remaining: startup time)
+- The command runs from `cwd: '..'` (project root) so tsc and vite configs resolve correctly
+- Previously the widget HTML loaded an ES module that failed to execute — the build pipeline guarantees the IIFE bundle is current
+
+**Tradeoff:** Longer startup time for E2E tests (~20s vs instant for pre-built). Acceptable for test correctness.
+
+Source: `e2e/playwright.config.ts` lines 13-19.

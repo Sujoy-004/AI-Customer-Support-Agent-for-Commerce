@@ -54,7 +54,7 @@ export interface ChatWidgetState {
 
 // ── Widget class ─────────────────────────────────────────────────
 
-export class ChatWidget {
+export default class ChatWidget {
   private container: HTMLElement;
   private endpoint: string;
   private timeoutMs: number;
@@ -694,7 +694,6 @@ export class ChatWidget {
     if (state.status !== 'OFFERED') return;
 
     this._escalationStateMachine.transition('CONFIRM');
-    this._escalationStateMachine.transition('TRANSFERRING');
 
     const transferringMsg = this._createSystemMessage('Transferring you to a human agent...', 'transferring');
     this._removeLastSystemMessage();

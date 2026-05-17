@@ -311,8 +311,8 @@ What happens:
 ### 4.1 Test Architecture
 
 ```
-TypeScript Source ─→ Vitest (unit/integration) ─→ 313 tests, 18 test files
-Browser Widget   ─→ Playwright (E2E)          ─→ 3 spec files (11 tests)
+TypeScript Source ─→ Vitest (unit/integration) ─→ 325 tests, 19 test files
+Browser Widget   ─→ Playwright (E2E)          ─→ 4 spec files (12 tests)
 Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 ```
 
@@ -340,15 +340,16 @@ Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 | `shopify-widget/tests/NetworkDetector.test.ts` | Unit | Network state detection |
 | `src/tests/eval/catalogIntelligence.eval.test.ts` | ~20 eval scenarios | Scenario-based eval for catalog queries |
 
-### 4.3 E2E Tests (Playwright, 3 spec files)
+### 4.3 E2E Tests (Playwright, 4 spec files, 12 tests)
 
 | Spec File | Tests | What It Verifies |
 |-----------|-------|------------------|
 | `e2e/specs/catalogQuery.spec.ts` | 3 | Widget loads, responds to catalog query, shows OOS badge, handles sizing |
 | `e2e/specs/offTopic.spec.ts` | 4 | Weather, competitor, personal advice, technical support refusals |
 | `e2e/specs/stockCheck.spec.ts` | 4 | In-stock badge, low stock warning, OOS badge, stock summary |
+| `e2e/specs/domSnapshot.spec.ts` | 1 | Captures DOM snapshot, console errors, console warnings, and screenshot for visual review |
 
-Playwright config: `e2e/playwright.config.ts` — serves `shopify-widget/` on port 3000 via `npx serve`, 30s timeout, 1 retry.
+Playwright config: `e2e/playwright.config.ts` — builds widget via `tsc -p tsconfig.widget.json && vite build --config shopify-widget/vite.config.ts`, serves `shopify-widget/` on port 3000 via `npx serve`, 30s timeout, 1 retry, `reuseExistingServer: false`.
 
 ### 4.4 Coverage Approach
 
@@ -602,3 +603,46 @@ Implemented by `MockCatalogDataSource` (for testing/development) with an interfa
 | Policies | 5 minutes (300000ms) | `clearCache()` method | `policyService.ts` |
 | Conversation context | 5 minutes (300000ms) | 3-turn max, `clearContext()` | `catalogIntentDetector.ts` |
 | Generic cache | Configurable per key | `CacheManager.delete()` | `cacheManager.ts` |
+
+## 9. Build Pipeline
+
+### 9.1 Widget Bundle (Vite Library Mode)
+
+The chat widget (`shopify-widget/`) is built as an IIFE bundle via Vite's library mode:
+
+```
+TypeScript source (ChatWidget.ts) → tsc compilation → JS output → Vite build → dist/widget.js (IIFE)
+```
+
+**Configuration** (`shopify-widget/vite.config.ts`):
+- **Entry:** Compiled `ChatWidget.js` (ES module with default export)
+- **Output:** `dist/widget.js` — IIFE bundle that registers `ChatWidget` in the global scope
+- **Format:** `iife` — self-executing function, no module loader required
+- **Entry filename:** `widget.js`
+
+**Why IIFE instead of ESM:**
+
+| Aspect | ES Module (previous) | IIFE (current) |
+|--------|---------------------|----------------|
+| Script tag | `<script type="module" src="...">` | `<script src="...">` |
+| Browser support | Requires modern browsers (type=module) | All browsers |
+| CORS | Requires server with correct MIME types | No CORS issues |
+| Global access | Not available outside module scope | `window.ChatWidget` available |
+| Compatibility | Fails in older Shopify themes | Works everywhere |
+
+The `index.html` loads the IIFE bundle via `<script src="dist/widget.js"></script>` and instantiates `new ChatWidget()` on `DOMContentLoaded`.
+
+### 9.2 E2E Test Build Pipeline
+
+Playwright E2E tests require a built widget before the server starts. The `webServer` command in `e2e/playwright.config.ts` runs three steps sequentially:
+
+```
+npx tsc -p tsconfig.widget.json    # 1. Compile TS → JS
+npx vite build ...                  # 2. Bundle IIFE widget
+npx serve shopify-widget -l 3000   # 3. Serve static files
+```
+
+Key settings:
+- `reuseExistingServer: false` — ensures a fresh build every test run
+- `port: 3000` — matches `baseURL`
+- `timeout: 60000` — 60s for the full build + serve pipeline

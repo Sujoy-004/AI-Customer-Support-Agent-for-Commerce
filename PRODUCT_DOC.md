@@ -3,7 +3,7 @@
 
 > **Track:** Kasparro Agentic Commerce Hackathon — Track 4
 > **Stack:** TypeScript, Vitest, Playwright, OpenCode Plugin System
-> **Status:** 5 of 6 phases complete (May 2026)
+> **Status:** 6 of 6 phases complete (May 2026)
 
 ## What Problem Does This Solve?
 
@@ -104,9 +104,7 @@ The critical differentiator: **Phase 3 (catalog queries) uses ZERO LLM calls.** 
 7. **Off-topic refusal** — "what's the weather?" → polite refusal with redirect suggestions
 8. **Order tracking** — "track order #1234 for email@example.com" → rich order card with timeline
 9. **Graceful handoff** — "talk to human" → escalation offer → queue → human agent connection
-
-### Planned (Not Yet Implemented)
-10. **Return initiation** — in-chat return submission
+10. **Return initiation** — "start a return for #1234" → eligibility check → item selection → in-chat submission
 
 ## User Experience
 
@@ -139,8 +137,7 @@ There is **no welcome message**. The widget opens to an empty message area. This
 
 1. **Browser-side only** — All services run in the browser. The `_generateAgentResponse` pipeline in ChatWidget calls local services, not a server API. This means every page load creates new service instances. A production deployment would move services to a Shopify App backend.
 2. **Mock data** — Catalog and policy data are mock implementations. `CatalogDataSource` and `PolicyService` have interfaces ready for live API connections but no Shopify Admin API client has been written yet.
-3. **No return initiation** (Phase 6) — The most common support workflow is not yet automated.
-4. **No persistent conversation history** — Context expires after 5 minutes or 3 turns; no long-term session storage.
+3. **No persistent conversation history** — Context expires after 5 minutes or 3 turns; no long-term session storage.
 
 ## Future Roadmap
 

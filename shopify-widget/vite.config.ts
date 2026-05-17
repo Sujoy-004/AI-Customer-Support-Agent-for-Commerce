@@ -1,12 +1,19 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  root: resolve(__dirname),
-  server: {
-    open: '/demo/index.html',
-  },
   build: {
-    outDir: 'dist',
+    outDir: resolve(__dirname, 'dist'),
+    lib: {
+      entry: resolve(__dirname, 'src/shopify-widget/src/ChatWidget.js'),
+      name: 'ChatWidget',
+      formats: ['iife'],
+    },
+    rollupOptions: {
+      output: {
+        exports: 'default',
+        entryFileNames: 'widget.js',
+      },
+    },
   },
 });

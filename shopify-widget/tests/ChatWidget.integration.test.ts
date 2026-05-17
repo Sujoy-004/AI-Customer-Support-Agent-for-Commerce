@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ChatWidget } from '../src/ChatWidget';
+import ChatWidget from '../src/ChatWidget';
 import { CatalogIntentDetector } from '../../src/services/catalogIntentDetector';
 import { CatalogService } from '../../src/services/catalogService';
 import { MockCatalogDataSource } from '../../src/services/mockCatalogData';

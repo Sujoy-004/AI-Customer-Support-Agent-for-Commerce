@@ -16,14 +16,18 @@ Not a generic FAQ wrapper. Executes active workflows: product lookup, stock chec
 # Install dependencies
 npm install
 
-# Run unit and integration tests
+# Type check
+npx tsc --noEmit
+
+# Run unit and integration tests (325 tests, 19 files)
 npx vitest run
 
-# Run E2E browser tests
+# Build the widget bundle, then run E2E browser tests (12 tests, 4 specs)
 npx playwright test --config=e2e/playwright.config.ts
 
-# Open the widget demo page
-open shopify-widget/index.html
+# Build the widget and open the demo page
+npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.config.ts
+# Then open shopify-widget/index.html in your browser
 ```
 
 ## Project Structure
@@ -61,9 +65,10 @@ open shopify-widget/index.html
 ├── e2e/                     # Playwright E2E tests
 │   ├── playwright.config.ts
 │   └── specs/
-│       ├── catalogQuery.spec.ts    # Catalog query tests
-│       ├── offTopic.spec.ts        # Off-topic detection tests
-│       └── stockCheck.spec.ts      # Stock check tests
+│       ├── catalogQuery.spec.ts    # Catalog query tests (3)
+│       ├── offTopic.spec.ts        # Off-topic detection tests (4)
+│       ├── stockCheck.spec.ts      # Stock check tests (4)
+│       └── domSnapshot.spec.ts     # DOM snapshot test (1)
 ├── .opencode/               # OpenCode plugin config (dev tooling)
 ├── .planning/               # GSD planning artifacts
 ├── vitest.config.ts         # Vitest configuration
@@ -101,6 +106,9 @@ EscalationDetector ── active? ──► system message (offer/queue/connecte
 OrderIntentDetector ── order? ──► formatOrderResponse() ──► order card
   │ (not order)
   ▼
+ReturnService ── return intent? ──► checkEligibility() ──► return flow
+  │ (not return)
+  ▼
 CatalogIntentDetector ── catalog? ──► formatCatalogResponse() ──► product info
   │ (not catalog)
   ▼
@@ -113,25 +121,26 @@ Greeting check / Fallback text
 ### Key Design Properties
 
 - **No hallucinations**: Catalog pipeline uses zero LLM calls. Stock is never cached. Policy responses are verified against source data.
+- **10 implemented workflows**: Product search, stock check, sizing inquiry, variant lookup, multi-turn refinement, policy queries, order tracking, return initiation, off-topic refusal, and graceful human handoff.
 - **Deterministic intent**: Keyword-based intent detection with exclusion guards prevents catalog/policy cross-contamination.
-- **Swappable data sources**: `CatalogDataSource` interface for mock → live Shopify API migration.
+- **Swappable data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration.
 - **Bounded context**: Cross-turn context expires after 5 minutes or 3 turns.
 
 ## Testing
 
-- **18 unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, and guard services
-- **3 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks
+- **19 unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, and guard services
+- **4 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks, DOM snapshot
 - **Eval suite** — 20 scenario-based catalog intelligence evals
-- **Coverage**: 325 tests passing
+- **Coverage**: 325 unit tests + 12 E2E tests passing
 
 ```bash
-# Run all Vitest tests
+# Run all Vitest tests (325 passing)
 npx vitest run
 
 # Run with coverage
 npx vitest run --coverage
 
-# Run E2E tests
+# Build widget + run E2E tests (12 passing)
 npx playwright test --config=e2e/playwright.config.ts
 ```
 
@@ -149,8 +158,8 @@ npx playwright test --config=e2e/playwright.config.ts
 ## Key Technologies
 
 - **TypeScript** — strict mode, discriminated unions, ES modules
-- **Vitest** — unit and integration tests (11 test files)
-- **Playwright** — E2E browser tests (3 spec files)
+- **Vitest** — unit and integration tests (19 test files)
+- **Playwright** — E2E browser tests (4 spec files, 12 tests)
 - **OpenCode + GSD** — development workflow engine (planning, execution, verification)
 
 ## Product Decisions
@@ -159,7 +168,7 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Demo Video
 
-*Demo video coming soon. A 3–5 minute screen recording with narration will be added before the submission deadline.*
+*A 3–5 minute demo video will be uploaded as YouTube unlisted before the submission deadline (20th May 2026). The walkthrough will cover: widget loading, product search, stock check, order tracking, return initiation, and graceful human handoff.*
 
 ## Screenshots
 
