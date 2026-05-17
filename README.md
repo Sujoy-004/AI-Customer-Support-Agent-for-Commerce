@@ -1,9 +1,9 @@
 <!-- generated-by: gsd-doc-writer -->
 # AI Customer Support Agent for Commerce
 
-A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Deeply integrated into live store data — catalog, sizing, stock, orders — with deterministic guardrails and zero hallucination risk.
+A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Uses a **hybrid architecture**: in-browser semantic understanding (MiniLM embeddings via transformer.js) for intent routing + deterministic data retrieval for zero-hallucination answers.
 
-Not a generic FAQ wrapper. Executes active workflows: product lookup, stock checks, policy answers, and order tracking.
+Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows: product lookup, stock checks, policy answers, order tracking, and live human handoff.
 
 ## Prerequisites
 
@@ -105,17 +105,14 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 
 ## Architecture
 
-Three-layer browser-side architecture. All services run in the browser — no backend required.
+Three-layer browser-side architecture. All services run in the browser — no backend required (optional serverless proxy for secure order lookup).
 
 ```
-User query → OffTopicDetector → EscalationDetector → OrderIntentDetector → CatalogIntentDetector → PolicyService → Response
-              (keyword guard)    (handoff + frustration) (order intent)   (catalog + intent)     (policy lookup)
-              │
-              └→ EscalationStateMachine → EscalationTransferHandler → HumanAgentSimulator
-                 (FSM + localStorage)       (20s timeout)           (3-message script)
+User query → SemanticRouter → OffTopicDetector → EscalationDetector → OrderIntentDetector → CatalogIntentDetector → PolicyService → Response
+              (transformer.js) (keyword guard)   (handoff)           (order intent)       (catalog + intent)     (policy lookup)
 
-Catalog, order, and escalation use ZERO LLM calls — every product lookup, stock check,
-variant resolution, order tracking, and human handoff goes through deterministic keyword + structured parsing.
+SemanticRouter (MiniLM sentence embeddings) classifies user intent in-browser.
+All data retrieval is fully deterministic — zero LLM calls, zero hallucinations.
 ```
 
 ### Pipeline Flow
@@ -123,6 +120,9 @@ variant resolution, order tracking, and human handoff goes through deterministic
 ```
 User Input
   │
+  ▼
+SemanticRouter (transformer.js) ── embedding similarity routing
+  │ (catalog intent)
   ▼
 OffTopicDetector ── off-topic? ──► RefusalResponseService ──► polite refusal
   │ (on-topic)
@@ -132,9 +132,6 @@ EscalationDetector ── active? ──► system message (offer/queue/connecte
   ▼ (not escalating)
 OrderIntentDetector ── order? ──► formatOrderResponse() ──► order card
   │ (not order)
-  ▼
-ReturnService ── return intent? ──► checkEligibility() ──► return flow
-  │ (not return)
   ▼
 CatalogIntentDetector ── catalog? ──► formatCatalogResponse() ──► product info
   │ (not catalog)
@@ -147,11 +144,11 @@ Greeting check / Fallback text
 
 ### Key Design Properties
 
-- **No hallucinations**: Catalog pipeline uses zero LLM calls. Stock is never cached. Policy responses are verified against source data.
-- **10 implemented workflows**: Product search, stock check, sizing inquiry, variant lookup, multi-turn refinement, policy queries, order tracking, return initiation, off-topic refusal, and graceful human handoff.
-- **Deterministic intent**: Keyword-based intent detection with exclusion guards prevents catalog/policy cross-contamination.
+- **No hallucinations**: Data retrieval pipeline uses zero LLM calls — every product lookup, stock check, and variant resolution goes through deterministic code.
+- **Hybrid AI approach**: MiniLM sentence embeddings for semantic intent detection (in-browser), structured code for all data lookups. Best of both worlds.
 - **Swappable data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration.
 - **Bounded context**: Cross-turn context expires after 5 minutes or 3 turns.
+- **All services run in-browser**: No backend required (except optional serverless proxy for order security).
 
 ## Testing
 
@@ -180,7 +177,9 @@ npx playwright test --config=e2e/playwright.config.ts
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
 | 5. Graceful Handoff | Complete | EscalationDetector, StateMachine, queue, transfer, human agent |
-| 6. Return Initiation | Complete | Return eligibility, item selection, in-chat submission |
+| 6. Semantic AI Router | In progress | In-browser semantic intent detection (transformer.js) |
+| 7. Security & Live Data | Planned | Serverless order proxy, Shopify Storefront API |
+| 8. UX & Demo | Planned | Quick action chips, realtime handoff, demo video |
 
 ## Key Technologies
 
@@ -195,11 +194,17 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Demo Video
 
-*coming before 20th May 2026*
+*To be recorded after Phase 8 completion (due May 20, 2026)*
+
+4-minute walkthrough showing:
+- Semantic understanding: typos, synonyms, natural phrasing
+- Product lookup → stock check → order tracking (full customer journey)
+- Live human handoff via Supabase Realtime
+- Architecture summary: semantic router + deterministic data
 
 ## Screenshots
 
-*coming before 20th May 2026*
+*To be added after Phase 8 completion*
 
 ## Contribution Note
 

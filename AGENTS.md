@@ -28,16 +28,20 @@ Catalog, order, and escalation queries use ZERO LLM calls — every product look
 
 ## Project Status
 
-**6 mandatory workflows — all complete:**
+**5 phases complete. 3 remaining after judge verdict pivot:**
 - Policy Execution (Phase 2) ✓
 - Product Intelligence (Phase 3) ✓
 - Order Tracking (Phase 4) ✓
 - Graceful Handoff (Phase 5) ✓
-- Return Initiation (Phase 6) ✓
+- [ ] Phase 6: Semantic AI Router — in-browser semantic intent detection (transformer.js)
+- [ ] Phase 7: Security & Live Data — serverless order proxy, Shopify Storefront API
+- [ ] Phase 8: UX & Demo — quick action chips, realtime handoff, demo video
 
 **4 mandatory docs:** PRODUCT_DOC.md, TECHNICAL_DOC.md, DECISION_LOG.md, README.md
 
-**Priority:** 1. Demo video → 2. Coverage to 80%+
+**Judge Score:** 58/100 — Bronze Tier. Rebuild in progress.
+**Deadline:** May 20, 2026 11:59 PM IST
+**Priority:** Phase 6 > Phase 7 > Phase 8 (sequential)
 
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
@@ -100,14 +104,14 @@ A "Store-Native" Shopify AI customer support agent (Track 4) built with GSD prot
 
 ### Project Architecture
 
-Three-layer browser-side architecture. All services run in the browser — no backend required.
+Three-layer browser-side architecture. All services run in the browser — no backend required (optional serverless proxy for secure order lookup).
 
 ```
-User query → OffTopicDetector → CatalogIntentDetector → PolicyService → Response
-              (keyword guard)    (catalog + intent parsing)   (policy lookup)
+User query → SemanticRouter → OffTopicDetector → CatalogIntentDetector → PolicyService → Response
+              (transformer.js) (keyword guard)    (catalog + intent parsing)   (policy lookup)
 
-Catalog queries use ZERO LLM calls — every product lookup, stock check,
-and variant resolution goes through deterministic keyword + structured parsing.
+Semantic router (MiniLM embeddings via transformer.js) classifies intent in-browser.
+Data retrieval is fully deterministic — zero LLM calls, zero hallucinations.
 ```
 
 ### Pipeline Flow
@@ -115,6 +119,9 @@ and variant resolution goes through deterministic keyword + structured parsing.
 ```
 User Input
   │
+  ▼
+SemanticRouter (transformer.js) ── embedding similarity routing
+  │ (catalog intent)
   ▼
 OffTopicDetector ── off-topic? ──► RefusalResponseService ──► polite refusal
   │ (on-topic)
@@ -130,9 +137,9 @@ Greeting check / Fallback text
 
 ### Key Design Properties
 
-- **No hallucinations**: Catalog pipeline uses zero LLM calls.
-- **Deterministic intent**: Keyword-based intent detection with exclusion guards prevents catalog/policy cross-contamination.
-- **Swappable data sources**: `CatalogDataSource` interface for mock → live Shopify API migration.
+- **No hallucinations**: Data retrieval pipeline uses zero LLM calls — every product lookup, stock check, and variant resolution goes through deterministic code.
+- **Hybrid AI approach**: MiniLM sentence embeddings for semantic intent detection (in-browser), structured code for all data lookups. Best of both worlds.
+- **Swappable data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration.
 - **Bounded context**: Cross-turn context expires after 5 minutes or 3 turns.
 
 ### .opencode Structure (GSD Only)
