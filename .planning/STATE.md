@@ -6,8 +6,8 @@
 
 ## Current Position
 **Phase**: 06-semantic-ai-router
-**Plan**: 01 complete
-**Status**: Phase 6 Plan 1 complete. Ready for 06-02.
+**Plan**: 02 complete
+**Status**: Phase 6 Plans 1-2 complete. Build script + tests done. Ready for 06-03.
 
 ## Progress:
 [███████████████████████████████░░] 62% (5/8 phases)
@@ -51,6 +51,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Order Tracking Workflow (Phase 4) — Built ✓
 - Graceful Handoff (Phase 5) — Built ✓
 - Semantic Routing (Phase 6 Plan 1) — Foundation built ✓
+- Build Script + Tests (Phase 6 Plan 2) — JUDGE-01, JUDGE-02, JUDGE-03 ✓
 
 ### Remaining phases
 - Phase 6: Semantic AI Router — Context gathered, ready for planning
@@ -75,5 +76,5 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 | `.planning/phases/08-ux-demo/08-CONTEXT.md` | Phase 8 detailed context |
 
 ## Session Continuity
-Phase 6 context gathered (2026-05-17). 34 decisions captured across 9 gray areas including transformer.js integration, reference embeddings, SemanticRouter API, off-topic semantics, failure handling, return service feature flag, build-time embedding generation, rollout strategy, and integration testing.
-Resume file: `.planning/phases/06-semantic-ai-router/06-CONTEXT.md`
+Phase 6 Plans 1-2 complete (2026-05-18). Build script generates embeddings.json, 13 unit tests + 28 eval tests passing. Ready for 06-03 (Integration).
+Resume file: `.planning/phases/06-semantic-ai-router/06-02-SUMMARY.md`
