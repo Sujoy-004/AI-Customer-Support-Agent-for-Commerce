@@ -83,6 +83,7 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 │   │   ├── escalationHumanAgent.ts     # 3-message canned script
 │   │   └── types.ts                   # All TypeScript definitions
 │   ├── config/synonyms/     # Size, color, material synonym tables
+│   ├── config/semantic/     # Reference phrases + pre-computed embeddings for SemanticRouter
 │   └── tests/eval/          # Scenario evaluation tests
 ├── e2e/                     # Playwright E2E tests
 │   ├── playwright.config.ts       # Main E2E config
