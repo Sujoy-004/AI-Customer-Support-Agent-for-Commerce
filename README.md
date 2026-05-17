@@ -203,7 +203,9 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Contribution Note
 
-Solo participant. Product thinking, architecture, implementation, testing, and documentation all by one developer.
+**Participants:** Sujoy and Sparsh
+
+**Roles:** *to be filled*
 
 ## Troubleshooting
 
