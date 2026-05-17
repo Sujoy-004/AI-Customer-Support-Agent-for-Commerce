@@ -92,9 +92,7 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 │       ├── catalogQuery.spec.ts    # Catalog query tests (3)
 │       ├── offTopic.spec.ts        # Off-topic detection tests (4)
 │       ├── stockCheck.spec.ts      # Stock check tests (4)
-│       └── domSnapshot.spec.ts     # DOM snapshot test (1)
-├── .opencode/               # OpenCode plugin config (dev tooling)
-├── .planning/               # GSD planning artifacts
+│               └── domSnapshot.spec.ts     # DOM snapshot test (1)
 ├── tsconfig.json            # Root TypeScript config
 ├── tsconfig.widget.json     # Widget-specific TS config
 ├── vitest.config.ts         # Vitest configuration
