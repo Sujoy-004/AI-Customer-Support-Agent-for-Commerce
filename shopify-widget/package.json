@@ -4,15 +4,21 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "prebuild": "npx tsx scripts/generateEmbeddings.ts",
+    "predev": "npx tsx scripts/generateEmbeddings.ts",
+    "build": "vite build",
+    "dev": "vite --open /demo/index.html",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "dev": "vite --open /demo/index.html"
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.6"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0"
   }
 }
