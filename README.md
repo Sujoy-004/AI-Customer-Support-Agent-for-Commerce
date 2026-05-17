@@ -51,17 +51,22 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 
 ```
 ├── shopify-widget/          # Browser widget (ChatWidget DOM rendering)
+│   ├── index.html           # Demo page — loads dist/widget.js
 │   ├── src/ChatWidget.ts    # Main widget class — pipeline, events, DOM
-│   ├── src/OrderCard.ts     # Order status HTML card renderer
+│   ├── src/orderCard.ts     # Order status HTML card renderer
 │   ├── src/styles/widget.css # CSS with escalation components
-│   └── tests/               # Widget integration tests
+│   ├── tests/               # Widget integration tests
+│   ├── vite.config.ts       # Vite IIFE library build config
+│   └── vitest.config.ts     # Widget-specific Vitest config
 ├── src/
+│   ├── integrations/        # IDE integrations (Antigravity, Context7)
 │   ├── services/            # All core services
 │   │   ├── catalogService.ts          # Product search, stock, variants
 │   │   ├── catalogIntentDetector.ts   # Intent classification + parsing
 │   │   ├── orderService.ts            # Order lookup by ID/email/number
 │   │   ├── orderIntentDetector.ts     # Order intent + email/number extraction
 │   │   ├── orderResponseFormatter.ts  # Order query → formatted response
+│   │   ├── returnService.ts           # Return eligibility + submission
 │   │   ├── mockOrderData.ts           # Mock orders for testing
 │   │   ├── offTopicDetector.ts        # Off-topic guard
 │   │   ├── responseGrounder.ts        # Policy grounding check
@@ -80,7 +85,9 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 │   ├── config/synonyms/     # Size, color, material synonym tables
 │   └── tests/eval/          # Scenario evaluation tests
 ├── e2e/                     # Playwright E2E tests
-│   ├── playwright.config.ts
+│   ├── playwright.config.ts       # Main E2E config
+│   ├── playwright.dom.config.ts   # DOM snapshot config
+│   ├── dev-server.mjs             # Dev server helper
 │   └── specs/
 │       ├── catalogQuery.spec.ts    # Catalog query tests (3)
 │       ├── offTopic.spec.ts        # Off-topic detection tests (4)
@@ -88,10 +95,12 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 │       └── domSnapshot.spec.ts     # DOM snapshot test (1)
 ├── .opencode/               # OpenCode plugin config (dev tooling)
 ├── .planning/               # GSD planning artifacts
+├── tsconfig.json            # Root TypeScript config
+├── tsconfig.widget.json     # Widget-specific TS config
 ├── vitest.config.ts         # Vitest configuration
-├── package.json
-└── DESIGN.md                # Berkeley Mono design system spec
-```
+├── DESIGN.md                # Berkeley Mono design system spec
+├── hackathon.md             # Hackathon rules & requirements
+└── package.json
 
 ## Architecture
 
