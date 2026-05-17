@@ -175,3 +175,35 @@ export interface OrderDataSource {
   getOrdersByEmail(email: string): Promise<Order[]>;
   getOrderByNumber(orderNumber: number): Promise<Order | null>;
 }
+
+// ==============================
+// Escalation Types
+// ==============================
+
+export type EscalationStatus =
+  | 'IDLE' | 'OFFERED' | 'CONFIRMING'
+  | 'TRANSFERRING' | 'QUEUED' | 'CONNECTED'
+  | 'CANCELLED' | 'FAILED';
+
+export type EscalationTrigger = 'explicit' | 'frustration' | 'none';
+
+export type EscalationEvent =
+  | 'OFFER' | 'CONFIRM' | 'QUEUE' | 'CONNECT'
+  | 'CANCEL' | 'RESET' | 'FAIL' | 'RETRY' | 'ABANDON';
+
+export interface EscalationState {
+  status: EscalationStatus;
+  triggerType: EscalationTrigger;
+  queuedAt: number | null;
+  position: number;
+  lastContext: { userMessages: string[]; agentResponse: string | null };
+}
+
+export interface EscalationChatMessage {
+  id: string;
+  role: 'system';
+  text: string;
+  timestamp: number;
+  status: 'sending' | 'delivered' | 'error';
+  subtype: 'escalation-offer' | 'frustration-offer' | 'transferring' | 'queue' | 'connected';
+}

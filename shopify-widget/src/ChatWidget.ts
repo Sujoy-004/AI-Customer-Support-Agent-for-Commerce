@@ -10,6 +10,12 @@ import { OrderService } from '../../src/services/orderService';
 import { MockOrderDataSource } from '../../src/services/mockOrderData';
 import { OrderIntentDetector } from '../../src/services/orderIntentDetector';
 import { formatOrderResponse } from '../../src/services/orderResponseFormatter';
+import { EscalationDetector } from '../../src/services/escalationDetector';
+import { EscalationStateMachine } from '../../src/services/escalationStateMachine';
+import { EscalationQueueSimulator } from '../../src/services/escalationQueueSimulator';
+import { EscalationTransferHandler } from '../../src/services/escalationTransferHandler';
+import { HumanAgentSimulator } from '../../src/services/escalationHumanAgent';
+import type { EscalationChatMessage } from '../../src/services/types';
 
 // Initialize our services
 const refusalResponseService = new RefusalResponseService(offTopicDetector);
@@ -19,10 +25,11 @@ const policyService = new PolicyService();
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'agent' | 'error';
+  role: 'user' | 'agent' | 'system' | 'error';
   text: string;
   timestamp: number;
   status: 'sending' | 'delivered' | 'error';
+  isHumanAgent?: boolean;
 }
 
 export interface ChatWidgetOptions {
@@ -33,6 +40,8 @@ export interface ChatWidgetOptions {
   catalogService?: CatalogService;
   orderService?: OrderService;
   orderIntentDetector?: OrderIntentDetector;
+  escalationDetector?: EscalationDetector;
+  escalationStateMachine?: EscalationStateMachine;
 }
 
 export interface ChatWidgetState {
@@ -51,6 +60,11 @@ export class ChatWidget {
   private state: ChatWidgetState;
   private _catalogIntentDetector!: CatalogIntentDetector;
   private _orderIntentDetector!: OrderIntentDetector;
+  private _escalationDetector!: EscalationDetector;
+  private _escalationStateMachine!: EscalationStateMachine;
+  private _escalationQueueSimulator: EscalationQueueSimulator | null = null;
+  private _escalationTransferHandler: EscalationTransferHandler | null = null;
+  private _humanAgentSimulator: HumanAgentSimulator | null = null;
   private toggleBtn!: HTMLButtonElement;
   private widget!: HTMLDivElement;
   private offlineBanner!: HTMLDivElement;
@@ -86,6 +100,18 @@ export class ChatWidget {
     } else {
       const catalogService = options.catalogService || new CatalogService(new MockCatalogDataSource());
       this._catalogIntentDetector = new CatalogIntentDetector(catalogService);
+    }
+
+    // Escalation services — optionally injectable for tests
+    if (options.escalationDetector) {
+      this._escalationDetector = options.escalationDetector;
+    } else {
+      this._escalationDetector = new EscalationDetector();
+    }
+    if (options.escalationStateMachine) {
+      this._escalationStateMachine = options.escalationStateMachine;
+    } else {
+      this._escalationStateMachine = new EscalationStateMachine();
     }
 
     this._init();
@@ -263,7 +289,149 @@ export class ChatWidget {
     };
   }
 
+  _createSystemMessage(text: string, subtype: EscalationChatMessage['subtype']): EscalationChatMessage {
+    return {
+      id: this._generateId(),
+      role: 'system',
+      subtype,
+      text,
+      timestamp: Date.now(),
+      status: 'delivered',
+    };
+  }
+
   _renderMessage(msg: ChatMessage): void {
+    if (msg.role === 'system') {
+      const systemMsg = msg as EscalationChatMessage;
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble--system';
+
+      switch (systemMsg.subtype) {
+        case 'escalation-offer':
+        case 'frustration-offer': {
+          bubble.className += ' chat-bubble--escalation-offer';
+          if (systemMsg.subtype === 'frustration-offer') {
+            bubble.classList.add('chat-bubble--frustration');
+          }
+          bubble.dataset.messageId = msg.id;
+
+          const header = document.createElement('div');
+          header.className = 'chat-bubble__header';
+          const roleLabel = document.createElement('span');
+          roleLabel.className = 'chat-bubble__role';
+          roleLabel.textContent = 'Support';
+          const time = document.createElement('time');
+          time.className = 'chat-bubble__time';
+          time.textContent = this._formatTimestamp(msg.timestamp);
+          header.appendChild(roleLabel);
+          header.appendChild(time);
+
+          const content = document.createElement('div');
+          content.className = 'chat-bubble__content';
+          content.textContent = msg.text;
+
+          const actions = document.createElement('div');
+          actions.className = 'chat-bubble__actions';
+
+          const confirmBtn = document.createElement('button');
+          confirmBtn.className = 'chat-bubble__action-btn chat-bubble__action-btn--confirm';
+          confirmBtn.textContent = systemMsg.subtype === 'frustration-offer' ? 'Yes, please' : 'Confirm';
+          confirmBtn.addEventListener('click', () => this._handleEscalationConfirm());
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'chat-bubble__action-btn chat-bubble__action-btn--cancel';
+          cancelBtn.textContent = systemMsg.subtype === 'frustration-offer' ? "No, I'll keep trying" : 'Cancel';
+          cancelBtn.addEventListener('click', () => this._handleEscalationCancel());
+
+          actions.appendChild(confirmBtn);
+          actions.appendChild(cancelBtn);
+
+          bubble.appendChild(header);
+          bubble.appendChild(content);
+          bubble.appendChild(actions);
+          break;
+        }
+        case 'transferring': {
+          bubble.className += ' chat-bubble--transferring';
+          bubble.dataset.messageId = msg.id;
+
+          const header = document.createElement('div');
+          header.className = 'chat-bubble__header';
+          const roleLabel = document.createElement('span');
+          roleLabel.className = 'chat-bubble__role';
+          roleLabel.textContent = 'Support';
+          header.appendChild(roleLabel);
+
+          const content = document.createElement('div');
+          content.className = 'chat-bubble__content';
+          content.textContent = msg.text;
+
+          const dot = document.createElement('span');
+          dot.className = 'chat-bubble__dot';
+
+          content.appendChild(dot);
+
+          bubble.appendChild(header);
+          bubble.appendChild(content);
+          break;
+        }
+        case 'queue': {
+          bubble.className += ' chat-bubble--queue';
+          bubble.dataset.messageId = msg.id;
+
+          const header = document.createElement('div');
+          header.className = 'chat-bubble__header';
+          const roleLabel = document.createElement('span');
+          roleLabel.className = 'chat-bubble__role';
+          roleLabel.textContent = 'Support';
+          header.appendChild(roleLabel);
+
+          const content = document.createElement('div');
+          content.className = 'chat-bubble__content';
+
+          const positionRow = document.createElement('div');
+          positionRow.className = 'chat-bubble__position-row';
+
+          const positionText = document.createElement('span');
+          positionText.textContent = msg.text;
+
+          const refreshBtn = document.createElement('button');
+          refreshBtn.className = 'chat-bubble__refresh-btn';
+          refreshBtn.textContent = '↻';
+          refreshBtn.title = 'Refresh position';
+          refreshBtn.addEventListener('click', () => this._handleQueueRefresh());
+
+          positionRow.appendChild(positionText);
+          positionRow.appendChild(refreshBtn);
+          content.appendChild(positionRow);
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'chat-bubble__action-btn chat-bubble__action-btn--danger';
+          cancelBtn.textContent = 'Cancel escalation';
+          cancelBtn.addEventListener('click', () => this._handleEscalationCancel());
+
+          bubble.appendChild(header);
+          bubble.appendChild(content);
+          bubble.appendChild(cancelBtn);
+          break;
+        }
+        case 'connected': {
+          bubble.className += ' chat-bubble--connected';
+          bubble.dataset.messageId = msg.id;
+
+          const content = document.createElement('div');
+          content.className = 'chat-bubble__content';
+          content.textContent = msg.text;
+
+          bubble.appendChild(content);
+          break;
+        }
+      }
+
+      this.messageList.appendChild(bubble);
+      return;
+    }
+
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble chat-bubble--${msg.role === 'user' ? 'user' : msg.role === 'agent' ? 'agent' : 'error'}`;
     bubble.dataset.messageId = msg.id;
@@ -300,6 +468,12 @@ export class ChatWidget {
       bubble.appendChild(header);
       bubble.appendChild(content);
       bubble.appendChild(statusEl);
+    }
+
+    if (msg.role === 'agent' && msg.isHumanAgent && bubble.querySelector('.chat-bubble__role')) {
+      const roleSpan = bubble.querySelector('.chat-bubble__role') as HTMLElement;
+      roleSpan.textContent = 'Human Agent';
+      roleSpan.classList.add('chat-bubble__role--human');
     }
 
     this.messageList.appendChild(bubble);
@@ -395,7 +569,33 @@ export class ChatWidget {
       return "I'm here to help with questions about our store, products, policies, and orders. Please ask about something related to our store.";
     }
 
-    // Step 2: Order intent detection (order tracking, status lookup) per D-11
+    // Step 2: Escalation detection (D-14 — after off-topic, before order tracking)
+    if (this._escalationStateMachine.isActive()) {
+      const systemMsg = this._escalationStateMachine.getCurrentSystemMessage();
+      if (systemMsg) {
+        const msg = this._createSystemMessage(systemMsg, this._getSubtypeForCurrentState());
+        this.addMessage(msg);
+        return '';
+      }
+    }
+
+    const escalationType = this._escalationDetector.detectIntent(userQuery);
+    if (escalationType !== 'none') {
+      if (this._escalationDetector.isDuplicateRequest()) {
+        return "You can ask me about products, policies, and orders instead.";
+      }
+
+      this._escalationStateMachine.transition('OFFER', escalationType);
+
+      const offerSubtype = escalationType === 'frustration' ? 'frustration-offer' : 'escalation-offer';
+      const offerText = this._escalationStateMachine.getCurrentSystemMessage() || '';
+
+      const msg = this._createSystemMessage(offerText, offerSubtype);
+      this.addMessage(msg);
+      return '';
+    }
+
+    // Step 3: Order intent detection
     const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
     if (orderResult.type === 'order_found') {
       return formatOrderResponse(orderResult);
@@ -404,13 +604,13 @@ export class ChatWidget {
       return formatOrderResponse(orderResult);
     }
 
-    // Step 3: Catalog intent detection (product availability, sizing, search)
+    // Step 4: Catalog intent detection (product availability, sizing, search)
     const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
     if (catalogResult.type !== 'not_catalog') {
       return formatCatalogResponse(userQuery, catalogResult);
     }
 
-    // Step 4: Policy query handling
+    // Step 5: Policy query handling
     const policyResponse = await this._handlePolicyQuery(userQuery);
     if (policyResponse) {
       const grounding = await responseGrounder.groundResponse(userQuery, policyResponse);
@@ -421,12 +621,12 @@ export class ChatWidget {
       return policyResponse;
     }
 
-    // Step 5: Greeting
+    // Step 6: Greeting
     if (lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
       return "Hello! I'm here to help with questions about our products, shipping, warranty, and return policies. How can I assist you today?";
     }
 
-    // Step 6: Fallback
+    // Step 7: Fallback
     return "I'm here to help with questions about our store products, policies, and orders. You can ask me about shipping options, warranty coverage, return procedures, or product availability.";
   }
 
@@ -435,6 +635,130 @@ export class ChatWidget {
     const msg = this._createMessage(text, 'agent');
     this.addMessage(msg);
     return msg;
+  }
+
+  // ── Escalation helpers ──────────────────────────────
+
+  private _getSubtypeForCurrentState(): EscalationChatMessage['subtype'] {
+    const state = this._escalationStateMachine.getState();
+    switch (state.status) {
+      case 'OFFERED': return state.triggerType === 'frustration' ? 'frustration-offer' : 'escalation-offer';
+      case 'TRANSFERRING': return 'transferring';
+      case 'QUEUED': return 'queue';
+      case 'CONNECTED': return 'connected';
+      default: return 'escalation-offer';
+    }
+  }
+
+  private async _handleEscalationConfirm(): Promise<void> {
+    const state = this._escalationStateMachine.getState();
+
+    if (state.status === 'FAILED') {
+      await this._executeTransferRetry();
+      return;
+    }
+
+    if (state.status !== 'OFFERED') return;
+
+    this._escalationStateMachine.transition('CONFIRM');
+    this._escalationStateMachine.transition('TRANSFERRING');
+
+    const transferringMsg = this._createSystemMessage('Transferring you to a human agent...', 'transferring');
+    this._removeLastSystemMessage();
+    this.addMessage(transferringMsg);
+
+    if (!this._escalationTransferHandler) {
+      this._escalationTransferHandler = new EscalationTransferHandler(20000);
+    }
+
+    const result = await this._escalationTransferHandler.startTransfer();
+
+    if (result === 'connected') {
+      this._escalationStateMachine.transition('QUEUE');
+      this._showQueueBubble();
+    } else {
+      this._escalationStateMachine.transition('FAIL');
+      const failText = "I'm sorry, no human agents are available right now. I can keep helping you, or you can try again later.";
+      const retryMsg = this._createSystemMessage(failText, 'escalation-offer');
+      this._removeLastSystemMessage();
+      this.addMessage(retryMsg);
+    }
+  }
+
+  private async _executeTransferRetry(): Promise<void> {
+    this._removeLastSystemMessage();
+
+    const transferringMsg = this._createSystemMessage('Retrying transfer...', 'transferring');
+    this.addMessage(transferringMsg);
+
+    const result = await this._escalationTransferHandler!.retry();
+
+    if (result === 'connected') {
+      this._escalationStateMachine.transition('QUEUE');
+      this._showQueueBubble();
+    } else {
+      const fallbackText = "Something went wrong while trying to transfer you. Please try again, or contact support@store.com directly.";
+      const fallbackMsg = this._createSystemMessage(fallbackText, 'transferring');
+      this._removeLastSystemMessage();
+      this.addMessage(fallbackMsg);
+    }
+  }
+
+  private _showQueueBubble(): void {
+    const position = this._escalationQueueSimulator
+      ? this._escalationQueueSimulator.getPosition()
+      : Math.floor(Math.random() * 5) + 1;
+
+    const queueMsg = this._createSystemMessage(`You're number ${position} in the queue. An agent will be with you shortly.`, 'queue');
+    this._removeLastSystemMessage();
+    this.addMessage(queueMsg);
+
+    setTimeout(() => this._transferToAgent(), 8000);
+  }
+
+  private _transferToAgent(): void {
+    this._escalationStateMachine.transition('CONNECT');
+    const connectedMsg = this._createSystemMessage("You're now connected with a human agent.", 'connected');
+    this.addMessage(connectedMsg);
+
+    if (!this._humanAgentSimulator) {
+      this._humanAgentSimulator = new HumanAgentSimulator();
+    }
+    this._humanAgentSimulator.reset();
+    const timer = setInterval(() => {
+      const msg = this._humanAgentSimulator!.next();
+      if (msg === null) {
+        clearInterval(timer);
+        return;
+      }
+      const humanMsg = this._createMessage(msg, 'agent');
+      (humanMsg as ChatMessage).isHumanAgent = true;
+      this.addMessage(humanMsg);
+    }, 2000);
+  }
+
+  private _handleEscalationCancel(): void {
+    this._escalationStateMachine.transition('CANCEL');
+    this._escalationDetector.markCancelled();
+    this._escalationStateMachine.transition('RESET');
+
+    const cancelMsg = this._createMessage('Escalation cancelled. How else can I help you?', 'agent');
+    this._removeLastSystemMessage();
+    this.addMessage(cancelMsg);
+  }
+
+  private _handleQueueRefresh(): void {
+    if (!this._escalationQueueSimulator) return;
+    const newPosition = this._escalationQueueSimulator.refresh();
+    const refreshMsg = this._createSystemMessage(`You're number ${newPosition} in the queue. An agent will be with you shortly.`, 'queue');
+    this._removeLastSystemMessage();
+    this.addMessage(refreshMsg);
+  }
+
+  private _removeLastSystemMessage(): void {
+    const messages = this.messageList.querySelectorAll('.chat-bubble--system');
+    const last = messages[messages.length - 1];
+    if (last) last.remove();
   }
 
   destroy(): void {

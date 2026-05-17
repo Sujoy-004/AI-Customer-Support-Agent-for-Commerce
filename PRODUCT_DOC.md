@@ -3,7 +3,7 @@
 
 > **Track:** Kasparro Agentic Commerce Hackathon — Track 4
 > **Stack:** TypeScript, Vitest, Playwright, OpenCode Plugin System
-> **Status:** 4 of 6 phases complete (May 2026)
+> **Status:** 5 of 6 phases complete (May 2026)
 
 ## What Problem Does This Solve?
 
@@ -64,8 +64,14 @@ Secure order status retrieval with fulfillment tracking. Rich HTML order card wi
 - **OrderCard** (`shopify-widget/src/OrderCard.ts`) — DOM component for rich order card with visual timeline
 - **MockOrderDataSource** (`src/services/mockOrderData.ts`) — mock orders with 9 statuses, full timeline events
 
-### Phase 5 — Graceful Escalation (NOT STARTED)
-Detect complex or frustrated intents and seamlessly hand off to human support. Planned but not yet implemented.
+### Phase 5 — Graceful Escalation (COMPLETE)
+- **EscalationDetector** (`src/services/escalationDetector.ts`) — Keyword-based detection for explicit handoff ("talk to human", "speak to agent") and frustration signals ("useless", "terrible", 3+ non-resolving messages)
+- **EscalationStateMachine** (`src/services/escalationStateMachine.ts`) — FSM with valid transition matrix (IDLE → OFFERED → CONFIRMING → TRANSFERRING → QUEUED → CONNECTED), localStorage persistence, duplicate request blocking
+- **EscalationQueueSimulator** (`src/services/escalationQueueSimulator.ts`) — Dynamic queue position (random 1-5), 8s refresh interval
+- **EscalationTransferHandler** (`src/services/escalationTransferHandler.ts`) — 20s transfer timeout with retry and email fallback
+- **HumanAgentSimulator** (`src/services/escalationHumanAgent.ts`) — 3-message canned script for connected state
+- **ChatWidget integration** — Pipeline step 2 (after off-topic, before order), 5 system message bubble types (escalation-offer, frustration-offer, transferring, queue, connected)
+- **CSS** — 13 new classes + pulse animation keyframes
 
 ### Phase 6 — Return Initiation Workflow (NOT STARTED)
 Full in-chat return initiation with eligibility checks against policy rules. Planned but not yet implemented.
@@ -97,10 +103,10 @@ The critical differentiator: **Phase 3 (catalog queries) uses ZERO LLM calls.** 
 6. **Policy queries** — "what's your return policy?" → grounded policy response
 7. **Off-topic refusal** — "what's the weather?" → polite refusal with redirect suggestions
 8. **Order tracking** — "track order #1234 for email@example.com" → rich order card with timeline
+9. **Graceful handoff** — "talk to human" → escalation offer → queue → human agent connection
 
 ### Planned (Not Yet Implemented)
-9. **Return initiation** — in-chat return submission
-10. **Graceful handoff** — human agent escalation
+10. **Return initiation** — in-chat return submission
 
 ## User Experience
 
@@ -134,8 +140,7 @@ There is **no welcome message**. The widget opens to an empty message area. This
 1. **Browser-side only** — All services run in the browser. The `_generateAgentResponse` pipeline in ChatWidget calls local services, not a server API. This means every page load creates new service instances. A production deployment would move services to a Shopify App backend.
 2. **Mock data** — Catalog and policy data are mock implementations. `CatalogDataSource` and `PolicyService` have interfaces ready for live API connections but no Shopify Admin API client has been written yet.
 3. **No return initiation** (Phase 6) — The most common support workflow is not yet automated.
-4. **No human handoff** (Phase 5) — Complex or escalated cases have no escape hatch to a human agent.
-5. **No persistent conversation history** — Context expires after 5 minutes or 3 turns; no long-term session storage.
+4. **No persistent conversation history** — Context expires after 5 minutes or 3 turns; no long-term session storage.
 
 ## Future Roadmap
 
@@ -146,7 +151,7 @@ There is **no welcome message**. The widget opens to an empty message area. This
 | 2. Policy Grounding | Complete | PolicyService, OffTopicDetector, ResponseGrounder |
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderCard, multi-turn auth |
-| 5. Graceful Escalation | Not started | Human handoff |
+| 5. Graceful Escalation | Complete | Human handoff with queue, transfer, canned script |
 | 6. Return Initiation | Not started | In-chat return workflow |
 
 ### Post-Hackathon

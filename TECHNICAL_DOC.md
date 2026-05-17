@@ -18,9 +18,9 @@ The system uses a browser-side layered architecture. All services run in the use
 ├─────────────────────────────────────────────────────────────┤
 │                   Orchestration Layer                         │
 │  ChatWidget._generateAgentResponse()                          │
-│  └─ Pipeline: OffTopicDetector → OrderIntentDetector →        │
-│     CatalogIntentDetector → PolicyService → Greeting →        │
-│     Fallback                                                   │
+│  └─ Pipeline: OffTopicDetector → EscalationDetector →        │
+│     OrderIntentDetector → CatalogIntentDetector →             │
+│     PolicyService → Greeting → Fallback                      │
 ├─────────────────────────────────────────────────────────────┤
 │                   Service Layer                               │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
@@ -39,6 +39,18 @@ The system uses a browser-side layered architecture. All services run in the use
 │  │RefusalResponseService│ │ OrderCard                     │  │
 │  │(polite refusals)     │ │ (DOM component for orders)    │  │
 │  └──────────────────────┘ └───────────────────────────────┘  │
+│  ┌────────────────────────────┐ ┌─────────────────────────┐  │
+│  │EscalationDetector          │ │EscalationStateMachine   │  │
+│  │(handoff + frustration)     │ │(FSM + localStorage)     │  │
+│  └────────────────────────────┘ └─────────────────────────┘  │
+│  ┌──────────────────────────┐ ┌──────────────────────────┐  │
+│  │EscalationQueueSimulator  │ │EscalationTransferHandler │  │
+│  │(position 1-5, refresh)   │ │(20s timeout, retry)      │  │
+│  └──────────────────────────┘ └──────────────────────────┘  │
+│  ┌──────────────────────────┐                                │
+│  │HumanAgentSimulator       │                                │
+│  │(3-message canned script) │                                │
+│  └──────────────────────────┘                                │
 ├─────────────────────────────────────────────────────────────┤
 │                   Data Layer                                  │
 │  ┌────────────────────┐  ┌────────────────────────────┐       │
@@ -77,8 +89,13 @@ The system uses a browser-side layered architecture. All services run in the use
 | `src/services/responseGrounder.ts` | 457 | Validates agent responses against actual policy data |
 | `src/services/refusalResponses.ts` | 178 | Generates contextual polite refusal messages |
 | `src/services/policyService.ts` | 93 | Policy data management with caching |
-| `src/services/types.ts` | 160+ | All TypeScript interfaces — includes Order, OrderStatus, TrackingEvent, OrderDataSource |
+| `src/services/types.ts` | 210+ | All TypeScript interfaces — includes Order, OrderStatus, TrackingEvent, OrderDataSource, Escalation* types |
 | `src/services/synonymResolver.ts` | 69 | Maps aliases to canonical option values |
+| `src/services/escalationDetector.ts` | 64 | Keyword-based escalation and frustration detection |
+| `src/services/escalationStateMachine.ts` | 142 | FSM for escalation workflow with localStorage persistence |
+| `src/services/escalationQueueSimulator.ts` | 45 | Dynamic queue position (1-5) with refresh capability |
+| `src/services/escalationTransferHandler.ts` | 48 | 20s transfer timeout, retry logic, email fallback |
+| `src/services/escalationHumanAgent.ts` | 26 | 3-message canned script player for connected state |
 | `src/services/mockCatalogData.ts` | 332 | 7 products with 52 variants, stock overrides |
 | `src/services/mockOrderData.ts` | ~200 | Mock orders with 9 statuses, full timeline events |
 | `src/services/conversationContext.ts` | 49 | Cross-turn context manager |
@@ -277,7 +294,7 @@ What happens:
 ### 4.1 Test Architecture
 
 ```
-TypeScript Source ─→ Vitest (unit/integration) ─→ 254 tests, 13 suites
+TypeScript Source ─→ Vitest (unit/integration) ─→ 313 tests, 18 test files
 Browser Widget   ─→ Playwright (E2E)          ─→ 3 spec files (11 tests)
 Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 ```
@@ -296,6 +313,11 @@ Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 | `src/services/orderService.test.ts` | New | Order lookup, auth validation, status resolution |
 | `src/services/orderIntentDetector.test.ts` | New | Order intent detection, multi-turn auth flow, context expiry |
 | `src/services/orderResponseFormatter.test.ts` | New | Order response formatting, error messages |
+| `src/services/escalationDetector.test.ts` | New | Explicit/frustration keyword detection, non-resolving counter |
+| `src/services/escalationStateMachine.test.ts` | New | FSM transitions, localStorage persistence, invalid transition rejection |
+| `src/services/escalationQueueSimulator.test.ts` | New | Queue position 1-5, refresh, interval updates |
+| `src/services/escalationTransferHandler.test.ts` | New | 20s timeout, retry logic |
+| `src/services/escalationHumanAgent.test.ts` | New | 3-message canned script sequence |
 | `shopify-widget/tests/ChatWidget.integration.test.ts` | Integration | End-to-end widget + service integration |
 | `shopify-widget/tests/NetworkDetector.test.ts` | Unit | Network state detection |
 | `src/tests/eval/catalogIntelligence.eval.test.ts` | ~20 eval scenarios | Scenario-based eval for catalog queries |
@@ -401,6 +423,14 @@ User Input
 │ OffTopicDetector    │──── isOffTopic? ──► RefusalResponseService ──► Response
 └─────────────────────┘
     │ (not off-topic)
+    ▼
+┌──────────────────────────┐
+│ EscalationDetector      │──── escalation active? ──► system message (offer/queue/connected)
+│ ├─ detectIntent()       │──── escalation trigger ──► EscalationStateMachine ──► system message
+│ ├─ nonResolvingCount    │
+│ └─ isDuplicateRequest() │
+└──────────────────────────┘
+    │ (not escalating)
     ▼
 ┌──────────────────────────┐
 │ OrderIntentDetector      │──── order found ──► formatOrderResponse() ──► Response

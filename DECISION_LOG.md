@@ -367,3 +367,105 @@ Production deployment will move to a Shopify App backend with a REST/GraphQL API
 **Because:** Users whose orders are on hold need to see where the hold happened in the fulfillment process. A hidden timeline would be confusing ("is my order lost?"). A full timeline with "On Hold" status marker provides the clearest signal: "You got to this point, and it's stopped here." The amber color distinguishes it from cancelled (red) and active (green) states.
 
 **Tradeoff:** Adds another visual state to the OrderCard component. Three distinct timeline styles (active, cancelled, on-hold) means more CSS and rendering branches.
+
+---
+
+## 2026-05-17: Keyword-Based Escalation Detection (Phase 5)
+
+**Considered:**
+- LLM-based escalation detection: classify query as needing human handoff
+- Sentiment analysis API for frustration detection
+- Keyword-based approach: explicit handoff keywords + frustration keywords + non-resolving message count
+
+**Chose:** Keyword-based detection with three triggers: explicit keywords ("talk to human", "speak to agent"), frustration keywords ("useless", "terrible"), and 3+ non-resolving messages.
+
+**Because:**
+- Zero API cost — no LLM or sentiment API needed
+- Deterministic — exact keyword matching, no ambiguity
+- Testable — each keyword group has dedicated tests
+- The non-resolving counter handles the "silent frustration" case where users don't explicitly say they're frustrated but keep getting unhelpful responses
+
+**Tradeoff:** Cannot detect novel frustration phrases not in the keyword list. The list is finite and may need maintenance.
+
+Source: `src/services/escalationDetector.ts` lines 10-23, 40.
+
+---
+
+## 2026-05-17: Escalation State Machine with Valid Transition Matrix (Phase 5)
+
+**Considered:**
+- Unrestricted state transitions (any event can trigger any state)
+- Hard-coded if/else state logic
+- Explicit valid transition matrix defining allowed transitions per state
+
+**Chose:** Explicit `VALID_TRANSITIONS` record mapping each `EscalationStatus` to an array of allowed `EscalationEvent` values. Invalid transitions return false silently.
+
+**Because:**
+- Security: prevents invalid state jumps that could cause undefined behavior
+- Testable: each transition can be explicitly verified in tests
+- Self-documenting: the matrix is a single source of truth for allowed flows
+- Valid transitions: IDLE→OFFERED, OFFERED→CONFIRMING/CANCELLED, CONFIRMING→QUEUED/CANCELLED, etc.
+
+**Tradeoff:** Slightly more code than hard-coded if/else, but the explicitness is worth it for a security-sensitive flow (human handoff involves user trust).
+
+Source: `src/services/escalationStateMachine.ts` lines 9-18.
+
+---
+
+## 2026-05-17: localStorage Persistence for Escalation State (Phase 5)
+
+**Considered:**
+- No persistence (state lost on page refresh)
+- Session storage only
+- localStorage for cross-session persistence
+
+**Chose:** localStorage with graceful fallback — state persists across page refreshes, but if localStorage is unavailable or corrupted, the state machine initializes to IDLE silently.
+
+**Because:**
+- Users may refresh the page during an escalation flow — losing their place would be frustrating
+- Graceful fallback prevents errors — if localStorage is disabled or full, the system just starts fresh
+- No sensitive data stored — escalation state (status, position) is not PII
+
+**Tradeoff:** If localStorage contains corrupted JSON, the user loses their escalation progress with no warning. The catch block silently creates a fresh state.
+
+Source: `src/services/escalationStateMachine.ts` lines 127-134 (load), 136-141 (save).
+
+---
+
+## 2026-05-17: Pipeline Position — Escalation After Off-Topic (Phase 5)
+
+**Considered:**
+- Escalation at pipeline start (before any detection)
+- Escalation at end of pipeline (fallback)
+- Escalation after off-topic, before order detection (D-14 design decision)
+
+**Chose:** Escalation detection at pipeline step 2 — runs after off-topic check but before order/catalog detection. Active escalations short-circuit the rest of the pipeline.
+
+**Because:**
+- Off-topic users shouldn't be offered human handoff — they're asking about weather, not store issues
+- Order detection needs to be bypassed when escalation is active — if user is in escalation flow, their queries should not trigger order lookups
+- Short-circuit pattern: `if (isActive())` returns early with current system message
+
+**Tradeoff:** If a user's escalation is cancelled and they immediately ask an order question, there's one extra round-trip through the pipeline. Negligible performance impact.
+
+Source: `shopify-widget/src/ChatWidget.ts` lines 572-596.
+
+---
+
+## 2026-05-17: Queue Position from ChatWidget (Not State Machine)
+
+**Considered:**
+- Queue position stored in EscalationStateMachine
+- Queue position generated in ChatWidget
+- Queue position from EscalationQueueSimulator service
+
+**Chose:** ChatWidget generates position via `Math.floor(Math.random() * 5) + 1` fallback, with `EscalationQueueSimulator` class available for interval-based updates (not currently wired).
+
+**Because:**
+- Simpler implementation — no state machine state update needed for position
+- Queue simulator available for future enhancement (8s refresh interval)
+- The design decision (W-01 in code review) is noted — position is not stored in state machine
+
+**Tradeoff:** Queue position is not persisted across page refreshes. The `EscalationQueueSimulator` class exists but is unused (dead code, noted in review).
+
+Source: `shopify-widget/src/ChatWidget.ts` lines 708-709.

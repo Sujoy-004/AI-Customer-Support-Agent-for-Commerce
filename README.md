@@ -31,7 +31,8 @@ open shopify-widget/index.html
 ```
 ├── shopify-widget/          # Browser widget (ChatWidget DOM rendering)
 │   ├── src/ChatWidget.ts    # Main widget class — pipeline, events, DOM
-│   ├── src/orderCard.ts     # Order status HTML card renderer
+│   ├── src/OrderCard.ts     # Order status HTML card renderer
+│   ├── src/styles/widget.css # CSS with escalation components
 │   └── tests/               # Widget integration tests
 ├── src/
 │   ├── services/            # All core services
@@ -49,6 +50,11 @@ open shopify-widget/index.html
 │   │   ├── synonymResolver.ts         # Canonical → alias mapping
 │   │   ├── conversationContext.ts     # 5min/3turn context manager
 │   │   ├── cacheManager.ts            # Generic TTL cache
+│   │   ├── escalationDetector.ts       # Handoff + frustration detection
+│   │   ├── escalationStateMachine.ts   # FSM with localStorage
+│   │   ├── escalationQueueSimulator.ts # Queue position (1-5)
+│   │   ├── escalationTransferHandler.ts # 20s timeout, retry
+│   │   ├── escalationHumanAgent.ts     # 3-message canned script
 │   │   └── types.ts                   # All TypeScript definitions
 │   ├── config/synonyms/     # Size, color, material synonym tables
 │   └── tests/eval/          # Scenario evaluation tests
@@ -70,14 +76,14 @@ open shopify-widget/index.html
 Three-layer browser-side architecture. All services run in the browser — no backend required.
 
 ```
-User query → OffTopicDetector → CatalogIntentDetector → PolicyService → Response
-              (keyword guard)    (catalog + intent parsing)   (policy lookup)
+User query → OffTopicDetector → EscalationDetector → OrderIntentDetector → CatalogIntentDetector → PolicyService → Response
+              (keyword guard)    (handoff + frustration) (order intent)   (catalog + intent)     (policy lookup)
               │
-              └→ OrderIntentDetector → OrderService → OrderCard
-                 (order intent)       (order lookup)  (HTML card)
+              └→ EscalationStateMachine → EscalationTransferHandler → HumanAgentSimulator
+                 (FSM + localStorage)       (20s timeout)           (3-message script)
 
-Catalog and order queries use ZERO LLM calls — every product lookup, stock check,
-variant resolution, and order tracking goes through deterministic keyword + structured parsing.
+Catalog, order, and escalation use ZERO LLM calls — every product lookup, stock check,
+variant resolution, order tracking, and human handoff goes through deterministic keyword + structured parsing.
 ```
 
 ### Pipeline Flow
@@ -89,11 +95,14 @@ User Input
 OffTopicDetector ── off-topic? ──► RefusalResponseService ──► polite refusal
   │ (on-topic)
   ▼
+EscalationDetector ── active? ──► system message (offer/queue/connected)
+  │                    ── trigger ──► EscalationStateMachine
+  ▼ (not escalating)
+OrderIntentDetector ── order? ──► formatOrderResponse() ──► order card
+  │ (not order)
+  ▼
 CatalogIntentDetector ── catalog? ──► formatCatalogResponse() ──► product info
-  │
-  ├─ not catalog ──► OrderIntentDetector ──► OrderService ──► order status
-  │                   (order intent)         (lookup + email)
-  │
+  │ (not catalog)
   ▼
 PolicyService ── policy? ──► grounded policy response
   │ (not policy)
@@ -110,10 +119,10 @@ Greeting check / Fallback text
 
 ## Testing
 
-- **11 unit/integration test files** (Vitest) — covering catalog, policy, order, and guard services
+- **18 unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, and guard services
 - **3 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks
 - **Eval suite** — 20 scenario-based catalog intelligence evals
-- **Coverage**: 72.54% lines, 66.44% branches (target: 80%+)
+- **Coverage**: 313 tests passing
 
 ```bash
 # Run all Vitest tests
@@ -134,7 +143,7 @@ npx playwright test --config=e2e/playwright.config.ts
 | 2. Policy Grounding | Complete | PolicyService, OffTopicDetector, ResponseGrounder |
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
-| 5. Graceful Handoff | Pending | Human agent handoff |
+| 5. Graceful Handoff | Complete | EscalationDetector, StateMachine, queue, transfer, human agent |
 | 6. Return Initiation | Pending | In-chat return submission |
 
 ## Key Technologies
