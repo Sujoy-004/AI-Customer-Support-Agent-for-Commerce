@@ -12,21 +12,38 @@ Not a generic FAQ wrapper. Executes active workflows: product lookup, stock chec
 
 ## Quick Start
 
+### 1. Install dependencies
+
 ```bash
-# Install dependencies
 npm install
+```
 
-# Type check
-npx tsc --noEmit
+### 2. Run unit tests (optional, 325 tests)
 
-# Run unit and integration tests (325 tests, 19 files)
+```bash
 npx vitest run
+```
 
-# Build the widget bundle, then run E2E browser tests (12 tests, 4 specs)
+### 3. Install Playwright browsers (first time only)
+
+```bash
+npx playwright install chromium
+```
+
+### 4. Run E2E browser tests (12 tests)
+
+```bash
 npx playwright test --config=e2e/playwright.config.ts
+```
 
-# Build the widget and open the demo page
+This builds the widget (tsc + vite), serves it on port 3000, runs tests.
+
+### 5. Open the widget demo in your browser
+
+```bash
+# Build the widget bundle (IIFE)
 npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.config.ts
+
 # Then open shopify-widget/index.html in your browser
 ```
 
@@ -168,8 +185,17 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Demo Video
 
-*A 3–5 minute demo video will be uploaded as YouTube unlisted before the submission deadline (20th May 2026). The walkthrough will cover: widget loading, product search, stock check, order tracking, return initiation, and graceful human handoff.*
+*coming before 20th May 2026*
 
 ## Screenshots
 
-*Product walkthrough screenshots will be added before the submission deadline.*
+*coming before 20th May 2026*
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `npx playwright test` fails — browser not found | Run `npx playwright install chromium` |
+| Widget shows blank page | Run the build step first: `npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.config.ts` |
+| E2E tests hang or fail | Run tests one at a time: `npx playwright test --config=e2e/playwright.config.ts --headed` |
+| `npm install` fails | Use Node.js >= 18.0.0. Check with `node -v` |
