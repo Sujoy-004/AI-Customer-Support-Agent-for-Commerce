@@ -14,6 +14,9 @@ build/
 shopify-widget/src/shopify-widget/
 shopify-widget/src/src/
 test-results/
+dom-snapshot.html
+dom-errors.txt
+dom-screenshot.png
 
 # ==============================
 # Dependencies
@@ -80,7 +83,6 @@ graphify-out/cost.json
 .planning/
 .opencode/
 opencode.json
-e2e/
 
 # ==============================
 # Personal / scratch
