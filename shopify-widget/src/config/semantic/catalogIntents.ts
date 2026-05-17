@@ -1,0 +1,43 @@
+// src/config/semantic/catalogIntents.ts
+export const CATALOG_INTENT_PHRASES: Record<string, string[]> = {
+  stock_check: [
+    'is this in stock',
+    'how many do you have',
+    'is it available',
+    'avialable',
+    'do you have stock',
+    'any left',
+    'still available',
+    'do you have more',
+  ],
+  sizing_inquiry: [
+    'what sizes do you have',
+    'does it come in small',
+    'sizing information',
+    'how does it fit',
+    'size chart',
+    'measurements',
+    'what size options',
+    'size guide',
+  ],
+  product_search: [
+    'looking for',
+    'do you sell',
+    'show me',
+    'i want to buy',
+    'find products',
+    'browse catalog',
+    'what do you have',
+    'got any',
+  ],
+  variant_lookup: [
+    'blue hoodie',
+    'medium size',
+    'leather jacket',
+    'specific variant',
+    'color options',
+    'which colors',
+    'in black',
+    'do you have this in blue',
+  ],
+};
