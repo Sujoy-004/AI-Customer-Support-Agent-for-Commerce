@@ -89,7 +89,7 @@
 **Context**: .planning/phases/06-semantic-ai-router/
 
 **Plans:**
-- [ ] 06-01-PLAN.md — Foundation: deps, config files, SemanticRouter class
+- [x] 06-01-PLAN.md — Foundation: deps, config files, SemanticRouter class
 - [ ] 06-02-PLAN.md — Build script + test suite (eval + unit)
 - [ ] 06-03-PLAN.md — Semantic detector integration (all 3 detectors)
 - [ ] 06-04-PLAN.md — ChatWidget pipeline integration, first-query UX, feature flag
@@ -127,6 +127,6 @@
 | 3. Live Catalog Intelligence | 2/2 | Complete | 2026-05-15 |
 | 4. Order Tracking Workflow | 2/2 | Complete | 2026-05-16 |
 | 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
-| 6. Semantic AI Router | 0/0 | Not started | - |
+| 6. Semantic AI Router | 1/4 | In Progress | 2026-05-17 |
 | 7. Security & Live Data | 0/0 | Not started | - |
 | 8. UX & Demo | 0/0 | Not started | - |
