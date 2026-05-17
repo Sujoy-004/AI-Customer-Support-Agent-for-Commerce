@@ -156,3 +156,11 @@ npx playwright test --config=e2e/playwright.config.ts
 ## Product Decisions
 
 See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and product choices.
+
+## Demo Video
+
+*Demo video coming soon. A 3–5 minute screen recording with narration will be added before the submission deadline.*
+
+## Screenshots
+
+*Product walkthrough screenshots will be added before the submission deadline.*

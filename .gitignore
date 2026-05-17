@@ -73,10 +73,14 @@ graphify-out/cost.json
 .graphify_python
 
 # ==============================
-# Workflow & Planning (committed for hackathon submission)
+# Dev tooling & planning artifacts
+#   .planning/ and .opencode/ are development tools,
+#   not part of the hackathon submission
 # ==============================
-# .planning/  -- committed: judges need to see planning artifacts
-# .opencode/  -- committed: judges need to see plugin architecture
+.planning/
+.opencode/
+opencode.json
+e2e/
 
 # ==============================
 # Personal / scratch
@@ -84,12 +88,4 @@ graphify-out/cost.json
 SOVEREIGNTY.md
 raw/
 scratch/
-
-# ==============================
-# Planning & workflow (don't track)
-# ==============================
-.planning/
-.opencode/
-opencode.json
-e2e/
 
