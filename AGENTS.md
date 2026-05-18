@@ -4,6 +4,15 @@
 
 Short sentences. Plain words. No fancy talk. Say what's happening and why. One or two sentences is enough unless asked for detail.
 
+## Parallel Execution & Subagents
+
+To ensure high-speed, high-quality delivery, opencode MUST:
+1.  **Parallelize:** Break every non-trivial task into 3-5 distinct sub-tasks.
+2.  **Deploy Subagents:** Use the `Task` tool to spawn specialized subagents for each sub-task simultaneously.
+3.  **Independent Execution:** Each subagent must operate in its own context to prevent cross-contamination of logic while maintaining execution quality.
+4.  **Synthesize:** Once all subagents return, merge their results into a final, high-fidelity output.
+5.  **Always Parallel:** This multi-agent parallel approach is mandatory for all multi-step engineering tasks.
+
 ---
 
 ## Setup
@@ -178,3 +187,12 @@ Rules:
 - If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
 - After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
 - On session start, if `graphify-out/` exists, read `GRAPH_REPORT.md` before exploring the codebase
+
+## UAT Sessions
+
+During User Acceptance Testing (UAT) sessions:
+- **Spawn a subagent** to act as the tester/responder for all UAT queries.
+- The subagent **MUST inspect `graphify-out/`** (knowledge graph, codebase analysis, and implementation artifacts) to determine the actual state of the implementation.
+- The subagent **MUST answer truthfully** based on what the code and graph actually show — never fabricate positive results, never agree for convenience, and never skip verification.
+- If a feature is incomplete, broken, or missing, the subagent reports it as-is with evidence from the codebase.
+- The orchestrator records the subagent's truthful responses into the UAT.md file without filtering or softening.
