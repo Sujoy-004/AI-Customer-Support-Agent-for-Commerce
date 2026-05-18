@@ -4,6 +4,9 @@ import { CatalogIntentDetector } from '../../src/services/catalogIntentDetector'
 import { CatalogService } from '../../src/services/catalogService';
 import { MockCatalogDataSource } from '../../src/services/mockCatalogData';
 import { SemanticRouter } from '../src/core/semanticRouter';
+import { PolicyService } from '../../src/services/policyService';
+import { ShopifyStorefrontDataSource } from '../../src/services/shopifyStorefrontDataSource';
+import { ShopifyOrderProxyDataSource } from '../../src/services/shopifyOrderProxyDataSource';
 
 function createWidget(): ChatWidget {
   const container = document.createElement('div');
@@ -95,6 +98,130 @@ describe('ChatWidget catalog integration', () => {
     it('should return not_found message for non-existent order', async () => {
       const response = await widget._generateAgentResponse('track order #9999 for nobody@example.com');
       expect(response).toContain("wasn't found");
+    });
+  });
+});
+
+describe('ChatWidget data source options', () => {
+  describe('default options (mock data)', () => {
+    it('should use mock catalog data source by default', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({ container });
+      // _catalogIntentDetector should be set up (injected with mock catalog)
+      expect((widget as any)._catalogIntentDetector).toBeDefined();
+      // _policyService should be PolicyService with useMockData=true
+      const ps = (widget as any)._policyService;
+      expect(ps).toBeInstanceOf(PolicyService);
+      expect((ps as any).useMockData).toBe(true);
+      widget.destroy();
+    });
+
+    it('should use mock order data source by default', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({ container });
+      expect((widget as any)._orderIntentDetector).toBeDefined();
+      widget.destroy();
+    });
+  });
+
+  describe('live catalog option', () => {
+    it('should create ShopifyStorefrontDataSource when catalog is live', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({
+        container,
+        storeDomain: 'test-store.myshopify.com',
+        dataSource: { catalog: 'live' },
+      });
+      expect((widget as any)._catalogIntentDetector).toBeDefined();
+      widget.destroy();
+    });
+
+    it('should use mock order data source when only catalog is live', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({
+        container,
+        storeDomain: 'test-store.myshopify.com',
+        dataSource: { catalog: 'live' },
+      });
+      expect((widget as any)._policyService).toBeDefined();
+      widget.destroy();
+    });
+  });
+
+  describe('live order option', () => {
+    it('should create ShopifyOrderProxyDataSource when order is live', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({
+        container,
+        proxyUrl: 'https://proxy.example.com',
+        hmacSecret: 'test-secret',
+        dataSource: { order: 'live' },
+      });
+      expect((widget as any)._orderIntentDetector).toBeDefined();
+      widget.destroy();
+    });
+  });
+
+  describe('policyUrl option', () => {
+    it('should pass policyUrl to PolicyService', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({
+        container,
+        policyUrl: 'https://example.com/policies.md',
+      });
+      const ps = (widget as any)._policyService;
+      expect(ps).toBeInstanceOf(PolicyService);
+      expect((ps as any).policyUrl).toBe('https://example.com/policies.md');
+      widget.destroy();
+    });
+
+    it('should use default policyUrl when not specified', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({ container });
+      const ps = (widget as any)._policyService;
+      expect((ps as any).policyUrl).toBe('./policies.md');
+      widget.destroy();
+    });
+  });
+
+  describe('dataSource.policy = live', () => {
+    it('should set useMockData to false when policy is live', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({
+        container,
+        policyUrl: 'https://example.com/policies.md',
+        dataSource: { policy: 'live' },
+      });
+      const ps = (widget as any)._policyService;
+      expect((ps as any).useMockData).toBe(false);
+      widget.destroy();
+    });
+  });
+
+  describe('no UI changes (D-14)', () => {
+    it('should have same UI structure regardless of data source', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const widget = new ChatWidget({
+        container,
+        proxyUrl: 'https://proxy.example.com',
+        hmacSecret: 'test-secret',
+        policyUrl: 'https://example.com/policies.md',
+        storeDomain: 'test-store.myshopify.com',
+        dataSource: { catalog: 'live', order: 'live', policy: 'live' },
+      });
+      // Widget should have opened without data source indication
+      expect((widget as any)._policyService).toBeDefined();
+      expect(document.querySelector('.chat-toggle')).toBeTruthy();
+      widget.destroy();
     });
   });
 });

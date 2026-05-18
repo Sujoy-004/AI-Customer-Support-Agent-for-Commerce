@@ -15,8 +15,10 @@ import { EscalationStateMachine } from '../../src/services/escalationStateMachin
 import { EscalationQueueSimulator } from '../../src/services/escalationQueueSimulator';
 import { EscalationTransferHandler } from '../../src/services/escalationTransferHandler';
 import { HumanAgentSimulator } from '../../src/services/escalationHumanAgent';
+import { ShopifyStorefrontDataSource } from '../../src/services/shopifyStorefrontDataSource';
+import { ShopifyOrderProxyDataSource } from '../../src/services/shopifyOrderProxyDataSource';
+import type { CatalogDataSource, OrderDataSource, EscalationChatMessage } from '../../src/services/types';
 import { SemanticRouter } from './core/semanticRouter';
-import type { EscalationChatMessage } from '../../src/services/types';
 
 // Initialize our services
 const policyService = new PolicyService();
@@ -43,6 +45,17 @@ export interface ChatWidgetOptions {
   escalationDetector?: EscalationDetector;
   escalationStateMachine?: EscalationStateMachine;
   enableReturnService?: boolean;
+  // Live data source options (Phase 7)
+  proxyUrl?: string;
+  hmacSecret?: string;
+  policyUrl?: string;
+  storeDomain?: string;
+  storefrontToken?: string;
+  dataSource?: {
+    catalog?: 'mock' | 'live';
+    order?: 'mock' | 'live';
+    policy?: 'mock' | 'live';
+  };
 }
 
 export interface ChatWidgetState {
@@ -70,6 +83,7 @@ export default class ChatWidget {
   private _offTopicDetector!: OffTopicDetector;
   private _refusalResponseService!: RefusalResponseService;
   private _semanticRouter!: SemanticRouter;
+  private _policyService: PolicyService | undefined;
   private _pendingQuery: string | null = null;
   private _enableReturnService: boolean;
   private toggleBtn!: HTMLButtonElement;
@@ -101,8 +115,19 @@ export default class ChatWidget {
     this._offTopicDetector = new OffTopicDetector(policyService, this._semanticRouter);
     this._refusalResponseService = new RefusalResponseService(this._offTopicDetector);
 
+    // Data source selection (D-06, D-14 — silent, no UI indication)
+    const useMockOrder = options.dataSource?.order !== 'live';
+    const useMockCatalog = options.dataSource?.catalog !== 'live';
+    const useMockPolicy = options.dataSource?.policy !== 'live';
+
     // Order services — optionally injectable for tests
-    const _orderService = options.orderService || new OrderService(new MockOrderDataSource());
+    const orderDataSource: OrderDataSource = useMockOrder
+      ? new MockOrderDataSource()
+      : new ShopifyOrderProxyDataSource({
+          proxyUrl: options.proxyUrl ?? '',
+          hmacSecret: options.hmacSecret ?? '',
+        });
+    const _orderService = options.orderService || new OrderService(orderDataSource);
     if (options.orderIntentDetector) {
       this._orderIntentDetector = options.orderIntentDetector;
     } else {
@@ -114,10 +139,22 @@ export default class ChatWidget {
     if (options.catalogIntentDetector) {
       this._catalogIntentDetector = options.catalogIntentDetector;
     } else {
-      const catalogService = options.catalogService || new CatalogService(new MockCatalogDataSource());
+      const catalogDataSource: CatalogDataSource = useMockCatalog
+        ? new MockCatalogDataSource()
+        : new ShopifyStorefrontDataSource({
+            storeDomain: options.storeDomain ?? '',
+            storefrontToken: options.storefrontToken,
+          });
+      const catalogService = options.catalogService || new CatalogService(catalogDataSource);
       // Inject SemanticRouter (D-02)
       this._catalogIntentDetector = new CatalogIntentDetector(catalogService, this._semanticRouter);
     }
+
+    // Policy service with live fetch options (D-05, D-13)
+    this._policyService = new PolicyService({
+      policyUrl: options.policyUrl ?? './policies.md',
+      useMockData: useMockPolicy,
+    });
 
     // Return service — feature-flagged (D-30, D-31)
     // Field type changed to ReturnService | undefined; lazy init on first access
@@ -633,7 +670,8 @@ export default class ChatWidget {
    */
   private async _handlePolicyQuery(query: string): Promise<string | null> {
     const lower = query.toLowerCase();
-    const policies = await policyService.getAllPolicies();
+    const ps = this._policyService || policyService; // Use configured service, fallback to default
+    const policies = await ps.getAllPolicies();
 
     if (lower.includes('shipping') || lower.includes('delivery')) {
       return `Our shipping options are: ${policies.shipping.standard}, ${policies.shipping.express}, and ${policies.shipping.international}. Free shipping on orders over $${policies.shipping.freeShippingThreshold}.`;
