@@ -657,6 +657,17 @@ export default class ChatWidget {
   async _generateAgentResponse(userQuery: string): Promise<string> {
     const lowerQuery = userQuery.toLowerCase();
 
+    // Step 0: Mixed intent detection (split at conjunction, handle secondary via context)
+    const mixedIntent = this._detectMixedIntent(userQuery);
+    if (mixedIntent) {
+      const primaryResponse = await this._generateAgentResponse(mixedIntent.primary);
+      const secondaryAck = mixedIntent.acknowledgment;
+      if (primaryResponse) {
+        return `${primaryResponse}\n\n${secondaryAck}`;
+      }
+      return secondaryAck;
+    }
+
     // Step 1: Off-topic check
     const offTopicResult = await this._offTopicDetector.detectOffTopic(userQuery);
     if (offTopicResult.isOffTopic) {
@@ -764,6 +775,54 @@ export default class ChatWidget {
     const msg = this._createMessage(text, 'agent');
     this.addMessage(msg);
     return msg;
+  }
+
+  // ── Mixed Intent Detection ──────────────────────────
+
+  private _detectMixedIntent(query: string): { primary: string; secondary: string; acknowledgment: string } | null {
+    const lower = query.toLowerCase();
+    // Conjunction patterns that signal mixed intent
+    const conjunctions = [' and ', ' also ', ' plus ', ' but ', ' as well as '];
+    
+    for (const conj of conjunctions) {
+      const idx = lower.indexOf(conj);
+      if (idx === -1) continue;
+      
+      const primary = query.substring(0, idx).trim();
+      const secondary = query.substring(idx + conj.length).trim();
+      
+      // Only split if both parts are non-trivial (at least 3 chars each)
+      if (primary.length < 3 || secondary.length < 3) continue;
+      
+      // Generate acknowledgment for secondary intent
+      const acknowledgment = this._getSecondaryAcknowledgment(secondary);
+      
+      return { primary, secondary, acknowledgment };
+    }
+    
+    return null;
+  }
+
+  private _getSecondaryAcknowledgment(secondary: string): string {
+    const lower = secondary.toLowerCase();
+    
+    // Return-related
+    if (lower.includes('return') || lower.includes('refund') || lower.includes('exchange')) {
+      return "Also, regarding your return question — I can help with that too. Just provide your order number and I'll check eligibility.";
+    }
+    
+    // Shipping-related
+    if (lower.includes('ship') || lower.includes('deliver') || lower.includes('arrival')) {
+      return "Also, about shipping — standard shipping takes 5-7 business days. Expedited options are available at checkout.";
+    }
+    
+    // Sizing-related
+    if (lower.includes('size') || lower.includes('fit') || lower.includes('measurement')) {
+      return "Also, for sizing questions — each product page has a size chart. I can help with specific measurements if you tell me the product.";
+    }
+    
+    // Default acknowledgment
+    return "I also noticed you asked about another topic — feel free to ask me about it next and I'll help right away.";
   }
 
   // ── Escalation helpers ──────────────────────────────

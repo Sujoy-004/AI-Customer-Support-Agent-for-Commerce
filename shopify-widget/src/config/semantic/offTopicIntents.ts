@@ -4,11 +4,12 @@ export const ON_TOPIC_CLUSTERS: Record<string, string[]> = {
     'what sizes do you have',
     'is this in stock',
     'do you sell shoes',
-    'tell me about your products',
-    'looking for something',
+    'looking for something specific',
     'do you have this in blue',
     'how much does this cost',
     'i want to buy a hoodie',
+    'show me your collection',
+    'what products do you carry',
   ],
   orders: [
     'where is my order',
@@ -31,3 +32,17 @@ export const ON_TOPIC_CLUSTERS: Record<string, string[]> = {
     'how long does shipping take',
   ],
 };
+
+// Compliment/sentiment phrases that are NOT support queries
+export const COMPLIMENT_PHRASES: string[] = [
+  'i like your products',
+  'love your store',
+  'great website',
+  'nice store',
+  'beautiful products',
+  'amazing shop',
+  'cool stuff',
+  'your products are great',
+  'i love shopping here',
+  'best store ever',
+];

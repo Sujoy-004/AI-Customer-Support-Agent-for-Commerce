@@ -7,6 +7,7 @@
 import { PolicyService } from './policyService';
 import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
 import onTopicEmbeddingsData from '../../shopify-widget/src/config/semantic/embeddings.json';
+import { COMPLIMENT_PHRASES } from '../../shopify-widget/src/config/semantic/offTopicIntents';
 
 /**
  * Interface for off-topic detection results
@@ -14,6 +15,7 @@ import onTopicEmbeddingsData from '../../shopify-widget/src/config/semantic/embe
 export interface OffTopicResult {
   isOffTopic: boolean;
   confidence: number; // 0-1 score
+  source: "semantic" | "keyword" | "none";
   reasons: string[]; // Why it was flagged as off-topic
   suggestedTopics: string[]; // Suggested on-topic alternatives
 }
@@ -28,8 +30,8 @@ export class OffTopicDetector {
   
   // Topics that are considered on-topic for the store
   private readonly ON_TOPIC_KEYWORDS = [
-    // Product-related
-    'product', 'item', 'merchandise', 'goods', 'catalog', 'inventory',
+    // Product-related (removed 'product' — too broad, causes false positives on compliments)
+    'item', 'merchandise', 'goods', 'catalog', 'inventory',
     'size', 'sizing', 'fit', 'dimension', 'weight', 'color', 'style',
     'material', 'fabric', 'brand', 'model', 'sku', 'price', 'cost',
     'stock', 'available', 'backorder', 'restock',
@@ -93,6 +95,7 @@ export class OffTopicDetector {
     const result: OffTopicResult = {
       isOffTopic: false,
       confidence: 0,
+      source: "none",
       reasons: [],
       suggestedTopics: []
     };
@@ -101,7 +104,19 @@ export class OffTopicDetector {
     if (!lowerQuery) {
       result.isOffTopic = true;
       result.confidence = 0.8;
+      result.source = "keyword";
       result.reasons.push('Empty query');
+      result.suggestedTopics.push('Ask about our products, shipping, returns, or warranty');
+      return result;
+    }
+    
+    // Compliment/sentiment detection — positive statements about store are NOT support queries
+    const isCompliment = COMPLIMENT_PHRASES.some(phrase => lowerQuery.includes(phrase));
+    if (isCompliment) {
+      result.isOffTopic = true;
+      result.confidence = 0.85;
+      result.source = "keyword";
+      result.reasons.push('Query is a compliment/sentiment, not a support request');
       result.suggestedTopics.push('Ask about our products, shipping, returns, or warranty');
       return result;
     }
@@ -114,6 +129,7 @@ export class OffTopicDetector {
         // Query is on-topic — clear any off-topic suspicion
         result.isOffTopic = false;
         result.confidence = Math.min(0.3, 1 - onTopicResult.confidence);
+        result.source = "semantic";
         result.reasons = ['Query matches on-topic domain: ' + onTopicResult.intent];
         return result;
       }
@@ -130,6 +146,7 @@ export class OffTopicDetector {
     if (offTopicMatches.length > 0) {
       result.isOffTopic = true;
       result.confidence = Math.min(0.9, 0.5 + (offTopicMatches.length * 0.1));
+      result.source = "keyword";
       result.reasons.push(`Contains off-topic keywords: ${offTopicMatches.join(', ')}`);
       
       // Add suggested topics based on what was detected
@@ -153,6 +170,7 @@ export class OffTopicDetector {
     if (onTopicMatches.length >= 2) {
       result.isOffTopic = false;
       result.confidence = Math.max(0.1, 0.5 - (onTopicMatches.length * 0.1));
+      result.source = "keyword";
       // Clear previous off-topic decision if we have strong on-topic signals
       if (result.confidence < 0.3) {
         result.reasons = [];
@@ -166,6 +184,7 @@ export class OffTopicDetector {
       if (lowerQuery.length < 3) {
         result.isOffTopic = true;
         result.confidence = Math.max(result.confidence, 0.7);
+        result.source = "keyword";
         result.reasons.push('Query too short to determine topic');
         result.suggestedTopics.push('Please provide more details about what you need help with');
       }
@@ -178,6 +197,7 @@ export class OffTopicDetector {
       if (hasQuestionWord && onTopicMatches.length === 0 && offTopicMatches.length === 0) {
         result.isOffTopic = true;
         result.confidence = Math.max(result.confidence, 0.6);
+        result.source = "keyword";
         result.reasons.push('Question appears general without store context');
         result.suggestedTopics.push('Try asking about our products, policies, or your order');
       }

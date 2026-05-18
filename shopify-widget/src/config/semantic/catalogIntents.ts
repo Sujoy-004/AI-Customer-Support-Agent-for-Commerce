@@ -19,6 +19,14 @@ export const CATALOG_INTENT_PHRASES: Record<string, string[]> = {
     'measurements',
     'what size options',
     'size guide',
+    // Product-category synonyms
+    'do these pants run true to size',
+    'what is the size chart for trousers',
+    'how do jeans sizes work',
+    'what size shirt should i get',
+    'do your sneakers fit normal',
+    'do these shorts run big',
+    'jacket sizing guide',
   ],
   product_search: [
     'looking for',
@@ -29,6 +37,14 @@ export const CATALOG_INTENT_PHRASES: Record<string, string[]> = {
     'browse catalog',
     'what do you have',
     'got any',
+    // Product-category synonyms
+    'show me some pants',
+    'looking for trousers',
+    'do you have jeans',
+    'where are the shirts',
+    'need some sneakers',
+    'show me jackets',
+    'browse shorts collection',
   ],
   variant_lookup: [
     'blue hoodie',
