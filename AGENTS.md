@@ -1,5 +1,13 @@
 # AGENTS.md
 
+## ⚠️ MANDATORY — READ THIS FILE BEFORE EVERY TASK
+
+**Before executing any command, task, or request, you MUST read this entire file from top to bottom.** Do not skip sections. Do not assume you know the contents. This file defines the project's architecture, constraints, conventions, and workflows. Every line matters equally — the middle sections are as critical as the start and end.
+
+**If you have cached this file from a previous turn, re-read it.** The project state changes fast. Stale context causes wrong decisions.
+
+---
+
 ## Tone & Communication Style
 
 Short sentences. Plain words. No fancy talk. Say what's happening and why. One or two sentences is enough unless asked for detail.
@@ -15,42 +23,13 @@ To ensure high-speed, high-quality delivery, opencode MUST:
 
 ---
 
-## Setup
+## Core Constraints
 
-- Config: `.opencode/opencode.json`
-- Dependencies: `npm install` (Node.js >=18.0.0)
-
-## Architecture
-
-```
-User Input → OffTopicDetector → EscalationDetector → OrderIntentDetector → CatalogIntentDetector → PolicyService → Response
-```
-
-Catalog, order, and escalation queries use ZERO LLM calls — every product lookup, stock check, variant resolution, order tracking, and human handoff goes through deterministic keyword + structured parsing. `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify migration. Context expires after 5 minutes or 3 turns. All services run in-browser — no backend.
-
-## Key Directories
-
-- `.opencode/command/` — GSD slash commands
-- `.opencode/skills/` — Domain-specific skills
-- `.opencode/get-shit-done/` — GSD workflow engine
-- `.planning/` — GSD artifacts (maps, plans, specs)
-
-## Project Status
-
-**5 phases complete. 3 remaining after judge verdict pivot:**
-- Policy Execution (Phase 2) ✓
-- Product Intelligence (Phase 3) ✓
-- Order Tracking (Phase 4) ✓
-- Graceful Handoff (Phase 5) ✓
-- [ ] Phase 6: Semantic AI Router — in-browser semantic intent detection (transformer.js)
-- [ ] Phase 7: Security & Live Data — serverless order proxy, Shopify Storefront API
-- [ ] Phase 8: UX & Demo — quick action chips, realtime handoff, demo video
+Zero LLM calls for data retrieval — all product lookups, stock checks, order tracking, and human handoff use deterministic keyword + structured parsing. `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify migration. Context expires after 5 minutes or 3 turns. All services run in-browser.
 
 **4 mandatory docs:** PRODUCT_DOC.md, TECHNICAL_DOC.md, DECISION_LOG.md, README.md
 
-**Judge Score:** 58/100 — Bronze Tier. Rebuild in progress.
-**Deadline:** May 20, 2026 11:59 PM IST
-**Priority:** Phase 6 > Phase 7 > Phase 8 (sequential)
+**Deadline:** May 20, 2026 11:59 PM IST | **Priority:** Phase 6 > Phase 7 > Phase 8 (sequential)
 
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
@@ -184,7 +163,7 @@ This project has a graphify knowledge graph at `graphify-out/` (root, not `.open
 
 Rules:
 - Before answering architecture or codebase questions, read `graphify-out/GRAPH_REPORT.md` for god nodes and community structure
-- If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
+- If `graphify-out/manifest.json` exists, use it for file-to-node mapping instead of reading raw files
 - After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
 - On session start, if `graphify-out/` exists, read `GRAPH_REPORT.md` before exploring the codebase
 
@@ -196,3 +175,11 @@ During User Acceptance Testing (UAT) sessions:
 - The subagent **MUST answer truthfully** based on what the code and graph actually show — never fabricate positive results, never agree for convenience, and never skip verification.
 - If a feature is incomplete, broken, or missing, the subagent reports it as-is with evidence from the codebase.
 - The orchestrator records the subagent's truthful responses into the UAT.md file without filtering or softening.
+
+## Doc Sync — After Every Task/Command
+
+After completing any task, command, or code change:
+- **Update `docs/` files** — Sync any architectural, technical, or product changes to the relevant files in `docs/` (PRODUCT_DOC.md, TECHNICAL_DOC.md, DECISION_LOG.md, etc.)
+- **Update `README.md`** — Keep the root README current with project status, setup instructions, and recent changes
+- **Verify accuracy** — Read the files you're about to update, confirm changes match the actual codebase, then write
+- **Never skip** — Even small changes can cascade into doc drift. Update immediately, not later.
