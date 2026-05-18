@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "test": "npx vitest run && npx playwright test"
+    "test": "npx vitest run && npx playwright test",
+    "dev:proxy": "cd shopify-proxy && npx wrangler dev"
   },
   "type": "module",
   "devDependencies": {

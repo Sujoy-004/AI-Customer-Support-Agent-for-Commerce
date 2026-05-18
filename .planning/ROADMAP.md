@@ -103,8 +103,13 @@
    2. Shopify Storefront API integration replaces mock catalog data — merchants do not need to edit TS arrays for routine store updates
    3. Policy data is also dynamically fetched from live store sources
    4. All existing tests pass with the new data sources
-**Plans**: TBD
+**Plans**: 3 plans
 **Context**: .planning/phases/07-security-live-data/
+
+**Plans:**
+- [ ] 07-01-PLAN.md — Shopify proxy foundation (CF Worker, HMAC verification, Admin API proxy, tests)
+- [ ] 07-02-PLAN.md — Live data sources (ShopifyStorefrontDataSource, ShopifyOrderProxyDataSource, tests)
+- [ ] 07-03-PLAN.md — PolicyService live fetch + ChatWidget integration + tests
 
 ### Phase 8: UX & Demo
 **Goal**: UI affordances, live handoff, demo video. This is the visible layer that judges see first.
@@ -128,5 +133,5 @@
 | 4. Order Tracking Workflow | 2/2 | Complete | 2026-05-16 |
 | 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
 | 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
-| 7. Security & Live Data | 0/0 | Not started | - |
+| 7. Security & Live Data | 0/3 | Planning | - |
 | 8. UX & Demo | 0/0 | Not started | - |

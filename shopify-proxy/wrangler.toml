@@ -1,0 +1,6 @@
+name = "shopify-order-proxy"
+main = "src/worker.ts"
+compatibility_date = "2026-05-18"
+
+[env.production]
+vars = { SHOPIFY_STORE_DOMAIN = "" }
