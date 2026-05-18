@@ -6,14 +6,14 @@
 
 ## Current Position
 **Phase**: 07-security-live-data
-**Plan**: 07-02 (Live Data Sources)
-**Status**: Plan 07-02 complete. ShopifyStorefrontDataSource (CatalogDataSource) and ShopifyOrderProxyDataSource (OrderDataSource) with HMAC-signed proxy requests, 16 tests. 398 total tests across 21 suites.
+**Plan**: 07-03 (PolicyService + ChatWidget Integration)
+**Status**: Plan 07-03 complete. PolicyService with live markdown fetch and YAML frontmatter parsing, ChatWidget data source selection options (catalog/order/policy: 'mock' | 'live'), policies.md config file, 426 tests across 22 suites.
 
 ## Progress:
-[████████████████████████████████████] 88% (15/17 plans, 7/8 phases)
+[████████████████████████████████████] 94% (16/17 plans, 7/8 phases)
 
 ## Performance Metrics
-- **Test Coverage**: 398 tests across 21 suites (all passing)
+- **Test Coverage**: 426 tests across 22 suites (all passing)
 - **Build Passing**: Yes
 - **Judge Score**: 58/100 — Bronze Tier (hackathon submission)
 
@@ -35,6 +35,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 6: Semantic AI Router — In-browser semantic intent detection with transformer.js, replacing keyword matching across all intent detectors. COMPLETE.
 - Phase 7: Security & Live Data — Serverless order proxy (Cloudflare Worker), Shopify Storefront API integration, markdown config policies. Context captured.
 - Phase 8: UX & Demo — quick action chips, Supabase Realtime handoff, demo video recording, doc updates.
+- Plan 07-03: PolicyService live markdown fetch, ChatWidget data source options, 426 tests. Complete.
 - All existing deterministic data services (CatalogService, OrderService, PolicyService) preserved — only the intent detection layer changes.
 - Zero-hallucination guarantee remains: semantic understanding layer routes intent, but all data retrieval stays deterministic.
 
@@ -47,6 +48,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 6: Semantic AI Router — SemanticRouter class, build-time embeddings, all 3 detectors upgraded, first-query UX, feature flags
 - Phase 7 (Plan 07-01): Shopify Proxy Foundation — CF Worker with HMAC verification, Admin GraphQL integration, email hash matching, CORS, 17 tests
 - Phase 7 (Plan 07-02): Live Data Sources — ShopifyStorefrontDataSource (catalog), ShopifyOrderProxyDataSource (order lookup), HMAC signing, retry logic, 16 tests
+- Phase 7 (Plan 07-03): PolicyService + ChatWidget Integration — PolicyService live markdown fetch + YAML frontmatter parsing, ChatWidget data source selection options, policies.md, documentation update
 
 ### Requirements completed
 - Policy Execution (Phase 2) — Built ✓
@@ -57,16 +59,17 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - JUDGE-04 — Shopify Proxy Foundation (Plan 07-01): HMAC-authenticated serverless proxy prevents client-side data exposure ✓
 - JUDGE-04 — ShopifyOrderProxyDataSource (Plan 07-02): HMAC-signed proxy client with SHA-256 email hashing and retry logic ✓
 - JUDGE-05 — ShopifyStorefrontDataSource (Plan 07-02): Live Storefront GraphQL API integration replacing mock catalog data ✓
+- JUDGE-06 — PolicyService live markdown fetch + YAML frontmatter parsing (Plan 07-03): Policy data dynamically fetched from policies.md ✓
 
 ### Remaining phases
-- Phase 7: Security & Live Data — Plans 07-01 and 07-02 complete. 07-03 remaining.
+- Phase 7: Security & Live Data — All 3 plans complete.
 - Phase 8: UX & Demo — NOT started
 
 ### Mandatory docs
-- PRODUCT_DOC.md — Created ✓ (needs update after rewrite)
-- TECHNICAL_DOC.md — Created ✓ (needs update after rewrite)
-- DECISION_LOG.md — Created ✓
-- README.md — Created ✓ (needs update)
+- PRODUCT_DOC.md — Updated ✓
+- TECHNICAL_DOC.md — Updated ✓ (Phase 7 architecture added)
+- DECISION_LOG.md — Updated ✓ (D-01 through D-14 added)
+- README.md — Updated ✓ (Project structure, test counts, proxy dev)
 
 ## Key Reference Files
 
@@ -80,5 +83,5 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 | `.planning/phases/08-ux-demo/08-CONTEXT.md` | Phase 8 detailed context |
 
 ## Session Continuity
-Plan 07-02 complete (2026-05-18). Live data sources built: ShopifyStorefrontDataSource (catalog) and ShopifyOrderProxyDataSource (order lookup), 16 tests. 398 total tests across 21 suites. Ready for Plan 07-03 (PolicyService live fetch + ChatWidget integration).
-Resume file: `.planning/phases/07-security-live-data/07-02-SUMMARY.md`
+Plan 07-03 complete (2026-05-18). PolicyService live markdown fetch with YAML frontmatter parsing, ChatWidget data source selection options (catalog/order/policy: 'mock' | 'live'), 426 total tests across 22 suites. Phase 7 fully complete — all 3 plans delivered. Ready for Phase 8 (UX & Demo).
+Resume file: `.planning/phases/07-security-live-data/07-03-SUMMARY.md`
