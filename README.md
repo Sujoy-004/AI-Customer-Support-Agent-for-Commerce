@@ -18,7 +18,7 @@ Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows
 npm install
 ```
 
-### 2. Run unit tests (optional, 325 tests)
+### 2. Run unit tests (optional, 366 tests)
 
 ```bash
 npx vitest run
@@ -97,11 +97,11 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 ├── tsconfig.json            # Root TypeScript config
 ├── tsconfig.widget.json     # Widget-specific TS config
 ├── vitest.config.ts         # Vitest configuration
-├── PRODUCT_DOC.md           # Product document (hackathon requirement)
-├── TECHNICAL_DOC.md         # Technical document (hackathon requirement)
-├── DECISION_LOG.md          # Key decisions log
-├── DESIGN.md                # Berkeley Mono design system spec
-├── hackathon.md             # Hackathon rules & requirements
+├── PRODUCT_DOC.md           # Product document (in docs/)
+├── TECHNICAL_DOC.md         # Technical document (in docs/)
+├── DECISION_LOG.md          # Key decisions log (in docs/)
+├── DESIGN.md                # Berkeley Mono design system spec (in docs/)
+├── hackathon.md             # Hackathon rules & requirements (in docs/)
 └── package.json
 
 ## Architecture
@@ -153,13 +153,13 @@ Greeting check / Fallback text
 
 ## Testing
 
-- **19 unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, and guard services
+- **20 unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, and guard services
 - **4 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks, DOM snapshot
-- **Eval suite** — 20 scenario-based catalog intelligence evals
-- **Coverage**: 325 unit tests + 12 E2E tests passing
+- **Eval suite** — 48 scenario-based catalog intelligence evals
+- **Coverage**: 366 unit tests + 12 E2E tests passing
 
 ```bash
-# Run all Vitest tests (325 passing)
+# Run all Vitest tests (366 passing)
 npx vitest run
 
 # Run with coverage
@@ -178,14 +178,15 @@ npx playwright test --config=e2e/playwright.config.ts
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
 | 5. Graceful Handoff | Complete | EscalationDetector, StateMachine, queue, transfer, human agent |
-| 6. Semantic AI Router | In progress | In-browser semantic intent detection (transformer.js) |
-| 7. Security & Live Data | Planned | Serverless order proxy, Shopify Storefront API |
+| 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
+| 7. Security & Live Data | In progress | Serverless order proxy, Shopify Storefront API |
 | 8. UX & Demo | Planned | Quick action chips, realtime handoff, demo video |
 
 ## Key Technologies
 
 - **TypeScript** — strict mode, discriminated unions, ES modules
-- **Vitest** — unit and integration tests (19 test files)
+- **@huggingface/transformers** — in-browser MiniLM embeddings for semantic intent detection
+- **Vitest** — unit and integration tests (20 test files)
 - **Playwright** — E2E browser tests (4 spec files, 12 tests)
 - **OpenCode + GSD** — development workflow engine (planning, execution, verification)
 

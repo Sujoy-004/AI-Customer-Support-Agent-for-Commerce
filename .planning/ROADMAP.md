@@ -7,7 +7,7 @@
 - [x] **Phase 3: Live Catalog Intelligence** - Real-time Shopify queries for catalog, sizing, and stock without hallucinations
 - [x] **Phase 4: Order Tracking Workflow** - Secure retrieval and explanation of customer order status
 - [x] **Phase 5: Graceful Escalation** - Seamless human handoff for complex or frustrated intents
-- [ ] **Phase 6: Semantic AI Router** - In-browser semantic intent detection replacing brittle keyword matching
+- [x] **Phase 6: Semantic AI Router** - In-browser semantic intent detection replacing brittle keyword matching
 - [ ] **Phase 7: Security & Live Data** - Serverless order proxy, live Shopify Storefront API integration
 - [ ] **Phase 8: UX & Demo** - Quick action chips, live human handoff, demo video
 
@@ -91,8 +91,8 @@
 **Plans:**
 - [x] 06-01-PLAN.md — Foundation: deps, config files, SemanticRouter class
 - [x] 06-02-PLAN.md — Build script + test suite (eval + unit)
-- [ ] 06-03-PLAN.md — Semantic detector integration (all 3 detectors)
-- [ ] 06-04-PLAN.md — ChatWidget pipeline integration, first-query UX, feature flag
+- [x] 06-03-PLAN.md — Semantic detector integration (all 3 detectors)
+- [x] 06-04-PLAN.md — ChatWidget pipeline integration, first-query UX, feature flag
 
 ### Phase 7: Security & Live Data
 **Goal**: Move sensitive operations behind a serverless proxy. Connect catalog to live Shopify Storefront API. Eliminates the two most serious production-readiness gaps.
@@ -127,6 +127,6 @@
 | 3. Live Catalog Intelligence | 2/2 | Complete | 2026-05-15 |
 | 4. Order Tracking Workflow | 2/2 | Complete | 2026-05-16 |
 | 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
-| 6. Semantic AI Router | 2/4 | In Progress | - |
+| 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
 | 7. Security & Live Data | 0/0 | Not started | - |
 | 8. UX & Demo | 0/0 | Not started | - |

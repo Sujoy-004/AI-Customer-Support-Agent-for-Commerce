@@ -535,15 +535,15 @@ Source: `e2e/playwright.config.ts` lines 13-19.
 
 ---
 
-## 2026-05-17: In-Browser Semantic Routing with @xenova/transformers (Phase 6)
+## 2026-05-17: In-Browser Semantic Routing with @huggingface/transformers (Phase 6)
 
 **Considered:**
-- Transformer.js via npm bundler import (@xenova/transformers, all-MiniLM-L6-v2, 22MB)
+- Transformer.js via npm bundler import (@huggingface/transformers, all-MiniLM-L6-v2, 22MB)
 - CDN dynamic import (no build change, but CDN dependency)
 - ONNX Runtime Web (alternative runtime, less ecosystem support)
 - Keep pure keyword detection (status quo — judge score 58/100)
 
-**Chose:** npm bundler import of `@xenova/transformers` with `Xenova/all-MiniLM-L6-v2`. Singleton `SemanticRouter` class shared across all 3 detectors (catalog, off-topic, order). Lazy-load model on first query. Pre-computed reference embeddings generated at build time. 5-8 reference phrases per intent category. 0.6 confidence threshold for semantic result, keyword fallback below that. Silent fallback to keywords on model failure with one retry attempt.
+**Chose:** npm bundler import of `@huggingface/transformers` with `Xenova/all-MiniLM-L6-v2`. Singleton `SemanticRouter` class shared across all 3 detectors (catalog, off-topic, order). Lazy-load model on first query. Pre-computed reference embeddings generated at build time. 5-8 reference phrases per intent category. 0.6 confidence threshold for semantic result, keyword fallback below that. Silent fallback to keywords on model failure with one retry attempt.
 
 **Because:**
 - Directly addresses the judge's core finding (#58/100, "no real semantic routing"). Transforms the project from "rule-based chatbot" to "AI-augmented agent."
@@ -555,4 +555,4 @@ Source: `e2e/playwright.config.ts` lines 13-19.
 
 **Tradeoff:** ~30MB model download on first query (~1-2s). Mitigated by IndexedDB caching via transformer.js (instant on subsequent loads) and "Loading AI model…" UX with query queuing. Build-time embedding generation adds ~2-3s to npm run build.
 
-Source: `.planning/phases/06-semantic-ai-router/06-CONTEXT.md` — full decision record with 34 decisions across 9 gray areas.
+Source: `.planning/phases/06-semantic-ai-router/06-AI-SPEC.md` — full decision record with 34 decisions across 9 gray areas.

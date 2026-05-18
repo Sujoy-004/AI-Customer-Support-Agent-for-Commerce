@@ -26,7 +26,7 @@ The system uses a browser-side layered architecture. All services run in the use
 │                   Semantic Layer (NEW in Phase 6)             │
 │  ┌────────────────────────────────────────────────────┐      │
 │  │ SemanticRouter (singleton)                         │      │
-│  │ ├─ @xenova/transformers (all-MiniLM-L6-v2)         │      │
+│  │ ├─ @huggingface/transformers (all-MiniLM-L6-v2)         │      │
 │  │ ├─ classify(query, refs) → intent + confidence     │      │
 │  │ ├─ Embedding cache (5-min TTL)                     │      │
 │  │ └─ Lazy-load on first query                        │      │
@@ -95,7 +95,7 @@ The system uses a browser-side layered architecture. All services run in the use
 | Services | `src/services/` | `policyService.ts`, `catalogService.ts`, `orderService.ts`, `offTopicDetector.ts`, `responseGrounder.ts`, `refusalResponses.ts`, `catalogIntentDetector.ts`, `orderIntentDetector.ts` | Domain logic — policies, catalog, orders, guardrails |
 | Data | `src/services/` | `mockCatalogData.ts`, `mockOrderData.ts`, `conversationContext.ts`, `cacheManager.ts` | Data sources, caching, context management |
 | Config | `src/config/synonyms/` | `colors.ts`, `sizes.ts`, `materials.ts` | Synonym maps for natural language → canonical values |
-| Semantic Config | `src/config/semantic/` | `catalogIntents.ts`, `offTopicIntents.ts`, `orderIntents.ts`, `embeddings.json` | Reference phrases + pre-computed embeddings for semantic router |
+| Semantic Config | `shopify-widget/src/config/semantic/` | `catalogIntents.ts`, `offTopicIntents.ts`, `orderIntents.ts`, `embeddings.json` | Reference phrases + pre-computed embeddings for semantic router |
 
 ### 1.3 Key Files and Their Roles
 
@@ -120,11 +120,12 @@ The system uses a browser-side layered architecture. All services run in the use
 | `src/services/escalationTransferHandler.ts` | 48 | 20s transfer timeout, retry logic, email fallback |
 | `src/services/escalationHumanAgent.ts` | 26 | 3-message canned script player for connected state |
 | `src/services/semanticRouter.ts` | New | Singleton SemanticRouter — lazy-loads all-MiniLM-L6-v2, classify(), embedding cache |
-| `src/config/semantic/catalogIntents.ts` | New | 5-8 reference phrases per catalog intent category |
-| `src/config/semantic/offTopicIntents.ts` | New | 3 on-topic clusters: products, orders, policies |
-| `src/config/semantic/orderIntents.ts` | New | 5-8 reference phrases for order intent detection |
-| `src/config/semantic/embeddings.json` | Generated | Pre-computed 384-dim embeddings per reference phrase (`.gitignore`d) |
-| `scripts/generate-embeddings.js` | New | Build-time script — loads model, generates embeddings.json |
+| `shopify-widget/src/core/semanticRouter.ts` | New | Singleton SemanticRouter — lazy-loads all-MiniLM-L6-v2, classify(), embedding cache |
+| `shopify-widget/src/config/semantic/catalogIntents.ts` | New | 5-8 reference phrases per catalog intent category |
+| `shopify-widget/src/config/semantic/offTopicIntents.ts` | New | 3 on-topic clusters: products, orders, policies + COMPLIMENT_PHRASES |
+| `shopify-widget/src/config/semantic/orderIntents.ts` | New | 5-8 reference phrases for order intent detection |
+| `shopify-widget/src/config/semantic/embeddings.json` | Generated | Pre-computed 384-dim embeddings per reference phrase (`.gitignore`d) |
+| `shopify-widget/scripts/generateEmbeddings.ts` | New | Build-time script — loads model, generates embeddings.json |
 | `src/services/mockCatalogData.ts` | 332 | 7 products with 52 variants, stock overrides |
 | `src/services/mockOrderData.ts` | ~200 | Mock orders with 9 statuses, full timeline events |
 | `src/services/conversationContext.ts` | 49 | Cross-turn context manager |
@@ -157,7 +158,7 @@ User Query → SemanticRouter.classify(query, refs)
            → Below 0.6 → fall back to keyword matching
 ```
 
-**SemanticRouter** (`src/services/semanticRouter.ts` — new):
+**SemanticRouter** (`shopify-widget/src/core/semanticRouter.ts` — new):
 - Singleton shared across all detectors
 - Lazy-loads model on first user query
 - `classify(query, categoryRefs)` returns `{ intent: string | null, confidence: number }`
@@ -165,10 +166,10 @@ User Query → SemanticRouter.classify(query, refs)
 - On model failure: silent fallback to keyword matching with one retry attempt
 
 **Reference embeddings** (pre-computed at build time):
-- `src/config/semantic/catalogIntents.ts` — 5-8 phrases per catalog intent
-- `src/config/semantic/offTopicIntents.ts` — 3 on-topic clusters (products, orders, policies)
-- `src/config/semantic/orderIntents.ts` — 5-8 phrases for order queries
-- Built via npm prebuild hook that loads the model and generates `embeddings.json`
+- `shopify-widget/src/config/semantic/catalogIntents.ts` — 5-8 phrases per catalog intent
+- `shopify-widget/src/config/semantic/offTopicIntents.ts` — 3 on-topic clusters (products, orders, policies) + compliment detection
+- `shopify-widget/src/config/semantic/orderIntents.ts` — 5-8 phrases for order queries
+- Built via npm prebuild hook (`shopify-widget/scripts/generateEmbeddings.ts`) that loads the model and generates `embeddings.json`
 - `embeddings.json` is `.gitignore`d, always regenerated
 
 **Failure mode:** If transformer.js fails to load (network error, outdated browser), the system silently falls back to the original keyword-only detection. No user-visible error, console.error only.
@@ -362,12 +363,12 @@ What happens:
 ### 4.1 Test Architecture
 
 ```
-TypeScript Source ─→ Vitest (unit/integration) ─→ 325 tests, 19 test files
+TypeScript Source ─→ Vitest (unit/integration) ─→ 366 tests, 20 test files
 Browser Widget   ─→ Playwright (E2E)          ─→ 4 spec files (12 tests)
-Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
+Eval Harness     ─→ Catalog Intelligence Eval  ─→ 48 scenario eval tests
 ```
 
-### 4.2 Test Files (13 suites + 3 E2E specs)
+### 4.2 Test Files (20 suites + 3 E2E specs)
 
 | Test File | Tests | Scope |
 |-----------|-------|-------|
@@ -391,7 +392,7 @@ Eval Harness     ─→ Catalog Intelligence Eval  ─→ 20 scenario eval tests
 | `shopify-widget/tests/NetworkDetector.test.ts` | Unit | Network state detection |
 | `src/services/semanticRouter.test.ts` | New | SemanticRouter model load, classify(), fallback, embedding cache, retry logic |
 | `src/config/semantic/catalogIntents.test.ts` | New | Reference phrase coverage, intent classification accuracy |
-| `src/tests/eval/catalogIntelligence.eval.test.ts` | ~20 eval scenarios + semantic regression | Scenario-based eval for catalog queries + full regression through semantic pipeline |
+| `src/tests/eval/catalogIntelligence.eval.test.ts` | ~48 eval scenarios + semantic regression | Scenario-based eval for catalog queries + full regression through semantic pipeline |
 
 ### 4.3 E2E Tests (Playwright, 4 spec files, 12 tests)
 
@@ -693,11 +694,11 @@ Implemented by `MockCatalogDataSource` (for testing/development) with an interfa
 Before the widget bundle is built, a prebuild hook generates reference embeddings for the semantic router:
 
 ```
-npm run build → prebuild hook → scripts/generate-embeddings.js
-   → Loads Xenova/all-MiniLM-L6-v2
-   → Reads reference phrases from src/config/semantic/*.ts
+npm run build → prebuild hook → shopify-widget/scripts/generateEmbeddings.ts
+   → Loads @huggingface/transformers (Xenova/all-MiniLM-L6-v2)
+   → Reads reference phrases from shopify-widget/src/config/semantic/*.ts
    → Pre-computes 384-dim embeddings for each phrase
-   → Writes src/config/semantic/embeddings.json
+   → Writes shopify-widget/src/config/semantic/embeddings.json
 
 If generation fails → build fails (D-16)
 embeddings.json is .gitignore'd → always regenerated (D-17, D-18)
@@ -706,7 +707,7 @@ embeddings.json is .gitignore'd → always regenerated (D-17, D-18)
 The embedding generation script:
 ```javascript
 // scripts/generate-embeddings.js — simplified pseudocode
-import { pipeline } from '@xenova/transformers';
+import { pipeline } from '@huggingface/transformers';
 const model = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
 const refs = loadReferencePhrases(); // from src/config/semantic/*.ts
 const embeddings = {};

@@ -2,8 +2,8 @@
 # Product Document: AI Customer Support Agent for Commerce
 
 > **Track:** Kasparro Agentic Commerce Hackathon — Track 4
-> **Stack:** TypeScript, Vitest, Playwright, @xenova/transformers, OpenCode Plugin System
-> **Status:** 8 phases planned, 5 complete, Phase 6 in progress (May 2026)
+> **Stack:** TypeScript, Vitest, Playwright, @huggingface/transformers, OpenCode Plugin System
+> **Status:** 8 phases planned, 6 complete, Phase 7 in progress (May 2026)
 
 ## What Problem Does This Solve?
 
@@ -73,8 +73,8 @@ Secure order status retrieval with fulfillment tracking. Rich HTML order card wi
 - **ChatWidget integration** — Pipeline step 2 (after off-topic, before order), 5 system message bubble types (escalation-offer, frustration-offer, transferring, queue, connected)
 - **CSS** — 13 new classes + pulse animation keyframes
 
-### Phase 6 — Semantic AI Router (IN PROGRESS)
-In-browser semantic intent detection replacing keyword-based routing. Uses `@xenova/transformers` with `all-MiniLM-L6-v2` for sentence embeddings. All three intent detectors (catalog, off-topic, order) use embedding cosine similarity as primary routing method, with keyword fallback below 0.6 confidence threshold. Singleton `SemanticRouter` class with lazy model load, embedding cache (5-min TTL), and silent fallback to keywords on model failure. Reference phrases pre-computed at build time via npm prebuild hook. Return service feature-flagged off for this phase.
+### Phase 6 — Semantic AI Router (COMPLETE)
+In-browser semantic intent detection replacing keyword-based routing. Uses `@huggingface/transformers` with `all-MiniLM-L6-v2` for sentence embeddings. All three intent detectors (catalog, off-topic, order) use embedding cosine similarity as primary routing method, with keyword fallback below 0.6 confidence threshold. Singleton `SemanticRouter` class with lazy model load, embedding cache (5-min TTL), and silent fallback to keywords on model failure. Reference phrases pre-computed at build time via npm prebuild hook. Return service feature-flagged off by default. Mixed intent detection splits queries at conjunctions and provides context-aware secondary acknowledgments.
 
 ## How Is It Different from Generic Chatbot Solutions?
 
@@ -104,7 +104,7 @@ The critical differentiator: **All data retrieval uses ZERO LLM calls.** Every p
 7. **Off-topic refusal** — "what's the weather?" → polite refusal with redirect suggestions
 8. **Order tracking** — "track order #1234 for email@example.com" → rich order card with timeline
 9. **Graceful handoff** — "talk to human" → escalation offer → queue → human agent connection
-10. **Return initiation** — "start a return for #1234" → eligibility check → item selection → in-chat submission
+10. **Return initiation** — "start a return for #1234" → eligibility check → item selection → in-chat submission (feature-flagged, off by default)
 
 ## User Experience
 
@@ -149,8 +149,8 @@ There is **no welcome message**. The widget opens to an empty message area. This
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderCard, multi-turn auth |
 | 5. Graceful Escalation | Complete | Human handoff with queue, transfer, canned script |
-| 6. Semantic AI Router | In progress | In-browser semantic intent detection (transformer.js) |
-| 7. Security & Live Data | Planned | Serverless order proxy, Shopify Storefront API |
+| 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
+| 7. Security & Live Data | In progress | Serverless order proxy, Shopify Storefront API |
 | 8. UX & Demo | Planned | Quick action chips, realtime handoff, demo video |
 
 ### Post-Hackathon
