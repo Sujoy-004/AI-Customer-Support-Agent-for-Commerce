@@ -2,18 +2,18 @@
 
 ## Project Reference
 **Core Value**: Zero-hallucination, high-fidelity customer resolution grounded strictly in live Shopify data, powered by deterministic data retrieval augmented with semantic understanding.
-**Current Focus**: Phase 6 — Semantic AI Router
+**Current Focus**: Phase 7 — Security & Live Data
 
 ## Current Position
-**Phase**: 06-semantic-ai-router
-**Plan**: 02 complete
-**Status**: Phase 6 Plans 1-2 complete. Build script + tests done. Ready for 06-03.
+**Phase**: 07-security-live-data
+**Plan**: Context gathered
+**Status**: Phase 7 context captured. Ready for planning.
 
 ## Progress:
-[███████████████████████████████░░] 62% (5/8 phases)
+[██████████████████████████████████░░] 75% (6/8 phases)
 
 ## Performance Metrics
-- **Test Coverage**: 325+ tests across 19+ suites (all passing)
+- **Test Coverage**: 366 tests across 20 suites (all passing)
 - **Build Passing**: Yes
 - **Judge Score**: 58/100 — Bronze Tier (hackathon submission)
 
@@ -32,8 +32,8 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 
 ### Decisions
 - Roadmap realigned from 6 phases to 8 phases. Original Phase 6 (Return Initiation) deferred in favor of architectural rewrite.
-- Phase 6: Semantic AI Router — in-browser semantic intent detection with transformer.js/ONNX Runtime Web, replacing keyword matching across all intent detectors.
-- Phase 7: Security & Live Data — serverless order proxy (Cloudflare Worker / Vercel function), Shopify Storefront API integration, dynamic policy fetching.
+- Phase 6: Semantic AI Router — In-browser semantic intent detection with transformer.js, replacing keyword matching across all intent detectors. COMPLETE.
+- Phase 7: Security & Live Data — Serverless order proxy (Cloudflare Worker), Shopify Storefront API integration, markdown config policies. Context captured.
 - Phase 8: UX & Demo — quick action chips, Supabase Realtime handoff, demo video recording, doc updates.
 - All existing deterministic data services (CatalogService, OrderService, PolicyService) preserved — only the intent detection layer changes.
 - Zero-hallucination guarantee remains: semantic understanding layer routes intent, but all data retrieval stays deterministic.
@@ -44,18 +44,17 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 3: Live Catalog Intelligence — CatalogService, CatalogIntentDetector, synonym resolver, mock data (7 products, 52 variants)
 - Phase 4: Order Tracking Workflow — OrderService, OrderIntentDetector, OrderCard, mock data (8 orders, 9 statuses)
 - Phase 5: Graceful Escalation — EscalationDetector, EscalationStateMachine, queue simulator, transfer handler, human agent simulator
+- Phase 6: Semantic AI Router — SemanticRouter class, build-time embeddings, all 3 detectors upgraded, first-query UX, feature flags
 
 ### Requirements completed
 - Policy Execution (Phase 2) — Built ✓
 - Product Intelligence (Phase 3) — Built ✓
 - Order Tracking Workflow (Phase 4) — Built ✓
 - Graceful Handoff (Phase 5) — Built ✓
-- Semantic Routing (Phase 6 Plan 1) — Foundation built ✓
-- Build Script + Tests (Phase 6 Plan 2) — JUDGE-01, JUDGE-02, JUDGE-03 ✓
+- Semantic AI Router (Phase 6) — Built (4/4 plans) ✓
 
 ### Remaining phases
-- Phase 6: Semantic AI Router — Context gathered, ready for planning
-- Phase 7: Security & Live Data — NOT started
+- Phase 7: Security & Live Data — Context gathered (2026-05-18), ready for planning
 - Phase 8: UX & Demo — NOT started
 
 ### Mandatory docs
@@ -76,5 +75,5 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 | `.planning/phases/08-ux-demo/08-CONTEXT.md` | Phase 8 detailed context |
 
 ## Session Continuity
-Phase 6 Plans 1-2 complete (2026-05-18). Build script generates embeddings.json, 13 unit tests + 28 eval tests passing. Ready for 06-03 (Integration).
-Resume file: `.planning/phases/06-semantic-ai-router/06-02-SUMMARY.md`
+Phase 7 context gathered (2026-05-18). Decisions captured for proxy platform (Cloudflare Workers), API contract, policy source (markdown), Shopify credentials, error handling, and local dev workflow. Ready for planning.
+Resume file: `.planning/phases/07-security-live-data/07-CONTEXT.md`
