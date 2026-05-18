@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ChatWidget from '../src/ChatWidget';
 import { CatalogIntentDetector } from '../../src/services/catalogIntentDetector';
 import { CatalogService } from '../../src/services/catalogService';
 import { MockCatalogDataSource } from '../../src/services/mockCatalogData';
+import { SemanticRouter } from '../src/core/semanticRouter';
 
 function createWidget(): ChatWidget {
   const container = document.createElement('div');
@@ -10,7 +11,9 @@ function createWidget(): ChatWidget {
   document.body.appendChild(container);
 
   const catalogService = new CatalogService(new MockCatalogDataSource());
-  const catalogIntentDetector = new CatalogIntentDetector(catalogService);
+  const semanticRouter = SemanticRouter.getInstance();
+  vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+  const catalogIntentDetector = new CatalogIntentDetector(catalogService, semanticRouter);
 
   const widget = new ChatWidget({
     container,

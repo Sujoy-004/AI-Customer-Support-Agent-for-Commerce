@@ -1,6 +1,6 @@
 // shopify-widget/src/ChatWidget.ts
 import responseGrounder from '../../src/services/responseGrounder';
-import offTopicDetector from '../../src/services/offTopicDetector';
+import { OffTopicDetector } from '../../src/services/offTopicDetector';
 import { PolicyService } from '../../src/services/policyService';
 import { RefusalResponseService } from '../../src/services/refusalResponses';
 import { CatalogIntentDetector, formatCatalogResponse } from '../../src/services/catalogIntentDetector';
@@ -15,11 +15,10 @@ import { EscalationStateMachine } from '../../src/services/escalationStateMachin
 import { EscalationQueueSimulator } from '../../src/services/escalationQueueSimulator';
 import { EscalationTransferHandler } from '../../src/services/escalationTransferHandler';
 import { HumanAgentSimulator } from '../../src/services/escalationHumanAgent';
-import { ReturnService, MockReturnDataSource } from '../../src/services/returnService';
+import { SemanticRouter } from './core/semanticRouter';
 import type { EscalationChatMessage } from '../../src/services/types';
 
 // Initialize our services
-const refusalResponseService = new RefusalResponseService(offTopicDetector);
 const policyService = new PolicyService();
 
 // ── Type interfaces ──────────────────────────────────────────────
@@ -43,6 +42,7 @@ export interface ChatWidgetOptions {
   orderIntentDetector?: OrderIntentDetector;
   escalationDetector?: EscalationDetector;
   escalationStateMachine?: EscalationStateMachine;
+  enableReturnService?: boolean;
 }
 
 export interface ChatWidgetState {
@@ -66,7 +66,12 @@ export default class ChatWidget {
   private _escalationQueueSimulator: EscalationQueueSimulator | null = null;
   private _escalationTransferHandler: EscalationTransferHandler | null = null;
   private _humanAgentSimulator: HumanAgentSimulator | null = null;
-  private _returnService!: ReturnService;
+  private _returnService: ReturnService | undefined;
+  private _offTopicDetector!: OffTopicDetector;
+  private _refusalResponseService!: RefusalResponseService;
+  private _semanticRouter!: SemanticRouter;
+  private _pendingQuery: string | null = null;
+  private _enableReturnService: boolean;
   private toggleBtn!: HTMLButtonElement;
   private widget!: HTMLDivElement;
   private offlineBanner!: HTMLDivElement;
@@ -80,6 +85,7 @@ export default class ChatWidget {
     this.container = options.container || document.getElementById('ai-support-widget') as HTMLElement;
     this.endpoint = options.endpoint || '/apps/support-agent/chat';
     this.timeoutMs = options.timeoutMs || 10000;
+    this._enableReturnService = options.enableReturnService ?? false;
 
     this.state = {
       isOpen: false,
@@ -88,12 +94,20 @@ export default class ChatWidget {
       messages: [],
     };
 
+    // Semantic Router — singleton shared across all detectors (D-22)
+    this._semanticRouter = SemanticRouter.getInstance();
+
+    // Off-topic detector — now injected with SemanticRouter (D-24)
+    this._offTopicDetector = new OffTopicDetector(policyService, this._semanticRouter);
+    this._refusalResponseService = new RefusalResponseService(this._offTopicDetector);
+
     // Order services — optionally injectable for tests
     const _orderService = options.orderService || new OrderService(new MockOrderDataSource());
     if (options.orderIntentDetector) {
       this._orderIntentDetector = options.orderIntentDetector;
     } else {
-      this._orderIntentDetector = new OrderIntentDetector(_orderService);
+      // Inject SemanticRouter (D-02)
+      this._orderIntentDetector = new OrderIntentDetector(_orderService, this._semanticRouter);
     }
 
     // Catalog services — optionally injectable for tests
@@ -101,11 +115,13 @@ export default class ChatWidget {
       this._catalogIntentDetector = options.catalogIntentDetector;
     } else {
       const catalogService = options.catalogService || new CatalogService(new MockCatalogDataSource());
-      this._catalogIntentDetector = new CatalogIntentDetector(catalogService);
+      // Inject SemanticRouter (D-02)
+      this._catalogIntentDetector = new CatalogIntentDetector(catalogService, this._semanticRouter);
     }
 
-    // Return service — return initiation workflow (Phase 6)
-    this._returnService = new ReturnService(policyService, _orderService, new MockReturnDataSource());
+    // Return service — feature-flagged (D-30, D-31)
+    // Field type changed to ReturnService | undefined; lazy init on first access
+    this._returnService = undefined;
 
     // Escalation services — optionally injectable for tests
     if (options.escalationDetector) {
@@ -127,6 +143,22 @@ export default class ChatWidget {
     this._bindEvents();
     this._initNetworkDetection();
     this._render();
+  }
+
+  // D-31: Lazy async init — constructor can't be async, so the dynamic
+  // import() for ReturnService + MockReturnDataSource happens here on
+  // first access in _generateAgentResponse. When enableReturnService is
+  // false, this method is never called and the bundler tree-shakes both
+  // modules away.
+  private async _lazyInitReturnService(): Promise<void> {
+    if (!this._enableReturnService || this._returnService !== undefined) return;
+    try {
+      const { ReturnService: RS, MockReturnDataSource: MDS } = await import('../../src/services/returnService');
+      const orderSvc = new OrderService(new MockOrderDataSource());
+      this._returnService = new RS(policyService, orderSvc, new MDS());
+    } catch (err) {
+      console.error('[ChatWidget] Failed to lazy-load ReturnService:', err);
+    }
   }
 
   _createDOM() {
@@ -509,6 +541,32 @@ export default class ChatWidget {
       return;
     }
 
+    // D-06, D-10, D-11: First-query model loading UX
+    if (!this._semanticRouter.isLoaded() && !this._semanticRouter.getLoadError()) {
+      this.setProcessing(true);
+      this.textarea.value = '';
+
+      // Show loading message
+      const loadingMsg = this._createMessage('Loading AI model\u2026', 'system');
+      this._pendingQuery = text;
+      this.addMessage(loadingMsg);
+
+      try {
+        // D-28: Retry handled internally by SemanticRouter._ensureModel()
+        await this._semanticRouter.embed('__warmup__'); // triggers lazy load
+        // Remove loading message
+        this._removeLastSystemMessage();
+      } catch {
+        // D-27: Silent fallback — model failed, remove loading message
+        this._removeLastSystemMessage();
+      }
+
+      this.setProcessing(false);
+      // Process the queued query normally (semantic fallback to keywords if model failed per D-29)
+      return this._processQuery(text);
+    }
+
+    // Original flow continues
     this.setProcessing(true);
     this.textarea.value = '';
 
@@ -531,6 +589,41 @@ export default class ChatWidget {
     } finally {
       this.setProcessing(false);
       this._updateSendButton();
+    }
+  }
+
+  // Process a query after model is loaded (used by first-query flow)
+  private async _processQuery(text: string): Promise<void> {
+    this.setProcessing(true);
+
+    const msg = this._createMessage(text, 'user', 'sending');
+    this.addMessage(msg);
+
+    try {
+      const agentResponse = await this._generateAgentResponse(text);
+      this._updateMessageStatus(msg.id, 'delivered');
+
+      const agentMsg = this._createMessage(agentResponse, 'agent');
+      this.addMessage(agentMsg);
+    } catch (err) {
+      this._updateMessageStatus(msg.id, 'error');
+      const errorMsg = this._createMessage(
+        'Sorry, I couldn\'t process that request right now. Please try again.',
+        'error'
+      );
+      this.addMessage(errorMsg);
+    } finally {
+      this.setProcessing(false);
+      this._updateSendButton();
+    }
+  }
+
+  // Remove the last system message (used to clear loading indicator)
+  private _removeLastSystemMessage(): void {
+    const lastIdx = this.state.messages.length - 1;
+    if (lastIdx >= 0 && this.state.messages[lastIdx].role === 'system') {
+      this.state.messages.splice(lastIdx, 1);
+      this._render();
     }
   }
 
@@ -565,9 +658,9 @@ export default class ChatWidget {
     const lowerQuery = userQuery.toLowerCase();
 
     // Step 1: Off-topic check
-    const offTopicResult = await offTopicDetector.detectOffTopic(userQuery);
+    const offTopicResult = await this._offTopicDetector.detectOffTopic(userQuery);
     if (offTopicResult.isOffTopic) {
-      const refusalResponse = await refusalResponseService.generateRefusal(userQuery);
+      const refusalResponse = await this._refusalResponseService.generateRefusal(userQuery);
       if (refusalResponse) {
         return refusalResponse.message;
       }
@@ -609,32 +702,35 @@ export default class ChatWidget {
       return formatOrderResponse(orderResult);
     }
 
-    // Step 4: Return initiation (Phase 6)
-    if (this._returnService.detectReturnIntent(userQuery)) {
-      const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
-      if (orderResult.type === 'order_found') {
-        const eligibility = await this._returnService.checkEligibility(
-          orderResult.order.orderNumber,
-          orderResult.email,
-        );
-        if (eligibility.type === 'return_eligible') {
-          const itemsList = eligibility.items.map(i => `  - ${i.title} (${i.variantTitle})`).join('\n');
-          return `I can help you start a return for order #${eligibility.orderNumber}. Which item(s) would you like to return?\n\nItems in this order:\n${itemsList}\n\nPlease tell me which item and the reason for the return.`;
+    // Step 4: Return initiation (feature-flagged per D-30, lazy-loaded per D-31)
+    if (this._enableReturnService) {
+      await this._lazyInitReturnService();
+      if (this._returnService?.detectReturnIntent(userQuery)) {
+        const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
+        if (orderResult.type === 'order_found') {
+          const eligibility = await this._returnService.checkEligibility(
+            orderResult.order.orderNumber,
+            orderResult.email,
+          );
+          if (eligibility.type === 'return_eligible') {
+            const itemsList = eligibility.items.map(i => `  - ${i.title} (${i.variantTitle})`).join('\n');
+            return `I can help you start a return for order #${eligibility.orderNumber}. Which item(s) would you like to return?\n\nItems in this order:\n${itemsList}\n\nPlease tell me which item and the reason for the return.`;
+          }
+          if (eligibility.type === 'return_not_eligible') {
+            return eligibility.message;
+          }
         }
-        if (eligibility.type === 'return_not_eligible') {
-          return eligibility.message;
+        if (orderResult.type === 'needs_order_number') {
+          return "Sure, I can help with a return. What's your order number?";
         }
+        if (orderResult.type === 'needs_email') {
+          return orderResult.message;
+        }
+        if (orderResult.type === 'email_mismatch' || orderResult.type === 'order_not_found') {
+          return orderResult.message;
+        }
+        return "I can help you start a return. Please provide your order number and email.";
       }
-      if (orderResult.type === 'needs_order_number') {
-        return "Sure, I can help with a return. What's your order number?";
-      }
-      if (orderResult.type === 'needs_email') {
-        return orderResult.message;
-      }
-      if (orderResult.type === 'email_mismatch' || orderResult.type === 'order_not_found') {
-        return orderResult.message;
-      }
-      return "I can help you start a return. Please provide your order number and email.";
     }
 
     // Step 5: Catalog intent detection (product availability, sizing, search)
