@@ -177,6 +177,12 @@ None.
 - Ready for integration testing with ChatWidget and OrderService
 - Worker tested with 17 passing tests — deploy via `cd shopify-proxy && wrangler deploy` after setting credentials
 
+## Self-Check: PASSED
+
+- ✅ All 8 key files exist (package.json, wrangler.toml, tsconfig.json, vitest.config.ts, .env.example, worker.ts, worker.test.ts, SUMMARY.md)
+- ✅ All 4 commits exist (a80afcf, 7d9a523, e5c5917, c22bc0e)
+- ✅ All 17 tests pass (1 test file, 0 failures, 505ms)
+
 ---
 
 *Phase: 07-security-live-data*
