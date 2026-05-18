@@ -6,11 +6,11 @@
 
 ## Current Position
 **Phase**: 07-security-live-data
-**Plan**: Context gathered
-**Status**: Phase 7 context captured. Ready for planning.
+**Plan**: 07-01 (Shopify Proxy Foundation)
+**Status**: Plan 07-01 complete. HMAC-authenticated Cloudflare Workers proxy with Shopify Admin GraphQL integration, 17 passing tests.
 
 ## Progress:
-[██████████████████████████████████░░] 75% (6/8 phases)
+[███████████████████████████████████░] 81% (13/17 plans, 7/8 phases)
 
 ## Performance Metrics
 - **Test Coverage**: 366 tests across 20 suites (all passing)
@@ -45,6 +45,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 4: Order Tracking Workflow — OrderService, OrderIntentDetector, OrderCard, mock data (8 orders, 9 statuses)
 - Phase 5: Graceful Escalation — EscalationDetector, EscalationStateMachine, queue simulator, transfer handler, human agent simulator
 - Phase 6: Semantic AI Router — SemanticRouter class, build-time embeddings, all 3 detectors upgraded, first-query UX, feature flags
+- Phase 7 (Plan 07-01): Shopify Proxy Foundation — CF Worker with HMAC verification, Admin GraphQL integration, email hash matching, CORS, 17 tests
 
 ### Requirements completed
 - Policy Execution (Phase 2) — Built ✓
@@ -53,8 +54,16 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Graceful Handoff (Phase 5) — Built ✓
 - Semantic AI Router (Phase 6) — Built (4/4 plans) ✓
 
+### Requirements completed
+- Policy Execution (Phase 2) — Built ✓
+- Product Intelligence (Phase 3) — Built ✓
+- Order Tracking Workflow (Phase 4) — Built ✓
+- Graceful Handoff (Phase 5) — Built ✓
+- Semantic AI Router (Phase 6) — Built (4/4 plans) ✓
+- JUDGE-04 — Shopify Proxy Foundation (Plan 07-01): HMAC-authenticated serverless proxy prevents client-side data exposure ✓
+
 ### Remaining phases
-- Phase 7: Security & Live Data — Context gathered (2026-05-18), ready for planning
+- Phase 7: Security & Live Data — Plan 07-01 complete. 07-02 and 07-03 remaining.
 - Phase 8: UX & Demo — NOT started
 
 ### Mandatory docs
@@ -75,5 +84,5 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 | `.planning/phases/08-ux-demo/08-CONTEXT.md` | Phase 8 detailed context |
 
 ## Session Continuity
-Phase 7 context gathered (2026-05-18). Decisions captured for proxy platform (Cloudflare Workers), API contract, policy source (markdown), Shopify credentials, error handling, and local dev workflow. Ready for planning.
-Resume file: `.planning/phases/07-security-live-data/07-CONTEXT.md`
+Plan 07-01 complete (2026-05-18). Shopify proxy foundation built: CF Worker with HMAC verification, Admin GraphQL proxy, email hash matching, 17 passing tests. Ready for Plan 07-02 (live data sources).
+Resume file: `.planning/phases/07-security-live-data/07-01-SUMMARY.md`

@@ -107,7 +107,7 @@
 **Context**: .planning/phases/07-security-live-data/
 
 **Plans:**
-- [ ] 07-01-PLAN.md — Shopify proxy foundation (CF Worker, HMAC verification, Admin API proxy, tests)
+- [x] 07-01-PLAN.md — Shopify proxy foundation (CF Worker, HMAC verification, Admin API proxy, tests)
 - [ ] 07-02-PLAN.md — Live data sources (ShopifyStorefrontDataSource, ShopifyOrderProxyDataSource, tests)
 - [ ] 07-03-PLAN.md — PolicyService live fetch + ChatWidget integration + tests
 
@@ -133,5 +133,5 @@
 | 4. Order Tracking Workflow | 2/2 | Complete | 2026-05-16 |
 | 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
 | 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
-| 7. Security & Live Data | 0/3 | Planning | - |
+| 7. Security & Live Data | 1/3 | In Progress | - |
 | 8. UX & Demo | 0/0 | Not started | - |
