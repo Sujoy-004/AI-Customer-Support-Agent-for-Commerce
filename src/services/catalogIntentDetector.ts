@@ -2,6 +2,8 @@
 import { CatalogService } from './catalogService';
 import type { Product, Variant, StockInfo } from './types';
 import { getSynonymTableForOption } from './synonymResolver';
+import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
+import catalogEmbeddingsData from '../../shopify-widget/src/config/semantic/embeddings.json';
 
 export type CatalogIntent = 'stock_check' | 'sizing_inquiry' | 'product_search' | 'variant_lookup';
 
@@ -137,6 +139,8 @@ function escapeRegex(str: string): string {
 
 export class CatalogIntentDetector {
   private catalogService: CatalogService;
+  private semanticRouter: SemanticRouter;
+  private catalogCategories: Record<string, any>;
   private context: CatalogConversationContext | null = null;
   private readonly CONTEXT_TTL_MS = 300000;
   private readonly MAX_CONTEXT_TURNS = 3;
@@ -169,8 +173,10 @@ export class CatalogIntentDetector {
     }
   };
 
-  constructor(catalogService: CatalogService) {
+  constructor(catalogService: CatalogService, semanticRouter: SemanticRouter) {
     this.catalogService = catalogService;
+    this.semanticRouter = semanticRouter;
+    this.catalogCategories = catalogEmbeddingsData.catalog;
   }
 
   async resolveQuery(query: string): Promise<ResolvedQuery> {
@@ -189,7 +195,8 @@ export class CatalogIntentDetector {
       return { type: 'not_catalog', reason: 'Query relates to orders, returns, or refunds' };
     }
 
-    const detectedIntent = this.detectIntent(lowerQuery);
+    const detectedResult = await this.detectIntent(lowerQuery);
+    const detectedIntent = detectedResult.intent;
     const searchResults = await this.searchProducts(query);
 
     const contextProduct = this.context?.product ?? null;
@@ -261,12 +268,12 @@ export class CatalogIntentDetector {
    * Phase 1 helper: Match products against query.
    * Runs intent detection and product search in parallel.
    */
-  private _matchProduct(
+  private async _matchProduct(
     query: string,
     lowerQuery: string
-  ): { intent: CatalogIntent | null } {
-    const detectedIntent = this.detectIntent(lowerQuery);
-    return { intent: detectedIntent };
+  ): Promise<{ intent: CatalogIntent | null }> {
+    const detectedResult = await this.detectIntent(lowerQuery);
+    return { intent: detectedResult.intent };
   }
 
   /**
@@ -435,7 +442,7 @@ export class CatalogIntentDetector {
     return exclusionCount >= catalogCount;
   }
 
-  private detectIntent(lowerQuery: string): CatalogIntent | null {
+  private detectKeywordIntent(lowerQuery: string): { intent: CatalogIntent | null; confidence: number } {
     let bestIntent: CatalogIntent | null = null;
     let bestScore = 0;
 
@@ -458,7 +465,33 @@ export class CatalogIntentDetector {
       }
     }
 
-    return bestIntent;
+    return { intent: bestIntent, confidence: bestIntent ? 0.5 + bestScore * 0.1 : 0 };
+  }
+
+  // New hybrid detectIntent — semantic primary, keyword fallback (D-02)
+  private async detectIntent(lowerQuery: string): Promise<{ intent: CatalogIntent | null; confidence: number; source: 'semantic' | 'keyword' | 'none' }> {
+    // Step 1: Semantic routing (primary)
+    const semanticResult = await this.semanticRouter.classify(
+      lowerQuery, this.catalogCategories,
+    );
+
+    if (semanticResult.intent && semanticResult.confidence >= 0.6) {
+      return {
+        intent: semanticResult.intent as CatalogIntent,
+        confidence: semanticResult.confidence,
+        source: 'semantic',
+      };
+    }
+
+    // Step 2: Keyword fallback (belt-and-suspenders per D-25)
+    const keywordResult = this.detectKeywordIntent(lowerQuery);
+
+    // Step 3: Highest confidence wins (D-23)
+    if (keywordResult.confidence > semanticResult.confidence) {
+      return { intent: keywordResult.intent, confidence: keywordResult.confidence, source: 'keyword' };
+    }
+
+    return { intent: null, confidence: 0, source: 'none' };
   }
 
   private async searchProducts(query: string): Promise<Product[]> {

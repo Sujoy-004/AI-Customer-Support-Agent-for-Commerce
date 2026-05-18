@@ -15,11 +15,13 @@ interface TestCase {
 }
 
 let detector: CatalogIntentDetector;
+const semanticRouter = SemanticRouter.getInstance();
 
 beforeEach(() => {
   const dataSource = new MockCatalogDataSource();
   const service = new CatalogService(dataSource);
-  detector = new CatalogIntentDetector(service);
+  vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+  detector = new CatalogIntentDetector(service, semanticRouter);
 });
 
 describe('Catalog Intelligence Eval', () => {

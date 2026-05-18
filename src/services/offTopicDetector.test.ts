@@ -1,15 +1,18 @@
 // src/services/offTopicDetector.test.ts
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { OffTopicDetector } from './offTopicDetector';
 import { PolicyService } from './policyService';
+import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
 
 describe('OffTopicDetector', () => {
   let offTopicDetector: OffTopicDetector;
   let policyService: PolicyService;
+  const semanticRouter = SemanticRouter.getInstance();
 
   beforeEach(() => {
     policyService = new PolicyService();
-    offTopicDetector = new OffTopicDetector(policyService);
+    vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+    offTopicDetector = new OffTopicDetector(policyService, semanticRouter);
   });
 
   describe('detectOffTopic', () => {

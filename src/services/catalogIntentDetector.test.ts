@@ -3,6 +3,7 @@ import { CatalogIntentDetector, ResolvedQuery, formatCatalogResponse } from './c
 import { CatalogService } from './catalogService';
 import { MockCatalogDataSource, MOCK_PRODUCTS } from './mockCatalogData';
 import type { Product } from './types';
+import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
 
 function createService(): CatalogService {
   const dataSource = new MockCatalogDataSource();
@@ -10,10 +11,12 @@ function createService(): CatalogService {
 }
 
 let detector: CatalogIntentDetector;
+const semanticRouter = SemanticRouter.getInstance();
 
 beforeEach(() => {
   const service = createService();
-  detector = new CatalogIntentDetector(service);
+  vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+  detector = new CatalogIntentDetector(service, semanticRouter);
 });
 
 function isNotCatalog(r: ResolvedQuery): r is { type: 'not_catalog'; reason: string } {

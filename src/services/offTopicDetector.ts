@@ -5,6 +5,8 @@
  */
 
 import { PolicyService } from './policyService';
+import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
+import onTopicEmbeddingsData from '../../shopify-widget/src/config/semantic/embeddings.json';
 
 /**
  * Interface for off-topic detection results
@@ -21,6 +23,8 @@ export interface OffTopicResult {
  */
 export class OffTopicDetector {
   private policyService: PolicyService;
+  private semanticRouter: SemanticRouter;
+  private onTopicCategories: Record<string, any>;
   
   // Topics that are considered on-topic for the store
   private readonly ON_TOPIC_KEYWORDS = [
@@ -73,8 +77,10 @@ export class OffTopicDetector {
     'alcohol', 'cigarette', 'smoking', 'gambling', 'casino'
   ];
 
-  constructor(policyService: PolicyService) {
+  constructor(policyService: PolicyService, semanticRouter: SemanticRouter) {
     this.policyService = policyService;
+    this.semanticRouter = semanticRouter;
+    this.onTopicCategories = onTopicEmbeddingsData.offTopic;
   }
 
   /**
@@ -98,6 +104,22 @@ export class OffTopicDetector {
       result.reasons.push('Empty query');
       result.suggestedTopics.push('Ask about our products, shipping, returns, or warranty');
       return result;
+    }
+    
+    // Semantic on-topic check (D-24)
+    // Check if query is semantically close to any on-topic domain
+    try {
+      const onTopicResult = await this.semanticRouter.classify(query, this.onTopicCategories);
+      if (onTopicResult.intent && onTopicResult.confidence >= 0.6) {
+        // Query is on-topic — clear any off-topic suspicion
+        result.isOffTopic = false;
+        result.confidence = Math.min(0.3, 1 - onTopicResult.confidence);
+        result.reasons = ['Query matches on-topic domain: ' + onTopicResult.intent];
+        return result;
+      }
+    } catch (err) {
+      // Silent fallback (D-27): if semantic check fails, fall through to keyword logic
+      console.error('[OffTopicDetector] Semantic on-topic check failed:', err);
     }
     
     // Check for clearly off-topic keywords
@@ -181,4 +203,4 @@ export class OffTopicDetector {
 /**
  * Default export for convenience
  */
-export default new OffTopicDetector(new PolicyService());
+export default new OffTopicDetector(new PolicyService(), SemanticRouter.getInstance());

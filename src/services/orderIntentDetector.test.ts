@@ -3,11 +3,14 @@ import { OrderIntentDetector } from './orderIntentDetector';
 import { OrderService } from './orderService';
 import { MockOrderDataSource } from './mockOrderData';
 import type { OrderQuery } from './orderIntentDetector';
+import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
 
 function createDetector(): OrderIntentDetector {
   const dataSource = new MockOrderDataSource();
   const service = new OrderService(dataSource);
-  return new OrderIntentDetector(service);
+  const semanticRouter = SemanticRouter.getInstance();
+  vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+  return new OrderIntentDetector(service, semanticRouter);
 }
 
 let detector: OrderIntentDetector;

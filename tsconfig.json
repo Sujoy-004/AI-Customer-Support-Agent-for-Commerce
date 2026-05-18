@@ -5,7 +5,6 @@
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,11 +17,12 @@
     "verbatimModuleSyntax": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "shopify-widget/src/core/semanticRouter.ts",
+    "shopify-widget/src/config/semantic/embeddings.json"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "shopify-widget/src/**/*"
+    "dist"
   ]
 }
