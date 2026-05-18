@@ -76,6 +76,33 @@ describe('ShopifyOrderProxyDataSource', () => {
     });
   });
 
+  // ==================== Input validation ====================
+
+  describe('input validation', () => {
+    it('returns null for non-positive order numbers', async () => {
+      expect(await dataSource.getOrderByNumber(0)).toBeNull();
+      expect(await dataSource.getOrderByNumber(-1)).toBeNull();
+      expect(await dataSource.getOrderByNumber(NaN)).toBeNull();
+      expect(await dataSource.getOrderByNumber(Infinity)).toBeNull();
+    });
+  });
+
+  // ==================== Error response handling ====================
+
+  describe('error response handling', () => {
+    it('returns null on invalid_hmac error code', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ error: true, code: 'invalid_hmac', message: 'Invalid signature' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const result = await dataSource.getOrderByNumber(1001);
+      expect(result).toBeNull();
+    });
+  });
+
   // ==================== getOrderByNumber request shape ====================
 
   describe('getOrderByNumber request', () => {
@@ -220,6 +247,46 @@ describe('ShopifyOrderProxyDataSource', () => {
     }, 10000);
   });
 
+  // ==================== proxyUrl normalization ====================
+
+  describe('proxyUrl normalization', () => {
+    it('removes trailing slash from proxyUrl', async () => {
+      const dsWithSlash = new ShopifyOrderProxyDataSource({
+        proxyUrl: 'https://proxy.example.com/',
+        hmacSecret: 'test-secret',
+      });
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ found: false }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      await dsWithSlash.getOrderByNumber(1001);
+
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toBe('https://proxy.example.com/api/order-lookup');
+    });
+
+    it('does not double-slash when proxyUrl has no trailing slash', async () => {
+      const dsNoSlash = new ShopifyOrderProxyDataSource({
+        proxyUrl: 'https://proxy.example.com',
+        hmacSecret: 'test-secret',
+      });
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ found: false }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      await dsNoSlash.getOrderByNumber(1001);
+
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toBe('https://proxy.example.com/api/order-lookup');
+    });
+  });
+
   // ==================== Network error ====================
 
   describe('network error handling', () => {
@@ -272,14 +339,4 @@ describe('ShopifyOrderProxyDataSource', () => {
     });
   });
 
-  // ==================== Input validation ====================
-
-  describe('input validation', () => {
-    it('returns null for non-positive order numbers', async () => {
-      expect(await dataSource.getOrderByNumber(0)).toBeNull();
-      expect(await dataSource.getOrderByNumber(-1)).toBeNull();
-      expect(await dataSource.getOrderByNumber(NaN)).toBeNull();
-      expect(await dataSource.getOrderByNumber(Infinity)).toBeNull();
-    });
-  });
 });
