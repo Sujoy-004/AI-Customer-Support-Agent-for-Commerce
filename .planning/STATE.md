@@ -6,14 +6,14 @@
 
 ## Current Position
 **Phase**: 07-security-live-data
-**Plan**: 07-01 (Shopify Proxy Foundation)
-**Status**: Plan 07-01 complete. HMAC-authenticated Cloudflare Workers proxy with Shopify Admin GraphQL integration, 17 passing tests.
+**Plan**: 07-02 (Live Data Sources)
+**Status**: Plan 07-02 complete. ShopifyStorefrontDataSource (CatalogDataSource) and ShopifyOrderProxyDataSource (OrderDataSource) with HMAC-signed proxy requests, 16 tests. 398 total tests across 21 suites.
 
 ## Progress:
-[███████████████████████████████████░] 81% (13/17 plans, 7/8 phases)
+[████████████████████████████████████] 88% (15/17 plans, 7/8 phases)
 
 ## Performance Metrics
-- **Test Coverage**: 366 tests across 20 suites (all passing)
+- **Test Coverage**: 398 tests across 21 suites (all passing)
 - **Build Passing**: Yes
 - **Judge Score**: 58/100 — Bronze Tier (hackathon submission)
 
@@ -46,6 +46,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 5: Graceful Escalation — EscalationDetector, EscalationStateMachine, queue simulator, transfer handler, human agent simulator
 - Phase 6: Semantic AI Router — SemanticRouter class, build-time embeddings, all 3 detectors upgraded, first-query UX, feature flags
 - Phase 7 (Plan 07-01): Shopify Proxy Foundation — CF Worker with HMAC verification, Admin GraphQL integration, email hash matching, CORS, 17 tests
+- Phase 7 (Plan 07-02): Live Data Sources — ShopifyStorefrontDataSource (catalog), ShopifyOrderProxyDataSource (order lookup), HMAC signing, retry logic, 16 tests
 
 ### Requirements completed
 - Policy Execution (Phase 2) — Built ✓
@@ -54,9 +55,11 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Graceful Handoff (Phase 5) — Built ✓
 - Semantic AI Router (Phase 6) — Built (4/4 plans) ✓
 - JUDGE-04 — Shopify Proxy Foundation (Plan 07-01): HMAC-authenticated serverless proxy prevents client-side data exposure ✓
+- JUDGE-04 — ShopifyOrderProxyDataSource (Plan 07-02): HMAC-signed proxy client with SHA-256 email hashing and retry logic ✓
+- JUDGE-05 — ShopifyStorefrontDataSource (Plan 07-02): Live Storefront GraphQL API integration replacing mock catalog data ✓
 
 ### Remaining phases
-- Phase 7: Security & Live Data — Plan 07-01 complete. 07-02 and 07-03 remaining.
+- Phase 7: Security & Live Data — Plans 07-01 and 07-02 complete. 07-03 remaining.
 - Phase 8: UX & Demo — NOT started
 
 ### Mandatory docs
@@ -77,5 +80,5 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 | `.planning/phases/08-ux-demo/08-CONTEXT.md` | Phase 8 detailed context |
 
 ## Session Continuity
-Plan 07-01 complete (2026-05-18). Shopify proxy foundation built: CF Worker with HMAC verification, Admin GraphQL proxy, email hash matching, 17 passing tests. Ready for Plan 07-02 (live data sources).
-Resume file: `.planning/phases/07-security-live-data/07-01-SUMMARY.md`
+Plan 07-02 complete (2026-05-18). Live data sources built: ShopifyStorefrontDataSource (catalog) and ShopifyOrderProxyDataSource (order lookup), 16 tests. 398 total tests across 21 suites. Ready for Plan 07-03 (PolicyService live fetch + ChatWidget integration).
+Resume file: `.planning/phases/07-security-live-data/07-02-SUMMARY.md`
