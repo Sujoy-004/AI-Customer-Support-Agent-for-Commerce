@@ -53,13 +53,6 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Order Tracking Workflow (Phase 4) — Built ✓
 - Graceful Handoff (Phase 5) — Built ✓
 - Semantic AI Router (Phase 6) — Built (4/4 plans) ✓
-
-### Requirements completed
-- Policy Execution (Phase 2) — Built ✓
-- Product Intelligence (Phase 3) — Built ✓
-- Order Tracking Workflow (Phase 4) — Built ✓
-- Graceful Handoff (Phase 5) — Built ✓
-- Semantic AI Router (Phase 6) — Built (4/4 plans) ✓
 - JUDGE-04 — Shopify Proxy Foundation (Plan 07-01): HMAC-authenticated serverless proxy prevents client-side data exposure ✓
 
 ### Remaining phases
