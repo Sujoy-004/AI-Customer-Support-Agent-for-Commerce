@@ -136,7 +136,7 @@ There is **no welcome message**. The widget opens to an empty message area. This
 ## Current Limitations
 
 1. **Browser-side only** — All services run in the browser. The `_generateAgentResponse` pipeline in ChatWidget calls local services, not a server API. This means every page load creates new service instances. A production deployment would move services to a Shopify App backend.
-2. **Mock data** — Catalog and policy data are mock implementations. `CatalogDataSource` and `PolicyService` have interfaces ready for live API connections but no Shopify Admin API client has been written yet. The semantic router is intent-only and data-source-agnostic — when live data connects in Phase 7, it auto-becomes the source of truth.
+2. **Mock data fallback** — Catalog, order, and policy data now support live Shopify API connections (Phase 7). `dataSource: { catalog, order, policy }` option in ChatWidgetOptions toggles between mock fallback and live sources. Default remains mock for backward compatibility.
 3. **No persistent conversation history** — Context expires after 5 minutes or 3 turns; no long-term session storage.
 
 ## Future Roadmap
@@ -150,7 +150,7 @@ There is **no welcome message**. The widget opens to an empty message area. This
 | 4. Order Tracking | Complete | OrderService, OrderCard, multi-turn auth |
 | 5. Graceful Escalation | Complete | Human handoff with queue, transfer, canned script |
 | 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
-| 7. Security & Live Data | In progress | Serverless order proxy, Shopify Storefront API |
+| 7. Security & Live Data | In progress | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
 | 8. UX & Demo | Planned | Quick action chips, realtime handoff, demo video |
 
 ### Post-Hackathon

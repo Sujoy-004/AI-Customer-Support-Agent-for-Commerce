@@ -50,6 +50,11 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 ## Project Structure
 
 ```
+├── shopify-proxy/           # Cloudflare Workers serverless proxy
+│   ├── package.json         # wrangler + workerd dependencies
+│   ├── wrangler.toml        # CF Workers config
+│   ├── .env.example         # Template for SHOPIFY_ADMIN_TOKEN, SHOPIFY_STORE_DOMAIN
+│   └── src/worker.ts        # HMAC verification, Admin GraphQL query, filtered response
 ├── shopify-widget/          # Browser widget (ChatWidget DOM rendering)
 │   ├── index.html           # Demo page — loads dist/widget.js
 │   ├── src/ChatWidget.ts    # Main widget class — pipeline, events, DOM
@@ -81,6 +86,8 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 │   │   ├── escalationQueueSimulator.ts # Queue position (1-5)
 │   │   ├── escalationTransferHandler.ts # 20s timeout, retry
 │   │   ├── escalationHumanAgent.ts     # 3-message canned script
+│   │   ├── shopifyStorefrontDataSource.ts # Live Shopify Storefront API client
+│   │   ├── shopifyOrderProxyDataSource.ts # HMAC-signed proxy client
 │   │   └── types.ts                   # All TypeScript definitions
 │   ├── config/synonyms/     # Size, color, material synonym tables
 │   ├── config/semantic/     # Reference phrases + pre-computed embeddings for SemanticRouter
@@ -147,19 +154,19 @@ Greeting check / Fallback text
 
 - **No hallucinations**: Data retrieval pipeline uses zero LLM calls — every product lookup, stock check, and variant resolution goes through deterministic code.
 - **Hybrid AI approach**: MiniLM sentence embeddings for semantic intent detection (in-browser), structured code for all data lookups. Best of both worlds.
-- **Swappable data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration.
+- **Swappable data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration. `PolicyService` supports live markdown fetch.
 - **Bounded context**: Cross-turn context expires after 5 minutes or 3 turns.
 - **All services run in-browser**: No backend required (except optional serverless proxy for order security).
 
 ## Testing
 
-- **20 unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, and guard services
+- **20+ unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, guard services, data sources
 - **4 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks, DOM snapshot
 - **Eval suite** — 48 scenario-based catalog intelligence evals
-- **Coverage**: 366 unit tests + 12 E2E tests passing
+- **Coverage**: 403 unit tests + 12 E2E tests passing
 
 ```bash
-# Run all Vitest tests (366 passing)
+# Run all Vitest tests (403 passing)
 npx vitest run
 
 # Run with coverage
@@ -167,6 +174,19 @@ npx vitest run --coverage
 
 # Build widget + run E2E tests (12 passing)
 npx playwright test --config=e2e/playwright.config.ts
+```
+
+### Proxy Local Dev
+
+```bash
+cd shopify-proxy
+cp .env.example .env         # Set SHOPIFY_ADMIN_TOKEN, SHOPIFY_STORE_DOMAIN
+npx wrangler dev             # Starts proxy at localhost:8787
+```
+
+Or from root:
+```bash
+npm run dev:proxy
 ```
 
 ## Phases
@@ -179,7 +199,7 @@ npx playwright test --config=e2e/playwright.config.ts
 | 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
 | 5. Graceful Handoff | Complete | EscalationDetector, StateMachine, queue, transfer, human agent |
 | 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
-| 7. Security & Live Data | In progress | Serverless order proxy, Shopify Storefront API |
+| 7. Security & Live Data | In progress | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
 | 8. UX & Demo | Planned | Quick action chips, realtime handoff, demo video |
 
 ## Key Technologies

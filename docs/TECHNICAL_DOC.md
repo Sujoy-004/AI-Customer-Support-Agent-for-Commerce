@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Technical Document: AI Customer Support Agent for Commerce
 
-> **Last updated:** 2026-05-17
+> **Last updated:** 2026-05-18
 > **Repository:** AI Customer Support Agent for Commerce (Track 4)
 
 ## 1. Architecture Overview
@@ -79,6 +79,10 @@ The system uses a browser-side layered architecture. All services run in the use
 │  │MockCatalogDataSource│  │MockOrderDataSource          │       │
 │  │(7 products, 52 var.)│  │(orders with 9 statuses)    │       │
 │  └────────────────────┘  └────────────────────────────┘       │
+│  ┌──────────────────────────┐  ┌────────────────────────────┐ │
+│  │ShopifyStorefrontDataSource│  │ShopifyOrderProxyDataSource│ │
+│  │(live Storefront API)     │  │(HMAC-signed proxy client)  │ │
+│  └──────────────────────────┘  └────────────────────────────┘ │
 │  ┌────────────────────┐  ┌────────────────────────────────┐   │
 │  │ConversationContext │  │ Synonym Config (colors.ts,     │   │
 │  │Manager (5min/3turn)│  │  sizes.ts, materials.ts)      │   │
@@ -128,8 +132,12 @@ The system uses a browser-side layered architecture. All services run in the use
 | `shopify-widget/scripts/generateEmbeddings.ts` | New | Build-time script — loads model, generates embeddings.json |
 | `src/services/mockCatalogData.ts` | 332 | 7 products with 52 variants, stock overrides |
 | `src/services/mockOrderData.ts` | ~200 | Mock orders with 9 statuses, full timeline events |
+| `src/services/shopifyStorefrontDataSource.ts` | 208 | Live Shopify Storefront API integration — GraphQL product query, maps to Product/Variant types |
+| `src/services/shopifyOrderProxyDataSource.ts` | 142 | HMAC-signed proxy client — SHA-256 email hash, HMAC signing, retry on 5xx |
 | `src/services/conversationContext.ts` | 49 | Cross-turn context manager |
 | `src/services/cacheManager.ts` | 33 | Generic TTL cache |
+| `policies.md` | Example | Markdown config file with YAML frontmatter — live policy data source |
+| `shopify-proxy/src/worker.ts` | New | Cloudflare Worker — HMAC verification, Shopify Admin GraphQL query, filtered status response |
 
 ## 2. AI/Deterministic Boundary
 
@@ -760,3 +768,140 @@ Key settings:
 - `reuseExistingServer: false` — ensures a fresh build every test run
 - `port: 3000` — matches `baseURL`
 - `timeout: 60000` — 60s for the full build + serve pipeline
+
+## 10. Phase 7: Security & Live Data Architecture
+
+### 10.1 Overview
+
+Phase 7 moves sensitive operations behind a serverless backend proxy and connects catalog/policy data to live Shopify APIs. This addresses two critical production-readiness gaps: client-side data exposure (JUDGE-04) and hardcoded static arrays (JUDGE-05, JUDGE-06).
+
+### 10.2 Cloudflare Workers Proxy
+
+The `shopify-proxy/` directory is a standalone Cloudflare Workers project:
+
+```
+shopify-proxy/
+├── package.json
+├── wrangler.toml
+├── .env.example
+└── src/
+    └── worker.ts
+```
+
+The Worker serves a single endpoint `POST /api/order-lookup`:
+
+1. **HMAC verification** — Uses `crypto.subtle.verify()` (constant-time) to validate the request signature
+2. **Timestamp validation** — 5-minute window prevents replay attacks
+3. **Admin GraphQL query** — Fetches order status + timeline via Shopify Admin API
+4. **Filtered response** — Returns only `{ found, status, estimatedDelivery, timeline }`
+
+**Request contract:**
+```json
+{ "orderNumber": 1001, "emailHash": "abc...64chars", "timestamp": 1700000000, "hmac": "def...64chars" }
+```
+
+**Response contract (success):**
+```json
+{ "found": true, "status": "shipped", "estimatedDelivery": "2026-05-18", "timeline": [...] }
+```
+
+**Error codes:** `not_found`, `email_mismatch`, `proxy_error`, `invalid_hmac`, `invalid_request`
+
+### 10.3 Live Data Sources
+
+#### ShopifyStorefrontDataSource (`src/services/shopifyStorefrontDataSource.ts`)
+
+Implements `CatalogDataSource` by querying the Shopify Storefront API's `products()` GraphQL endpoint. Products queried with variants, prices, options, and images. Maps API response to the existing `Product`/`Variant` types.
+
+**Key properties:**
+- `storeDomain` normalized (strips `https://` and trailing slashes)
+- Optional `storefrontToken` sent as `X-Shopify-Storefront-Access-Token` header
+- API version `2026-04`
+
+#### ShopifyOrderProxyDataSource (`src/services/shopifyOrderProxyDataSource.ts`)
+
+Implements `OrderDataSource` by HMAC-signing requests and sending them to the Cloudflare Worker proxy.
+
+**Key properties:**
+- SHA-256 hashes the user's email for request signing
+- HMAC-SHA256 signs `orderNumber + emailHash + timestamp`
+- Retry logic: 1 retry after 2s delay on 5xx responses
+- Stub methods `getOrder()` and `getOrdersByEmail()` return null/empty (not supported via proxy)
+
+### 10.4 PolicyService with Live Fetch
+
+`PolicyService` (`src/services/policyService.ts`) now accepts options:
+
+```typescript
+interface PolicyServiceOptions {
+  policyUrl?: string;    // default: './policies.md'
+  useMockData?: boolean; // default: true
+}
+```
+
+- **`useMockData: true`** — Returns existing hardcoded mock policies (unchanged behavior)
+- **`useMockData: false`** — Fetches markdown from `policyUrl`, parses YAML frontmatter, maps to `PolicyData`
+- **Frontmatter parser** — Handles nested section keys (e.g., `shipping.standard`), arrays (`["a", "b"]`), booleans (`true`/`false`), and numbers
+- **Failure mode** — Throws Error with fallback text "Please check our store policies for the most current information." (D-13)
+
+Example `policies.md` at project root:
+```markdown
+---
+shipping:
+  standard: "5-7 business days"
+  express: "2-3 business days"
+  free_threshold: 50
+return_window_days: 30
+warranty_months: 12
+---
+# Store Policies
+```
+
+### 10.5 ChatWidget Options Update
+
+`ChatWidgetOptions` extended with live data source options:
+
+```typescript
+interface ChatWidgetOptions {
+  // ... existing options ...
+  proxyUrl?: string;          // URL to Cloudflare Worker
+  hmacSecret?: string;         // Shared HMAC secret
+  policyUrl?: string;          // URL to policies.md (default: ./policies.md)
+  storeDomain?: string;        // Shopify store domain for Storefront API
+  storefrontToken?: string;    // Optional Storefront API access token
+  dataSource?: {
+    catalog?: 'mock' | 'live';
+    order?: 'mock' | 'live';
+    policy?: 'mock' | 'live';
+  };
+}
+```
+
+**Data source selection logic:**
+- Default (`dataSource` not set or `'mock'`): Uses `MockCatalogDataSource`, `MockOrderDataSource`, and mock PolicyService
+- `catalog: 'live'`: Creates `ShopifyStorefrontDataSource` (requires `storeDomain`)
+- `order: 'live'`: Creates `ShopifyOrderProxyDataSource` (requires `proxyUrl`, `hmacSecret`)
+- `policy: 'live'`: PolicyService uses `useMockData: false` (requires `policyUrl`)
+- Silent by design (D-14) — no UI indicator of data source mode
+
+### 10.6 Error Handling Per Data Source
+
+| Source | Failure Behavior |
+|--------|-----------------|
+| Order lookup | Retry once (2s delay), then return null |
+| Catalog | Propagates error (caught by ChatWidget try/catch) |
+| Policy | Throws fallback text: "Please check our store policies..." |
+| Data source mode | Silent — no user-facing indication (D-14) |
+
+### 10.7 HMAC Request Authentication (Browser-Side)
+
+Widget signs requests with a shared secret before sending to proxy:
+
+```typescript
+async function signRequest(payload, secret): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+```

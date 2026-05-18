@@ -556,3 +556,203 @@ Source: `e2e/playwright.config.ts` lines 13-19.
 **Tradeoff:** ~30MB model download on first query (~1-2s). Mitigated by IndexedDB caching via transformer.js (instant on subsequent loads) and "Loading AI model…" UX with query queuing. Build-time embedding generation adds ~2-3s to npm run build.
 
 Source: `.planning/phases/06-semantic-ai-router/06-AI-SPEC.md` — full decision record with 34 decisions across 9 gray areas.
+
+---
+
+## 2026-05-18: D-01 — Cloudflare Workers Proxy Platform
+
+**Considered:**
+- Vercel Edge Functions — 100k edge requests/month free
+- Cloudflare Workers — 100k requests/day free
+- Deno Deploy — 100k requests/month free
+
+**Chose:** Cloudflare Workers with TypeScript + `wrangler` CLI. Standalone `shopify-proxy/` directory at project root with its own `package.json`, `wrangler.toml`, and `src/worker.ts`.
+
+**Because:** Best free tier (100k requests/day), native Web Crypto API support for HMAC verification, excellent `wrangler dev` DX, and edge-native deployment.
+
+**Tradeoff:** Requires deploying to Cloudflare's edge network. Local dev requires `wrangler dev` which spawns a `workerd` process.
+
+---
+
+## 2026-05-18: D-02 — HMAC Request Authentication
+
+**Considered:**
+- No auth (open proxy) — anyone could query any order
+- API key in request header
+- HMAC signing with shared secret
+
+**Chose:** HMAC-SHA256 signing with a shared secret passed via ChatWidget constructor option. Browser signs `orderNumber + emailHash + timestamp` with `crypto.subtle.sign()`. Worker verifies with `crypto.subtle.verify()` (constant-time).
+
+**Because:** Directly addresses the judge's concern about client-side data exposure. HMAC prevents arbitrary third parties from using the proxy. Timestamp inclusion prevents replay attacks within a 5-minute window. No server-side state needed.
+
+**Tradeoff:** Shared secret is embedded in widget bundle — same risk profile as Storefront API token. Deployment-specific secret rotation recommended.
+
+---
+
+## 2026-05-18: D-03 — Shopify Admin GraphQL API
+
+**Considered:**
+- Shopify Admin REST API — simpler but returns full order objects
+- Shopify Admin GraphQL API — query only needed fields
+
+**Chose:** GraphQL Admin API. Worker queries `orders(first: 1, query: "name:1001")` for only status and timeline fields.
+
+**Because:** GraphQL allows querying exactly the fields needed (status, timeline, customer email), making the filtered response contract implicit in the query. More efficient than REST for partial data.
+
+**Tradeoff:** GraphQL query syntax is more complex than REST endpoints. API version `2025-07` must match the store's Admin API version.
+
+---
+
+## 2026-05-18: D-04 — Shopify Storefront API for Catalog
+
+**Considered:**
+- Admin API (requires secret token, server-side only)
+- Storefront API (public, designed for client-side use)
+
+**Chose:** Shopify Storefront API for catalog reads. GraphQL `products(first: 250)` query. Optional `X-Shopify-Storefront-Access-Token` header (depends on store configuration).
+
+**Because:** Storefront API is designed for public-facing store data. No secret key needed for basic published product queries (some stores may require a public token). Real-time inventory data.
+
+**Tradeoff:** The API may require a public token depending on store configuration. The token is safe to embed client-side since it only exposes public product data.
+
+---
+
+## 2026-05-18: D-05 — Policy Data Source (Markdown Frontmatter)
+
+**Considered:**
+- Separate JSON config file — structured but less human-friendly
+- Shopify Admin API policies endpoint — requires server-side auth
+- Markdown config file with frontmatter YAML
+
+**Chose:** Markdown file with frontmatter YAML (`policies.md`). Fetched client-side via `fetch()` — no proxy needed since policies are public data. PolicyService takes a `policyUrl` option (default: `./policies.md`).
+
+**Because:** Simplest approach that works offline and has zero API dependency. Frontmatter YAML gives structured fields for the widget to use programmatically. Markdown body provides human-readable policy text. Merchant edits a single file.
+
+**Tradeoff:** Requires editing a file rather than a dashboard UI. No version control or audit trail beyond git.
+
+---
+
+## 2026-05-18: D-06 — Fallback to Mock Data
+
+**Considered:**
+- Remove mock data entirely (require live API)
+- Keep mock data as default, live data as opt-in
+
+**Chose:** Keep mock data sources as fallback. Toggle via `dataSource: { catalog, order, policy }` option in ChatWidget constructor. Default is all mock.
+
+**Because:** Demo environment may not have a live Shopify store configured. Tests still use mock data (deterministic, fast, no network dependency). Migration path: merchant sets `dataSource: { catalog: 'live', order: 'live' }` when ready.
+
+**Tradeoff:** Two code paths to maintain. Widget defaults to non-production behavior unless explicitly configured.
+
+---
+
+## 2026-05-18: D-07 — Proxy Request Contract
+
+**Considered:**
+- Full email in request (worker hashes server-side)
+- Email hash only + HMAC
+
+**Chose:** Request body: `{ orderNumber, emailHash (SHA-256), timestamp, hmac }`. Email hash computed client-side via `crypto.subtle.digest('SHA-256')`. HMAC signs `orderNumber + emailHash + timestamp`. Timestamp validated within a 5-minute window on the proxy.
+
+**Because:** SHA-256 is standard, built into browsers via SubtleCrypto. The proxy never receives raw email addresses. Timestamp prevents replay attacks without server-side session state.
+
+**Tradeoff:** Email hash is deterministic — same email always produces the same hash (limited privacy improvement). Acceptable since the proxy only returns status data.
+
+---
+
+## 2026-05-18: D-08 — Proxy Response Contract
+
+**Considered:**
+- Pass through full Shopify Admin API response
+- Filter to status-only fields
+
+**Chose:** Return only status-related fields: `{ found, status, estimatedDelivery, timeline }`. On error: HTTP status code + JSON body `{ error: true, code, message }`. Error codes: `not_found`, `email_mismatch`, `proxy_error`, `invalid_hmac`, `invalid_request`.
+
+**Because:** Minimal data exposure — the widget already knows how to render these fields via OrderCard. Structured error codes let the widget handle each case specifically.
+
+**Tradeoff:** If the widget needs additional order fields in the future, the proxy must be updated.
+
+---
+
+## 2026-05-18: D-09 — Local Development Workflow
+
+**Considered:**
+- Use Cloudflare Dashboard for env vars
+- Use `.env` file + `wrangler dev`
+
+**Chose:** `wrangler dev` runs the worker locally on `localhost:8787`. Root `package.json` gets a `dev:proxy` npm script. Configuration via `.env` file (not `wrangler.toml [vars]`).
+
+**Because:** `.env` is more portable and familiar. `wrangler dev` is the standard CF Workers local dev approach. `.env` is gitignored, `.env.example` committed with placeholder values.
+
+**Tradeoff:** `wrangler dev` requires Node.js and the `workerd` binary to be installed.
+
+---
+
+## 2026-05-18: D-10 — Shopify Credential Setup
+
+**Considered:**
+- Shopify OAuth app (handles token management)
+- Custom app + Admin API token
+
+**Chose:** Create a Shopify Partners account → dev store → custom app → Admin API access token. Token stored as `SHOPIFY_ADMIN_TOKEN` in worker `.env`. Store domain configured similarly.
+
+**Because:** Custom app + Admin API token is the standard, non-OAuth approach for server-to-server integrations. Per hackathon setup instructions (`docs/hackathon.md` §"Getting Started with Shopify").
+
+**Tradeoff:** Admin API token has full write access to the store. Must be kept secret (never in client-side code).
+
+---
+
+## 2026-05-18: D-11 — Order Lookup Error Handling
+
+**Considered:**
+- Fail immediately on proxy error
+- Retry then fail (user sees error)
+- Retry then silently fall back to mock data
+
+**Chose:** Automatic retry once after 2s on proxy failure. If retry also fails, silently fall back to MockOrderDataSource. User still gets an order status response.
+
+**Because:** Best UX — user isn't blocked by transient API issues. Mock data may be stale but order lookup is primarily about showing the experience.
+
+**Tradeoff:** If the proxy is down, users see potentially stale order data. Acceptable for hackathon demo.
+
+---
+
+## 2026-05-18: D-12 — Catalog Error Handling
+
+**Considered:**
+- Fall back to mock catalog data
+- Show user-visible error message
+
+**Chose:** Show user-visible error message: "Product catalog is temporarily unavailable." No fallback to mock catalog data.
+
+**Because:** Catalog data changes frequently. Showing stale mock data could mislead users about actual product availability and pricing.
+
+**Tradeoff:** Users cannot browse products during a catalog outage. Acceptable for a support agent (not a storefront).
+
+---
+
+## 2026-05-18: D-13 — Policy Error Handling
+
+**Considered:**
+- Error message with no fallback
+- Show hardcoded fallback policy text
+
+**Chose:** Show built-in fallback text: "Please check our store policies for the most current information."
+
+**Because:** Policy text is relatively stable. Fallback text is truthful and directs users to the authoritative source (the store's actual policy page).
+
+**Tradeoff:** Users don't get a specific answer. Directed to check the store's actual policy page for complete information.
+
+---
+
+## 2026-05-18: D-14 — Silent Data Source Mode
+
+**Considered:**
+- Show data source badge ("Live" / "Demo")
+- No indication — identical UX regardless of backend
+
+**Chose:** Silent — no data source indicator shown to the user. Widget works identically regardless of backend.
+
+**Because:** Users don't need to know whether data comes from a live API or mock data. The experience and responses are the same. A data source badge would cause confusion ("why does it say Demo on my live store?").
+
+**Tradeoff:** Developers cannot visually confirm which data source is active.
