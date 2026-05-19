@@ -159,6 +159,42 @@ export class SemanticRouter {
     return { intent: bestIntent, confidence: bestScore };
   }
 
+  /**
+   * Classify a query against phrase-based categories (computes embeddings on-the-fly).
+   * Convenience wrapper around classify() for cases where pre-computed embeddings
+   * are not available (e.g., dynamic policy categories).
+   */
+  async classifyFromPhrases(
+    query: string,
+    phraseCategories: Record<string, string[]>,
+  ): Promise<ClassificationResult> {
+    const queryEmbedding = await this.embed(query);
+    if (!queryEmbedding) {
+      return { intent: null, confidence: 0 };
+    }
+
+    let bestIntent: string | null = null;
+    let bestScore = 0;
+
+    for (const [intentName, phrases] of Object.entries(phraseCategories)) {
+      for (const phrase of phrases) {
+        const refEmbedding = await this.embed(phrase);
+        if (!refEmbedding) continue;
+        const score = this.cosineSimilarity(queryEmbedding, refEmbedding);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIntent = intentName;
+        }
+      }
+    }
+
+    if (bestScore < this.CONFIDENCE_THRESHOLD) {
+      return { intent: null, confidence: bestScore };
+    }
+
+    return { intent: bestIntent, confidence: bestScore };
+  }
+
   pruneCache(): void {
     const now = Date.now();
     for (const [key, entry] of this._embedCache) {

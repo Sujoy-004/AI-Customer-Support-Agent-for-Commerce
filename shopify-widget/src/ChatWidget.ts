@@ -801,23 +801,78 @@ export default class ChatWidget {
 
   /**
    * Handle policy-specific queries by looking up live policy data.
+   * Uses SemanticRouter for intent detection (W4) with keyword fallback.
+   * Enforces ResponseGrounder validation (W2) — returns fallback on grounding failure.
    * Returns null if the query is not about store policies.
    */
   private async _handlePolicyQuery(query: string): Promise<string | null> {
-    const lower = query.toLowerCase();
-    const ps = this._policyService || policyService; // Use configured service, fallback to default
+    const ps = this._policyService || policyService;
     const policies = await ps.getAllPolicies();
 
+    // Semantic routing for policy intent (W4 fix)
+    const policyCategories = {
+      shipping: ['shipping', 'delivery', 'how long to arrive', 'when will it ship', 'delivery time', 'shipping options'],
+      warranty: ['warranty', 'guarantee', 'coverage', 'defect', 'repair', 'product guarantee'],
+      returns: ['return', 'refund', 'exchange', 'send back', 'money back', 'return policy']
+    };
+
+    try {
+      const result = await this._semanticRouter.classifyFromPhrases(query.toLowerCase(), policyCategories);
+
+      if (result.confidence >= 0.6 && result.intent) {
+        let policyResponse: string;
+        switch (result.intent) {
+          case 'shipping':
+            policyResponse = `Our shipping options are: ${policies.shipping.standard}, ${policies.shipping.express}, and ${policies.shipping.international}. Free shipping on orders over $${policies.shipping.freeShippingThreshold}.`;
+            break;
+          case 'warranty':
+            policyResponse = `Our products come with ${policies.warranty.standardPeriod} covering ${policies.warranty.coverageDetails}.`;
+            break;
+          case 'returns':
+            policyResponse = `Our return policy allows returns within ${policies.returns.returnWindow}. ${policies.returns.refundMethod}.`;
+            break;
+          default:
+            return null;
+        }
+
+        // Grounding enforcement (W2 fix)
+        const grounding = await responseGrounder.groundResponse(query, policyResponse);
+        if (!grounding.isGrounded) {
+          return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
+        }
+
+        return policyResponse;
+      }
+    } catch (err) {
+      // Semantic routing failed — fall through to keyword matching
+      console.error('[ChatWidget] Semantic policy routing failed:', err);
+    }
+
+    // Keyword fallback if semantic confidence is low or routing failed
+    const lower = query.toLowerCase();
     if (lower.includes('shipping') || lower.includes('delivery')) {
-      return `Our shipping options are: ${policies.shipping.standard}, ${policies.shipping.express}, and ${policies.shipping.international}. Free shipping on orders over $${policies.shipping.freeShippingThreshold}.`;
+      const policyResponse = `Our shipping options are: ${policies.shipping.standard}, ${policies.shipping.express}, and ${policies.shipping.international}. Free shipping on orders over $${policies.shipping.freeShippingThreshold}.`;
+      const grounding = await responseGrounder.groundResponse(query, policyResponse);
+      if (!grounding.isGrounded) {
+        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
+      }
+      return policyResponse;
     }
-
     if (lower.includes('warranty') || lower.includes('guarantee')) {
-      return `Our products come with ${policies.warranty.standardPeriod} covering ${policies.warranty.coverageDetails}.`;
+      const policyResponse = `Our products come with ${policies.warranty.standardPeriod} covering ${policies.warranty.coverageDetails}.`;
+      const grounding = await responseGrounder.groundResponse(query, policyResponse);
+      if (!grounding.isGrounded) {
+        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
+      }
+      return policyResponse;
     }
-
     if (lower.includes('return') || lower.includes('refund')) {
-      return `Our return policy allows returns within ${policies.returns.returnWindow}. ${policies.returns.refundMethod}.`;
+      const policyResponse = `Our return policy allows returns within ${policies.returns.returnWindow}. ${policies.returns.refundMethod}.`;
+      const grounding = await responseGrounder.groundResponse(query, policyResponse);
+      if (!grounding.isGrounded) {
+        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
+      }
+      return policyResponse;
     }
 
     return null;
@@ -926,10 +981,10 @@ export default class ChatWidget {
     // Step 6: Policy query handling
     const policyResponse = await this._handlePolicyQuery(userQuery);
     if (policyResponse) {
+      // Defensive grounding check (already enforced in _handlePolicyQuery)
       const grounding = await responseGrounder.groundResponse(userQuery, policyResponse);
-      if (!grounding.isGrounded && grounding.violations.length > 0) {
-        // Response validated against policy — violations logged if mismatch
-        // Policy text comes directly from live data so grounding checks pass
+      if (!grounding.isGrounded) {
+        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
       }
       return policyResponse;
     }
