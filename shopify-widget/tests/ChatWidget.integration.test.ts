@@ -127,8 +127,8 @@ describe('ChatWidget catalog integration', () => {
   describe('order tracking pipeline', () => {
     it('should return order card HTML for order query with number and email', async () => {
       const response = await widget._generateAgentResponse('track order #1001 for john@example.com');
-      expect(response).toContain('order-card');
-      expect(response).toContain('Order #1001');
+      expect(response).toContain('oc-card');
+      expect(response).toContain('#1001');
     });
 
     it('should prompt for email when only order number given', async () => {
@@ -295,10 +295,10 @@ describe('ChatWidget action chips', () => {
     const chips = document.querySelectorAll('.action-chip');
     expect(chips.length).toBe(4);
     // Chips come from SuggestedActionsService (initial state)
-    expect(chips[0].textContent).toBe('[Browse Products]');
-    expect(chips[1].textContent).toBe('[Track Order]');
-    expect(chips[2].textContent).toBe('[View Policies]');
-    expect(chips[3].textContent).toBe('[Check Returns]');
+    expect(chips[0].textContent).toBe('Browse Products');
+    expect(chips[1].textContent).toBe('Track Order');
+    expect(chips[2].textContent).toBe('View Policies');
+    expect(chips[3].textContent).toBe('Check Returns');
   });
 
   it('should re-render chips with context-aware labels after agent response', async () => {
@@ -316,7 +316,7 @@ describe('ChatWidget action chips', () => {
     expect(newChips.length).toBeGreaterThan(0);
     // Labels should differ from initial (product_search or policy_query state)
     const labels = Array.from(newChips).map(c => c.textContent);
-    const initialLabels = ['[Browse Products]', '[Track Order]', '[View Policies]', '[Check Returns]'];
+    const initialLabels = ['Browse Products', 'Track Order', 'View Policies', 'Check Returns'];
     const hasDifferentLabel = labels.some(l => !initialLabels.includes(l!));
     expect(hasDifferentLabel).toBe(true);
   });
@@ -390,24 +390,24 @@ describe('ChatWidget onboarding hint', () => {
 
   it('should show onboarding hint on first open with no messages', () => {
     widget.open();
-    const hint = document.querySelector('.chat-onboarding-hint');
+    const hint = document.querySelector('.onboarding-hint');
     expect(hint).toBeTruthy();
-    expect(hint!.textContent).toContain('Try asking about products');
+    expect(hint!.textContent).toContain('Store Support');
   });
 
   it('should hide onboarding hint after first message sent', async () => {
     widget.open();
-    expect(document.querySelector('.chat-onboarding-hint')).toBeTruthy();
+    expect(document.querySelector('.onboarding-hint')).toBeTruthy();
     widget['textarea' as any].value = 'hello';
     await widget['_sendMessage' as any]();
     await new Promise(r => setTimeout(r, 100));
-    expect(document.querySelector('.chat-onboarding-hint')).toBeFalsy();
+    expect(document.querySelector('.onboarding-hint')).toBeFalsy();
   });
 
   it('should not show onboarding hint when localStorage flag is set', () => {
     localStorage.setItem('support-onboarding-seen', String(Date.now()));
     widget.open();
-    const hint = document.querySelector('.chat-onboarding-hint');
+    const hint = document.querySelector('.onboarding-hint');
     expect(hint).toBeFalsy();
   });
 
@@ -416,7 +416,7 @@ describe('ChatWidget onboarding hint', () => {
     const eightDaysAgo = Date.now() - (8 * 24 * 60 * 60 * 1000);
     localStorage.setItem('support-onboarding-seen', String(eightDaysAgo));
     widget.open();
-    const hint = document.querySelector('.chat-onboarding-hint');
+    const hint = document.querySelector('.onboarding-hint');
     expect(hint).toBeTruthy();
   });
 });
@@ -538,7 +538,7 @@ describe('ChatWidget Supabase handoff', () => {
     (widget['_escalationStateMachine' as keyof typeof widget] as EscalationStateMachine).transition('OFFER', 'direct');
     await (widget['_handleEscalationConfirm' as keyof typeof widget] as () => Promise<void>)();
 
-    const transferringMsg = document.querySelector('.chat-bubble--transferring');
+    const transferringMsg = document.querySelector('.sys-msg--transfer');
     expect(transferringMsg).toBeTruthy();
     expect(transferringMsg!.textContent).toContain('Transferring you to a human agent');
   });
@@ -561,7 +561,7 @@ describe('ChatWidget Supabase handoff', () => {
     }
 
     const state = widget['state' as keyof typeof widget] as ChatWidgetState;
-    const connectedMsgEl = document.querySelector('.chat-bubble--connected');
+    const connectedMsgEl = document.querySelector('.sys-msg--connected');
     expect(connectedMsgEl).toBeTruthy();
     expect(connectedMsgEl!.textContent).toContain("You're now connected with a human agent");
   });
@@ -595,7 +595,7 @@ describe('ChatWidget Supabase handoff', () => {
     expect(humanMsg).toBeTruthy();
     expect(humanMsg!.text).toBe('Hello, this is a human agent. How can I help?');
 
-    const humanBubbles = document.querySelectorAll('.chat-bubble--agent');
+    const humanBubbles = document.querySelectorAll('.msg--agent');
     let hasHumanLabel = false;
     humanBubbles.forEach(b => {
       if (b.textContent?.includes('Human Agent')) hasHumanLabel = true;
@@ -658,10 +658,10 @@ describe('ChatWidget E2E handoff flow', () => {
     handoffService.callbacks.onHandoffAccepted?.({ payload: { userId: sessionId } });
 
     handoffService.callbacks.onTypingIndicator?.({ payload: { userId: sessionId, isTyping: true } });
-    expect(document.querySelector('.chat-bubble--typing')).toBeTruthy();
+    expect(document.querySelector('.typing-indicator')).toBeTruthy();
 
     handoffService.callbacks.onTypingIndicator?.({ payload: { userId: sessionId, isTyping: false } });
-    expect(document.querySelector('.chat-bubble--typing')).toBeFalsy();
+    expect(document.querySelector('.typing-indicator')).toBeFalsy();
   });
 
   it('should show reconnect banner when connection lost, hide when restored', async () => {

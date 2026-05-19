@@ -27,8 +27,8 @@ describe('formatOrderResponse', () => {
   it('returns HTML for order_found', () => {
     const result: OrderQuery = { type: 'order_found', order: sampleOrder, email: 'jane@example.com' };
     const output = formatOrderResponse(result);
-    expect(output).toContain('order-card');
-    expect(output).toContain('Order #1002');
+    expect(output).toContain('oc-card');
+    expect(output).toContain('#1002');
     expect(output).toContain('Shipped');
   });
 
