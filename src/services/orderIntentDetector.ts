@@ -1,6 +1,6 @@
 import { OrderService } from './orderService';
 import type { Order } from './types';
-import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
+import { SemanticRouter, type ReferenceCategory } from '../../shopify-widget/src/core/semanticRouter';
 import orderEmbeddingsData from '../../shopify-widget/src/config/semantic/embeddings.json';
 
 export type OrderQuery =
@@ -22,7 +22,7 @@ interface OrderConversationContext {
 export class OrderIntentDetector {
   private orderService: OrderService;
   private semanticRouter: SemanticRouter;
-  private orderCategories: Record<string, any>;
+  private orderCategories: Record<string, ReferenceCategory>;
   private context: OrderConversationContext | null = null;
   private readonly CONTEXT_TTL_MS = 300000;
   private readonly MAX_CONTEXT_TURNS = 3;
