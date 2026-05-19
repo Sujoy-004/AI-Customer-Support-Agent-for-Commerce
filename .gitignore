@@ -1,38 +1,40 @@
 # ==============================
-# Node.js / TypeScript
+# Dependencies
 # ==============================
 node_modules/
+.pnp/
+.pnp.js
+
+# ==============================
+# Build outputs
+# ==============================
 dist/
 build/
+shopify-widget/dist/
+
+# ==============================
+# Compiled JS (tsc outDir copies)
+# ==============================
+shopify-widget/src/shopify-widget/
+shopify-widget/src/src/
 *.tsbuildinfo
 *.js.map
 *.d.ts.map
 
 # ==============================
-# Build artifacts (compiled JS copies)
-# ==============================
-shopify-widget/src/shopify-widget/
-shopify-widget/src/src/
-test-results/
-dom-snapshot.html
-dom-errors.txt
-dom-screenshot.png
-
-# ==============================
-# Dependencies
-# ==============================
-.eslintcache
-.pnp/
-.pnp.js
-
-# ==============================
-# Testing
+# Test artifacts
 # ==============================
 coverage/
+test-results/
+playwright-report/
+blob-report/
+dom-snapshot.html
+dom-screenshot.png
+dom-errors.txt
 .vite/
 
 # ==============================
-# Environment & Secrets
+# Environment & secrets
 # ==============================
 .env
 .env.local
@@ -57,7 +59,7 @@ Thumbs.db
 desktop.ini
 
 # ==============================
-# Logs & Debug
+# Logs
 # ==============================
 *.log
 npm-debug.log*
@@ -66,9 +68,7 @@ yarn-error.log*
 stderr.txt
 
 # ==============================
-# Graphify (knowledge graph)
-#   graphify-out/* is committed for team use
-#   but local-only files stay ignored
+# Graphify (local-only)
 # ==============================
 graphify-out/cache/
 graphify-out/cost.json
@@ -76,16 +76,14 @@ graphify-out/cost.json
 .graphify_python
 
 # ==============================
-# Dev tooling & planning artifacts
-#   .planning/ and .opencode/ are development tools,
-#   not part of the hackathon submission
+# GSD / Planning (dev tools)
 # ==============================
 .planning/
 .opencode/
 opencode.json
 
 # ==============================
-# Personal / scratch
+# Scratch / personal
 # ==============================
 SOVEREIGNTY.md
 raw/
@@ -93,4 +91,4 @@ scratch/
 /test.html
 /index.html
 shopify-widget/test.html
-
+*.tgz
