@@ -379,13 +379,6 @@ describe('CatalogIntentDetector', () => {
     });
   });
 
-  describe('findSuggestions', () => {
-    it('should return up to 5 product suggestions', async () => {
-      const products = await (detector as any).findSuggestions('unknown product');
-      // findSuggestions calls loadProducts and returns first 5
-      expect(products.length).toBeLessThanOrEqual(5);
-    });
-  });
 
   describe('textContainsWord with single-char input', () => {
     it('should handle single-character word lookup via regex path', async () => {

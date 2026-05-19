@@ -652,10 +652,6 @@ export class CatalogIntentDetector {
     return false;
   }
 
-  private async findSuggestions(query: string): Promise<Product[]> {
-    const allProducts = await this.catalogService.loadProducts();
-    return allProducts.slice(0, this.SUGGESTION_LIMIT);
-  }
 }
 
 function buildAmbiguousMessage(

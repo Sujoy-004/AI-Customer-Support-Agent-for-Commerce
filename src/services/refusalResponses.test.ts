@@ -65,16 +65,6 @@ describe('RefusalResponseService', () => {
     });
   });
 
-  describe('generateSimpleRefusal', () => {
-    it('should generate a polite simple refusal', () => {
-      const response = refusalResponseService.generateSimpleRefusal();
-      
-      expect(response).toBeDefined();
-      expect(response.message).toContain('store-related questions');
-      expect(response.suggestions.length).toBeGreaterThan(0);
-      expect(response.tone).toBe('polite');
-    });
-  });
 
   describe('technical/device category', () => {
     it('should generate a refusal for device-related questions', async () => {

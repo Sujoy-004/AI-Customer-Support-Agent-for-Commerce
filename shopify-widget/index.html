@@ -11,7 +11,13 @@
   <script src="dist/widget.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      new ChatWidget();
+      new ChatWidget({
+        proxyUrl: 'http://localhost:8787/api/order-lookup', // CF Worker dev server — update for production
+        hmacSecret: 'your-hmac-secret-here', // From .env.example — DO NOT commit real value
+        storeDomain: 'your-store.myshopify.com', // Replace with actual store domain
+        storefrontToken: 'your-storefront-token', // Replace with actual Storefront API token
+        dataSource: { catalog: 'mock', order: 'mock', policy: 'mock' } // Fallback for demo without proxy
+      });
     });
   </script>
 </body>

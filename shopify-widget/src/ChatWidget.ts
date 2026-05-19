@@ -1499,7 +1499,7 @@ export default class ChatWidget {
 
       const typeSpan = document.createElement('span');
       typeSpan.className = 'autocomplete-item__type';
-      typeSpan.textContent = result.type === 'order' ? '#' : result.type === 'product' ? '📦' : '📋';
+      typeSpan.textContent = result.type === 'order' ? '[#]' : result.type === 'product' ? '[P]' : '[S]';
 
       const labelSpan = document.createElement('span');
       labelSpan.textContent = result.label;

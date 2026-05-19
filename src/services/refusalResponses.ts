@@ -155,21 +155,6 @@ export class RefusalResponseService {
     };
   }
 
-  /**
-   * Generate a simple polite refusal (fallback)
-   */
-  generateSimpleRefusal(): RefusalResponse {
-    return {
-      message: "I'm here to assist with store-related questions about our products, policies, and orders. Is there something I can help you with regarding our store?",
-      suggestions: [
-        "Ask about our products",
-        "Check shipping information",
-        "Learn about return policy",
-        "Inquire about warranty coverage"
-      ],
-      tone: 'polite'
-    };
-  }
 }
 
 /**
