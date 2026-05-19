@@ -1,182 +1,42 @@
-# Project Roadmap
+# Roadmap: AI Customer Support Agent for Commerce
+
+## Milestones
+
+- ✅ **v1.0 — Hackathon Submission** — Phases 1-9 (shipped 2026-05-19) — [Archive](milestones/v1-ROADMAP.md)
 
 ## Phases
 
-- [x] **Phase 1: UI Foundation & Error Handling** - Chat interface setup with DESIGN.md aesthetics and robust failure fallbacks
-- [x] **Phase 2: Policy Grounding & Guardrails** - Agent restricted to store policies and actively refusing off-topic prompts
-- [x] **Phase 3: Live Catalog Intelligence** - Real-time Shopify queries for catalog, sizing, and stock without hallucinations
-- [x] **Phase 4: Order Tracking Workflow** - Secure retrieval and explanation of customer order status
-- [x] **Phase 5: Graceful Escalation** - Seamless human handoff for complex or frustrated intents
-- [x] **Phase 6: Semantic AI Router** - In-browser semantic intent detection replacing brittle keyword matching
-- [x] **Phase 7: Security & Live Data** - Serverless order proxy, live Shopify Storefront API integration, live policy fetch
-- [x] **Phase 8: UX & Demo** - Quick action chips, live human handoff, agent console, docs
-- [x] **Phase 5.1: UX Refinement** - Context-aware action chips, autocomplete, adaptive onboarding
+<details>
+<summary>✅ v1.0 — Hackathon Submission (Phases 1-9) — SHIPPED 2026-05-19</summary>
 
-## Phase Details
+- [x] Phase 1: UI Foundation & Error Handling (2/2 plans) — completed 2026-05-14
+- [x] Phase 2: Policy Grounding & Guardrails (1/1 plans) — completed 2026-05-15
+- [x] Phase 3: Live Catalog Intelligence (2/2 plans) — completed 2026-05-15
+- [x] Phase 3: Realtime Human Handoff (2/2 plans) — completed 2026-05-17
+- [x] Phase 4: Order Tracking Workflow (2/2 plans) — completed 2026-05-16
+- [x] Phase 4: Dynamic Store Sync (1/1 plans) — completed 2026-05-19
+- [x] Phase 5: Graceful Escalation (2/2 plans) — completed 2026-05-17
+- [x] Phase 6: Semantic AI Router (4/4 plans) — completed 2026-05-18
+- [x] Phase 7: Security & Live Data (3/3 plans) — completed 2026-05-18
+- [x] Phase 8: UX & Demo (3/3 plans) — completed 2026-05-19
+- [x] Phase 5.1: UX Refinement (3/3 plans) — completed 2026-05-19
+- [x] Phase 9: Gap Closure (2/2 plans) — completed 2026-05-19
 
-### Phase 1: UI Foundation & Error Handling
-**Goal**: Users experience a robust, aesthetically accurate chat interface that gracefully handles systemic failures
-**Depends on**: Nothing
-**Requirements**: SAFE-02, SAFE-03
-**Success Criteria** (what must be TRUE):
-  1. User views chat interface styled exactly to DESIGN.md (Berkeley Mono, flat cream canvas, hairline borders)
-  2. User receives a friendly fallback message when simulating a network or API timeout
-**Plans**: 01-01, 01-02
-**UI hint**: yes
-
-**Plans:**
-- [x] 01-01-PLAN.md — Scaffold + CSS design system + test infrastructure + demo page
-- [x] 01-02-PLAN.md — Core widget engine: ChatWidget, NetworkDetector, CSS design system
-
-### Phase 2: Policy Grounding & Guardrails
-**Goal**: Users receive accurate, strict answers based solely on store policies, with no hallucinated or off-topic responses
-**Depends on**: Phase 1
-**Requirements**: CORE-02, CORE-03
-**Success Criteria** (what must be TRUE):
-   1. User receives accurate shipping and warranty details sourced directly from store policies
-   2. User asking out-of-domain questions (e.g., general trivia, competitors) receives a polite refusal
-**Plans:**
-- [x] 02-01-PLAN.md — Policy service, response grounding, off-topic detection, refusal responses
-
-### Phase 3: Live Catalog Intelligence
-**Goal**: Users can query real-time product catalogs, sizing, and stock without the agent guessing or hallucinating
-**Depends on**: Phase 2
-**Requirements**: CORE-01
-**Success Criteria** (what must be TRUE):
-   1. User can ask if a specific variant is in stock and get a real-time answer
-   2. User is informed correctly when an item is out of stock instead of a hallucinated availability
-
-**Plans:**
-- [x] 03-01-PLAN.md — Catalog Service Layer: types, mock data, product/variant/stock resolution
-- [x] 03-02-PLAN.md — Catalog Integration & Intent Detection: ChatWidget pipeline, intent routing
-
-### Phase 4: Order Tracking Workflow
-**Goal**: Users can securely authenticate and retrieve the current status of their past orders
-**Depends on**: Phase 3
-**Requirements**: WORK-01
-**Success Criteria** (what must be TRUE):
-  1. User can provide order information and see its current fulfillment or shipping status
-  2. User sees accurate tracking information natively rendered in the chat UI
-**Plans**: 2 plans
-**UI hint**: yes
-
-**Plans:**
-- [x] 04-01-PLAN.md — Order Service Layer: types, interface, mock data, service, tests
-- [x] 04-02-PLAN.md — Order Intent Detection & ChatWidget Integration: intent detector, response formatter, OrderCard, pipeline
-
-### Phase 5: Graceful Escalation
-**Goal**: Users facing complex issues or expressing frustration are seamlessly transferred to a human agent
-**Depends on**: Phase 4
-**Requirements**: SAFE-01
-**Success Criteria** (what must be TRUE):
-  1. User explicitly requesting a human is immediately routed to the escalation flow
-  2. User expressing frustration triggers an automatic offer to transfer to a human agent
-**Plans**: 2 plans
-
-**Plans:**
-- [x] 05-01-PLAN.md — Core escalation services: types, detector, state machine with localStorage
-- [x] 05-02-PLAN.md — Queue/transfer/human agent simulators, ChatWidget pipeline integration, CSS
-
-### Phase 6: Semantic AI Router
-**Goal**: Replace brittle keyword intent detection with real in-browser semantic routing. This is the single highest-impact change — transforms the project from "keyword bot" to "AI-augmented agent."
-**Depends on**: Phase 5
-**Requirements**: JUDGE-01 (semantic routing), JUDGE-02 (typo resilience), JUDGE-03 (natural language variation)
-**Success Criteria** (what must be TRUE):
-   1. User queries like "avialable?", "got medium blue pants?", "where's my stuff" route correctly without special-case keyword additions
-   2. All three intent detectors (catalog, off-topic, order) use semantic embedding similarity as primary routing method, with keyword fallback
-   3. The system can honestly be described as "AI-assisted" — semantic understanding layer + deterministic data retrieval
-   4. Full test suite passes for typo resilience, synonym handling, and natural phrasing
-**Plans**: 4 plans
-**Context**: .planning/phases/06-semantic-ai-router/
-
-**Plans:**
-- [x] 06-01-PLAN.md — Foundation: deps, config files, SemanticRouter class
-- [x] 06-02-PLAN.md — Build script + test suite (eval + unit)
-- [x] 06-03-PLAN.md — Semantic detector integration (all 3 detectors)
-- [x] 06-04-PLAN.md — ChatWidget pipeline integration, first-query UX, feature flag
-
-### Phase 7: Security & Live Data
-**Goal**: Move sensitive operations behind a serverless proxy. Connect catalog to live Shopify Storefront API. Eliminates the two most serious production-readiness gaps.
-**Depends on**: Phase 6
-**Requirements**: JUDGE-04 (client-side data exposure), JUDGE-05 (dynamic store sync), JUDGE-06 (no hardcoded arrays)
-**Success Criteria** (what must be TRUE):
-   1. Order lookup goes through an authenticated serverless proxy — browser never holds raw order databases or privileged tokens
-   2. Shopify Storefront API integration replaces mock catalog data — merchants do not need to edit TS arrays for routine store updates
-   3. Policy data is also dynamically fetched from live store sources
-   4. All existing tests pass with the new data sources
-**Plans**: 3 plans (all complete)
-**Context**: .planning/phases/07-security-live-data/
-
-**Plans:**
-- [x] 07-01-PLAN.md — Shopify proxy foundation (CF Worker, HMAC verification, Admin API proxy, tests)
-- [x] 07-02-PLAN.md — Live data sources (ShopifyStorefrontDataSource, ShopifyOrderProxyDataSource, tests)
-- [x] 07-03-PLAN.md — PolicyService live fetch + ChatWidget integration + tests
-
-### Phase 8: UX & Demo
-**Goal**: UI affordances, live handoff, demo video. This is the visible layer that judges see first.
-**Depends on**: Phase 7
-**Requirements**: JUDGE-07 (UI affordances), JUDGE-08 (real handoff), JUDGE-09 (demo video)
-**Success Criteria** (what must be TRUE):
-   1. Widget shows quick action chips ([Track Order], [Check Stock], [Return Item], [View Policies]) — users never face a blank screen
-   2. Human handoff uses a real realtime channel (Supabase Realtime / WebSocket) — not setTimeout simulation
-   3. Demo video (3-4 min) shows: typo resilience → product lookup → order tracking → live handoff
-   4. All documentation updated to honestly describe the hybrid architecture
-**Plans**: 3 plans
-**Context**: .planning/phases/08-ux-demo/
-
-**Plans:**
-- [x] 08-01-PLAN.md — Action chips + onboarding hint (JUDGE-07)
-- [x] 08-02-PLAN.md — Supabase Realtime handoff (JUDGE-08)
-- [x] 08-03-PLAN.md — Agent console + documentation updates (JUDGE-09)
-
-### Phase 5.1: UX Refinement
-**Goal**: Improve user experience with context-aware suggested actions, autocomplete for product names and order numbers, and adaptive onboarding
-**Depends on**: Phase 8
-**Requirements**: UX-01, UX-02, UX-03, UX-04, UX-05
-**Success Criteria** (what must be TRUE):
-   1. User sees relevant action chips that change based on conversation context (not static 4-chip array)
-   2. User gets autocomplete suggestions when typing product names or order numbers
-   3. First-time users see adaptive onboarding that fades after interaction
-   4. All 542 existing tests pass with zero regressions
-   5. New services have 80%+ test coverage
-**Plans**: 3 plans (all complete)
-**Context**: .planning/phases/05-ux-refinement/
-
-**Plans:**
-- [x] 05-01-PLAN.md — SuggestedActionsService: types, service, 40 tests
-- [x] 05-02-PLAN.md — AutocompleteService: types, service, CSS, 22 tests
-- [x] 05-03-PLAN.md — ChatWidget integration, adaptive onboarding, integration tests (609 tests total)
-
-### Phase 9: Gap Closure
-**Goal**: Close critical blockers and major gaps from milestone v1 audit — compilation fixes, rendering bugs, grounding enforcement, and dead code removal.
-**Depends on**: Phase 5.1
-**Requirements**: SAFE-01, WORK-01, CORE-02, JUDGE-03, UX-04
-**Success Criteria** (what must be TRUE):
-   1. ChatWidget.ts compiles without TypeScript errors (ReturnService import resolved)
-   2. OrderCard HTML renders as DOM elements, not escaped text
-   3. Policy grounding violations return fallback messages instead of passing through silently
-   4. Natural language policy queries work via SemanticRouter, not just keyword matching
-   5. Demo page wires CF Worker proxy configuration
-   6. Dead code removed (generateSimpleRefusal, findSuggestions)
-   7. All 609 existing tests pass with zero regressions
-**Plans**: 2 plans
-**Context**: .planning/phases/09-gap-closure/
-
-**Plans:**
-- [x] 09-01-PLAN.md — ChatWidget fixes: B1 (ReturnService import), B2 (OrderCard HTML rendering), W2 (grounding enforcement), W4 (semantic policy routing)
-- [ ] 09-02-PLAN.md — Demo config (W5), emoji replacement (W6), dead code removal
+</details>
 
 ## Progress
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. UI Foundation & Error Handling | 2/2 | Complete | 2026-05-14 |
-| 2. Policy Grounding & Guardrails | 1/1 | Complete | 2026-05-15 |
-| 3. Live Catalog Intelligence | 2/2 | Complete | 2026-05-15 |
-| 4. Order Tracking Workflow | 2/2 | Complete | 2026-05-16 |
-| 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
-| 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
-| 7. Security & Live Data | 3/3 | Complete | 2026-05-18 |
-| 8. UX & Demo | 3/3 | Complete | 2026-05-19 |
-| 5.1. UX Refinement | 3/3 | Complete | 2026-05-19 |
-| 9. Gap Closure | 1/2 | In Progress | 2026-05-19 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. UI Foundation | v1.0 | 2/2 | Complete | 2026-05-14 |
+| 2. Policy Grounding | v1.0 | 1/1 | Complete | 2026-05-15 |
+| 3. Catalog Intelligence | v1.0 | 2/2 | Complete | 2026-05-15 |
+| 3. Realtime Handoff | v1.0 | 2/2 | Complete | 2026-05-17 |
+| 4. Order Tracking | v1.0 | 2/2 | Complete | 2026-05-16 |
+| 4. Dynamic Store Sync | v1.0 | 1/1 | Complete | 2026-05-19 |
+| 5. Graceful Escalation | v1.0 | 2/2 | Complete | 2026-05-17 |
+| 6. Semantic AI Router | v1.0 | 4/4 | Complete | 2026-05-18 |
+| 7. Security & Live Data | v1.0 | 3/3 | Complete | 2026-05-18 |
+| 8. UX & Demo | v1.0 | 3/3 | Complete | 2026-05-19 |
+| 5.1. UX Refinement | v1.0 | 3/3 | Complete | 2026-05-19 |
+| 9. Gap Closure | v1.0 | 2/2 | Complete | 2026-05-19 |
