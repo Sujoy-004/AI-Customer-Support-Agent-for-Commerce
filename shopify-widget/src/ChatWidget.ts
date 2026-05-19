@@ -22,6 +22,7 @@ import type { CatalogDataSource, OrderDataSource, EscalationChatMessage, Product
 import { SuggestedActionsService } from '../../src/services/suggestedActions';
 import { AutocompleteService } from '../../src/services/autocomplete';
 import type { SuggestedAction, ConversationState, AutocompleteResult } from '../../src/services/types';
+import type { ResponseSurface } from './renderers/renderTypes';
 import type { ReturnService } from '../../src/services/returnService';
 import { SemanticRouter } from './core/semanticRouter';
 
@@ -52,6 +53,8 @@ export interface ChatMessage {
   timestamp: number;
   status: 'sending' | 'delivered' | 'error';
   isHumanAgent?: boolean;
+  surface?: ResponseSurface;
+  responseType?: 'product' | 'order' | 'policy' | 'escalation' | 'tracking' | 'return' | 'general';
 }
 
 export interface ChatWidgetOptions {
@@ -115,6 +118,7 @@ export default class ChatWidget {
   private toggleBtn!: HTMLButtonElement;
   private widget!: HTMLDivElement;
   private offlineBanner!: HTMLDivElement;
+  private dataSourceIndicator!: HTMLDivElement;
   private messageList!: HTMLDivElement;
   private inputContainer!: HTMLDivElement;
   private textarea!: HTMLTextAreaElement;
@@ -136,6 +140,11 @@ export default class ChatWidget {
   private _autocompleteDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   // Adaptive onboarding (Phase 5-03)
   private _onboardingFadeTimer: ReturnType<typeof setTimeout> | null = null;
+  // Response surface for structured commerce data (P1)
+  private _lastResponseSurface: ResponseSurface | null = null;
+  private _lastResponseType: ChatMessage['responseType'] = 'general';
+  // Scroll persistence (P4)
+  private _lastScrollTop = 0;
 
   constructor(options: ChatWidgetOptions = {}) {
     this.container = options.container || document.getElementById('ai-support-widget') as HTMLElement;
@@ -288,7 +297,7 @@ export default class ChatWidget {
   }
 
   _createDOM() {
-    const { toggleBtn, widget, offlineBanner, messageList } = createWidgetShell();
+    const { toggleBtn, widget, offlineBanner, messageList, dataSourceIndicator } = createWidgetShell();
     const { container: inputContainer, textarea, sendBtn } = createInputArea({
       onSend: () => this._sendMessage(),
       onInput: () => {
@@ -340,13 +349,12 @@ export default class ChatWidget {
     this.toggleBtn = toggleBtn;
     this.widget = widget;
     this.offlineBanner = offlineBanner;
+    this.dataSourceIndicator = dataSourceIndicator;
     this.messageList = messageList;
     this.textarea = textarea;
     this.sendBtn = sendBtn;
     this.inputContainer = inputContainer;
 
-    widget.appendChild(offlineBanner);
-    widget.appendChild(messageList);
     widget.appendChild(inputContainer);
 
     document.body.appendChild(toggleBtn);
@@ -380,7 +388,13 @@ export default class ChatWidget {
       this.textarea.focus();
       this._renderActionChips();
       this._renderOnboardingHint();
+      // Restore scroll position (P4)
+      requestAnimationFrame(() => {
+        this.messageList.scrollTop = this._lastScrollTop;
+      });
     } else {
+      // Save scroll position (P4)
+      this._lastScrollTop = this.messageList.scrollTop;
       this._removeActionChips();
       this._dismissAutocomplete();
     }
@@ -562,14 +576,37 @@ export default class ChatWidget {
     const msg = this._createMessage(text, 'user', 'sending');
     this.addMessage(msg);
 
+    // Show contextual loading state (P3)
+    const loadingMsg = this._createContextualLoadingMessage(text);
+    if (loadingMsg) {
+      this.addMessage(loadingMsg);
+    }
+
     try {
       const agentResponse = await this._generateAgentResponse(text);
+
+      // Remove loading message if shown
+      if (loadingMsg) {
+        this._removeLastSystemMessage();
+        const idx = this.state.messages.findIndex(m => m.id === loadingMsg.id);
+        if (idx >= 0) this.state.messages.splice(idx, 1);
+      }
+
       this._updateMessageStatus(msg.id, 'delivered');
+
+      // Realistic typing delay based on response length (P4)
+      const typingDelay = this._computeTypingDelay(agentResponse);
+      await this._delay(typingDelay);
 
       // Update conversation state based on response content
       this._lastConversationState = this._determineConversationState(agentResponse);
 
       const agentMsg = this._createMessage(agentResponse, 'agent');
+      agentMsg.responseType = this._lastResponseType;
+      if (this._lastResponseSurface) {
+        agentMsg.surface = this._lastResponseSurface;
+        this._lastResponseSurface = null;
+      }
       this.addMessage(agentMsg);
 
       // Re-render action chips with updated conversation context
@@ -594,14 +631,37 @@ export default class ChatWidget {
     const msg = this._createMessage(text, 'user', 'sending');
     this.addMessage(msg);
 
+    // Show contextual loading state (P3)
+    const loadingMsg = this._createContextualLoadingMessage(text);
+    if (loadingMsg) {
+      this.addMessage(loadingMsg);
+    }
+
     try {
       const agentResponse = await this._generateAgentResponse(text);
+
+      // Remove loading message if shown
+      if (loadingMsg) {
+        this._removeLastSystemMessage();
+        const idx = this.state.messages.findIndex(m => m.id === loadingMsg.id);
+        if (idx >= 0) this.state.messages.splice(idx, 1);
+      }
+
       this._updateMessageStatus(msg.id, 'delivered');
+
+      // Realistic typing delay based on response length (P4)
+      const typingDelay = this._computeTypingDelay(agentResponse);
+      await this._delay(typingDelay);
 
       // Update conversation state based on response content
       this._lastConversationState = this._determineConversationState(agentResponse);
 
       const agentMsg = this._createMessage(agentResponse, 'agent');
+      agentMsg.responseType = this._lastResponseType;
+      if (this._lastResponseSurface) {
+        agentMsg.surface = this._lastResponseSurface;
+        this._lastResponseSurface = null;
+      }
       this.addMessage(agentMsg);
 
       // Re-render action chips with updated conversation context
@@ -712,6 +772,7 @@ export default class ChatWidget {
      * Pipeline: off-topic → escalation → order tracking → return → catalog → policy → greeting → fallback.
      */
   async _generateAgentResponse(userQuery: string): Promise<string> {
+    this._lastResponseSurface = null;
     const lowerQuery = userQuery.toLowerCase();
 
     // Step 0: Mixed intent detection (split at conjunction, handle secondary via context)
@@ -764,9 +825,11 @@ export default class ChatWidget {
     // Step 3: Order intent detection
     const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
     if (orderResult.type === 'order_found') {
+      this._lastResponseType = 'order';
       return formatOrderResponse(orderResult);
     }
     if (orderResult.type === 'needs_email' || orderResult.type === 'needs_order_number' || orderResult.type === 'email_mismatch' || orderResult.type === 'order_not_found') {
+      this._lastResponseType = 'tracking';
       return formatOrderResponse(orderResult);
     }
 
@@ -774,6 +837,7 @@ export default class ChatWidget {
     if (this._enableReturnService) {
       await this._lazyInitReturnService();
       if (this._returnService?.detectReturnIntent(userQuery)) {
+        this._lastResponseType = 'return';
         const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
         if (orderResult.type === 'order_found') {
           const eligibility = await this._returnService.checkEligibility(
@@ -804,12 +868,15 @@ export default class ChatWidget {
     // Step 5: Catalog intent detection (product availability, sizing, search)
     const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
     if (catalogResult.type !== 'not_catalog') {
+      this._lastResponseType = 'product';
+      this._lastResponseSurface = this._buildCatalogSurface(catalogResult);
       return formatCatalogResponse(userQuery, catalogResult);
     }
 
     // Step 6: Policy query handling
     const policyResponse = await this._handlePolicyQuery(userQuery);
     if (policyResponse) {
+      this._lastResponseType = 'policy';
       // Defensive grounding check (already enforced in _handlePolicyQuery)
       const grounding = await responseGrounder.groundResponse(userQuery, policyResponse);
       if (!grounding.isGrounded) {
@@ -1166,6 +1233,86 @@ export default class ChatWidget {
     return 'initial';
   }
 
+  // ── Catalog Surface Builder ──────────────────────
+
+  private _computeTypingDelay(response: string): number {
+    if (!response || response.length === 0) return 200;
+    // Base delay + per-character delay with variance for realism
+    const base = 300;
+    const perChar = Math.min(response.length * 8, 1200);
+    const variance = Math.random() * 200 - 100;
+    return Math.max(200, Math.min(2000, base + perChar + variance));
+  }
+
+  private _delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private _buildCatalogSurface(result: ReturnType<typeof this._catalogIntentDetector.resolveQuery> extends Promise<infer T> ? T : never): ResponseSurface | null {
+    switch (result.type) {
+      case 'exact':
+        return {
+          type: 'product-card',
+          product: result.product,
+          variant: {
+            title: result.variant.title.split(' - ')[1] || result.variant.title,
+            price: result.variant.price,
+            stock: result.stock,
+          },
+        };
+
+      case 'partial':
+        return {
+          type: 'product-card',
+          product: result.product,
+        };
+
+      case 'product_only':
+        return {
+          type: 'product-card',
+          product: result.product,
+        };
+
+      case 'search_results':
+        return {
+          type: 'product-list',
+          products: result.products,
+          totalCount: result.totalCount,
+        };
+
+      case 'ambiguous':
+      case 'not_found':
+      case 'context_expired':
+      case 'not_catalog':
+        return null;
+    }
+  }
+
+  // ── Contextual Loading States ────────────────────
+
+  private _createContextualLoadingMessage(query: string): EscalationChatMessage | null {
+    const lower = query.toLowerCase();
+
+    let label: string;
+    if (lower.includes('stock') || lower.includes('available') || lower.includes('inventory') || lower.includes('in stock')) {
+      label = 'Checking inventory\u2026';
+    } else if (lower.includes('order') || lower.includes('track') || lower.includes('#')) {
+      label = 'Looking up order\u2026';
+    } else if (lower.includes('return') || lower.includes('refund') || lower.includes('exchange')) {
+      label = 'Checking return eligibility\u2026';
+    } else if (lower.includes('ship') || lower.includes('deliver') || lower.includes('policy') || lower.includes('warranty')) {
+      label = 'Reviewing policy details\u2026';
+    } else if (lower.includes('product') || lower.includes('show') || lower.includes('browse') || lower.includes('find')) {
+      label = 'Searching catalog\u2026';
+    } else if (lower.includes('human') || lower.includes('agent') || lower.includes('support') || lower.includes('help')) {
+      label = 'Checking agent availability\u2026';
+    } else {
+      return null;
+    }
+
+    return this._createSystemMessage(label, 'transferring');
+  }
+
   // ── Onboarding Hint ────────────────────────────
 
   private _renderOnboardingHint(): void {
@@ -1185,7 +1332,7 @@ export default class ChatWidget {
         fadeOutOnboarding(this._onboardingHint);
         setTimeout(() => this._dismissOnboarding(), 500);
       }
-    }, 3000);
+    }, 2500);
 
     this.messageList.prepend(this._onboardingHint!);
   }
