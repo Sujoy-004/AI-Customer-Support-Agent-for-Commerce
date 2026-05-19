@@ -120,8 +120,13 @@
    2. Human handoff uses a real realtime channel (Supabase Realtime / WebSocket) — not setTimeout simulation
    3. Demo video (3-4 min) shows: typo resilience → product lookup → order tracking → live handoff
    4. All documentation updated to honestly describe the hybrid architecture
-**Plans**: TBD
+**Plans**: 3 plans
 **Context**: .planning/phases/08-ux-demo/
+
+**Plans:**
+- [ ] 08-01-PLAN.md — Action chips + onboarding hint (JUDGE-07)
+- [ ] 08-02-PLAN.md — Supabase Realtime handoff (JUDGE-08)
+- [ ] 08-03-PLAN.md — Agent console + documentation updates (JUDGE-09)
 
 ## Progress
 
@@ -134,4 +139,4 @@
 | 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
 | 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
 | 7. Security & Live Data | 3/3 | Complete | 2026-05-18 |
-| 8. UX & Demo | 0/0 | Not started | - |
+| 8. UX & Demo | 0/3 | Not started | - |
