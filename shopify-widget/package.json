@@ -19,6 +19,7 @@
     "vitest": "^4.1.6"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0"
+    "@huggingface/transformers": "^4.2.0",
+    "@supabase/supabase-js": "^2.106.0"
   }
 }

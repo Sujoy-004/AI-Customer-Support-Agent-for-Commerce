@@ -12,9 +12,7 @@ import { OrderIntentDetector } from '../../src/services/orderIntentDetector';
 import { formatOrderResponse } from '../../src/services/orderResponseFormatter';
 import { EscalationDetector } from '../../src/services/escalationDetector';
 import { EscalationStateMachine } from '../../src/services/escalationStateMachine';
-import { EscalationQueueSimulator } from '../../src/services/escalationQueueSimulator';
-import { EscalationTransferHandler } from '../../src/services/escalationTransferHandler';
-import { HumanAgentSimulator } from '../../src/services/escalationHumanAgent';
+import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import { ShopifyStorefrontDataSource } from '../../src/services/shopifyStorefrontDataSource';
 import { ShopifyOrderProxyDataSource } from '../../src/services/shopifyOrderProxyDataSource';
 import type { CatalogDataSource, OrderDataSource, EscalationChatMessage } from '../../src/services/types';
@@ -22,6 +20,11 @@ import { SemanticRouter } from './core/semanticRouter';
 
 // Initialize our services
 const policyService = new PolicyService();
+
+// Supabase Realtime — hardcoded for demo per D-06
+// Replace with your own values from .env.example
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 
 // ── Type interfaces ──────────────────────────────────────────────
 
@@ -76,9 +79,9 @@ export default class ChatWidget {
   private _orderIntentDetector!: OrderIntentDetector;
   private _escalationDetector!: EscalationDetector;
   private _escalationStateMachine!: EscalationStateMachine;
-  private _escalationQueueSimulator: EscalationQueueSimulator | null = null;
-  private _escalationTransferHandler: EscalationTransferHandler | null = null;
-  private _humanAgentSimulator: HumanAgentSimulator | null = null;
+  private _supabaseClient: ReturnType<typeof createClient> | null = null;
+  private _handoffChannel: RealtimeChannel | null = null;
+  private _sessionId: string;
   private _returnService: ReturnService | undefined;
   private _offTopicDetector!: OffTopicDetector;
   private _refusalResponseService!: RefusalResponseService;
@@ -174,6 +177,8 @@ export default class ChatWidget {
     } else {
       this._escalationStateMachine = new EscalationStateMachine();
     }
+
+    this._sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     this._init();
   }
