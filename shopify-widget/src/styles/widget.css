@@ -450,3 +450,14 @@
   background: var(--color-accent);
   color: var(--color-on-primary);
 }
+
+/* ── Onboarding Hint ───────────────────────── */
+.chat-onboarding-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-ash);
+  text-align: center;
+  padding: var(--space-xl) var(--space-md);
+  margin: auto;
+  max-width: 280px;
+  line-height: var(--line-height-body);
+}

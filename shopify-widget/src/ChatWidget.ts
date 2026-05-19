@@ -96,6 +96,7 @@ export default class ChatWidget {
   private _messageIdCounter = 0;
   private _hasSentMessage = false;
   private _chipContainer: HTMLDivElement | null = null;
+  private _onboardingHint: HTMLDivElement | null = null;
 
   constructor(options: ChatWidgetOptions = {}) {
     this.container = options.container || document.getElementById('ai-support-widget') as HTMLElement;
@@ -1039,6 +1040,27 @@ export default class ChatWidget {
     if (this._chipContainer) {
       this._chipContainer.remove();
       this._chipContainer = null;
+    }
+  }
+
+  // ── Onboarding Hint ────────────────────────────
+
+  private _renderOnboardingHint(): void {
+    if (this._hasSentMessage || this.state.messages.length > 0 || this._onboardingHint) return;
+
+    this._onboardingHint = document.createElement('div');
+    this._onboardingHint.className = 'chat-onboarding-hint';
+    this._onboardingHint.textContent =
+      '[+] Ask about products, track orders, or check policies. Type naturally — I understand typos.';
+
+    // Prepend to message list so it appears at the top
+    this.messageList.prepend(this._onboardingHint);
+  }
+
+  private _removeOnboardingHint(): void {
+    if (this._onboardingHint) {
+      this._onboardingHint.remove();
+      this._onboardingHint = null;
     }
   }
 
