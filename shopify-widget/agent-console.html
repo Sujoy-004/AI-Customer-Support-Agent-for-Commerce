@@ -195,12 +195,46 @@
       color: var(--color-ash);
       cursor: default;
     }
+    /* Typing indicator in agent console */
+    .typing-indicator-agent {
+      display: flex;
+      gap: 4px;
+      padding: var(--space-sm) var(--space-md);
+      align-self: flex-start;
+    }
+    .typing-indicator-agent .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      animation: typing-bounce 1.4s infinite ease-in-out;
+    }
+    .typing-indicator-agent .dot:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator-agent .dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator-agent .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing-bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    #agent-count {
+      margin-left: auto;
+      font-size: var(--font-size-xs);
+      color: var(--color-mute);
+    }
+    .disconnect-notification {
+      background: #ff3b30;
+      color: var(--color-on-primary);
+      padding: var(--space-xs) var(--space-md);
+      font-size: var(--font-size-xs);
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <div id="connection-status">
     <span class="dot connecting" id="status-dot"></span>
     <span id="status-text">Connecting...</span>
+    <span id="agent-count"></span>
   </div>
   <div id="console-layout">
     <aside id="request-list">
@@ -236,9 +270,10 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 
     // ── State ────────────────────────────────────
-    const requests = [];        // { userId, transcript[], timestamp }
-    let activeUserId = null;    // currently accepted request
+    const requests = [];
+    let activeUserId = null;
     let isConnected = false;
+    let typingTimeout = null;
 
     // ── DOM refs ────────────────────────────────
     const statusDot = document.getElementById('status-dot');
@@ -283,9 +318,26 @@
         }
       })
       .on('broadcast', { event: 'handoff_accepted' }, (payload) => {
-        // Update status if this console accepted
         const card = document.querySelector(`[data-user-id="${payload.userId}"]`);
         if (card) card.classList.add('accepted');
+      })
+      .on('broadcast', { event: 'typing_indicator' }, (payload) => {
+        if (payload.userId === activeUserId && payload.isTyping) {
+          showUserTyping();
+        } else {
+          hideUserTyping();
+        }
+      })
+      .on('broadcast', { event: 'handoff_cancelled' }, (payload) => {
+        const req = requests.find(r => r.userId === payload.userId);
+        if (req) {
+          showDisconnectNotification(payload.userId);
+          if (activeUserId === payload.userId) {
+            agentTextarea.disabled = true;
+            sendBtn.disabled = true;
+            chatHeader.textContent = 'Session ended by customer';
+          }
+        }
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
@@ -378,6 +430,36 @@
     }
 
     // ── Actions ─────────────────────────────────
+    let typingIndicatorEl = null;
+
+    function showUserTyping() {
+      if (typingIndicatorEl) return;
+      typingIndicatorEl = document.createElement('div');
+      typingIndicatorEl.className = 'typing-indicator-agent';
+      typingIndicatorEl.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+      chatMessages.appendChild(typingIndicatorEl);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideUserTyping() {
+      if (typingIndicatorEl) {
+        typingIndicatorEl.remove();
+        typingIndicatorEl = null;
+      }
+    }
+
+    function showDisconnectNotification(userId) {
+      const existing = document.querySelector('.disconnect-notification');
+      if (existing) existing.remove();
+
+      const notif = document.createElement('div');
+      notif.className = 'disconnect-notification';
+      notif.textContent = `Customer ${userId} has disconnected.`;
+      document.body.prepend(notif);
+
+      setTimeout(() => notif.remove(), 5000);
+    }
+
     function acceptRequest(userId) {
       activeUserId = userId;
       chatHeader.textContent = 'Chat — ' + userId;
@@ -422,6 +504,25 @@
     agentTextarea.addEventListener('input', () => {
       agentTextarea.style.height = 'auto';
       agentTextarea.style.height = agentTextarea.scrollHeight + 'px';
+
+      if (activeUserId) {
+        channel.send({
+          type: 'broadcast',
+          event: 'typing_indicator',
+          payload: { userId: activeUserId, isTyping: true, timestamp: Date.now() },
+        });
+      }
+
+      if (typingTimeout) clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        if (activeUserId) {
+          channel.send({
+            type: 'broadcast',
+            event: 'typing_indicator',
+            payload: { userId: activeUserId, isTyping: false, timestamp: Date.now() },
+          });
+        }
+      }, 2000);
     });
 
     // ── Initial state ──────────────────────────

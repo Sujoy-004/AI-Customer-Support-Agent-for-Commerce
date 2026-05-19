@@ -12,7 +12,8 @@ import { OrderIntentDetector } from '../../src/services/orderIntentDetector';
 import { formatOrderResponse } from '../../src/services/orderResponseFormatter';
 import { EscalationDetector } from '../../src/services/escalationDetector';
 import { EscalationStateMachine } from '../../src/services/escalationStateMachine';
-import { createClient, RealtimeChannel } from '@supabase/supabase-js';
+import { HandoffChannel, HandoffChannelState } from '../../src/services/handoffChannel';
+import { AgentPresenceTracker } from '../../src/services/agentPresence';
 import { ShopifyStorefrontDataSource } from '../../src/services/shopifyStorefrontDataSource';
 import { ShopifyOrderProxyDataSource } from '../../src/services/shopifyOrderProxyDataSource';
 import type { CatalogDataSource, OrderDataSource, EscalationChatMessage } from '../../src/services/types';
@@ -22,7 +23,6 @@ import { SemanticRouter } from './core/semanticRouter';
 const policyService = new PolicyService();
 
 // Supabase Realtime — hardcoded for demo per D-06
-// Replace with your own values from .env.example
 const SUPABASE_URL = 'https://your-project.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 
@@ -79,8 +79,11 @@ export default class ChatWidget {
   private _orderIntentDetector!: OrderIntentDetector;
   private _escalationDetector!: EscalationDetector;
   private _escalationStateMachine!: EscalationStateMachine;
-  private _supabaseClient: ReturnType<typeof createClient> | null = null;
-  private _handoffChannel: RealtimeChannel | null = null;
+  private _handoffService: HandoffChannel | null = null;
+  private _presenceTracker: AgentPresenceTracker | null = null;
+  private _agentTyping = false;
+  private _typingIndicatorEl: HTMLDivElement | null = null;
+  private _reconnectBannerEl: HTMLDivElement | null = null;
   private _sessionId: string;
   private _returnService: ReturnService | undefined;
   private _offTopicDetector!: OffTopicDetector;
@@ -898,61 +901,76 @@ export default class ChatWidget {
     this.addMessage(transferringMsg);
 
     try {
-      this._supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      this._handoffChannel = this._supabaseClient.channel('support-queue', {
-        config: { broadcast: { self: false } }, // D-13: Widget does NOT receive its own events
+      this._presenceTracker = new AgentPresenceTracker();
+      this._presenceTracker.onPresenceChange((count) => {
+        if (count === 0 && this._escalationStateMachine.getState().status === 'CONFIRMING') {
+          this._showNoAgentsMessage();
+        }
       });
 
-      // Set up event listeners before subscribing
-      this._handoffChannel
-        .on('broadcast', { event: 'handoff_accepted' }, (payload: { userId: string; agentId?: string; agentName?: string; conversationId?: string }) => {
+      this._handoffService = new HandoffChannel(SUPABASE_URL, SUPABASE_ANON_KEY);
+      this._handoffService.setCallbacks({
+        onHandoffAccepted: ({ payload }) => {
           if (payload.userId !== this._sessionId) return;
           this._escalationStateMachine.transition('CONNECT');
           this._removeLastSystemMessage();
+          this._hideReconnectBanner();
           const connectedMsg = this._createSystemMessage(
             "You're now connected with a human agent.", 'connected');
           this.addMessage(connectedMsg);
-        })
-        .on('broadcast', { event: 'agent_message' }, (payload: { userId: string; text: string; timestamp?: number }) => {
+        },
+        onAgentMessage: ({ payload }) => {
           if (payload.userId !== this._sessionId) return;
+          this._hideTypingIndicator();
           const humanMsg = this._createMessage(payload.text, 'agent');
           (humanMsg as ChatMessage).isHumanAgent = true;
           this.addMessage(humanMsg);
-        })
-        .subscribe((status: string) => {
-          if (status === 'SUBSCRIBED') {
-            this._handoffChannel?.send({
-              type: 'broadcast',
-              event: 'handoff_request',
-              payload: {
-                userId: this._sessionId,
-                transcript: this.state.messages.filter(m => m.role !== 'system').slice(-10),
-                timestamp: Date.now(),
-              },
-            });
+        },
+        onTypingIndicator: ({ payload }) => {
+          if (payload.userId !== this._sessionId) return;
+          if (payload.isTyping) {
+            this._showTypingIndicator();
           } else {
-            // D-12: Graceful failure — show unavailable and cancel escalation
-            this._removeLastSystemMessage();
-            const failMsg = this._createMessage(
-              'Human support is currently unavailable. Please try again later.', 'agent');
-            this.addMessage(failMsg);
-            this._escalationStateMachine.transition('CANCEL');
-            this._escalationStateMachine.transition('RESET');
+            this._hideTypingIndicator();
           }
-        });
-
-      // D-03, D-12: 60s timeout — if no agent accepts, show unavailable
-      setTimeout(() => {
-        if (this._handoffChannel && this._escalationStateMachine.getState().status === 'CONFIRMING') {
-          this._handoffChannel.unsubscribe();
-          this._handoffChannel = null;
+        },
+        onHandoffCancelled: ({ payload }) => {
+          if (payload.userId !== this._sessionId) return;
           this._removeLastSystemMessage();
-          const timeoutMsg = this._createMessage(
-            'No agents are currently available. Please try again later.', 'agent');
-          this.addMessage(timeoutMsg);
+          const cancelledMsg = this._createMessage(
+            'The agent has ended the session. How else can I help you?', 'agent');
+          this.addMessage(cancelledMsg);
           this._escalationStateMachine.transition('CANCEL');
           this._escalationStateMachine.transition('RESET');
+        },
+        onStateChange: (newState: HandoffChannelState) => {
+          if (newState === 'reconnecting') {
+            this._showReconnectBanner();
+          } else if (newState === 'connected') {
+            this._hideReconnectBanner();
+          }
+        },
+        onMaxRetriesReached: () => {
+          this._removeLastSystemMessage();
+          const failMsg = this._createMessage(
+            'Connection to human support lost. Please try again later.', 'agent');
+          this.addMessage(failMsg);
+          this._escalationStateMachine.transition('CANCEL');
+          this._escalationStateMachine.transition('RESET');
+        },
+      });
+
+      await this._handoffService.connect();
+
+      this._handoffService.sendHandoffRequest({
+        userId: this._sessionId,
+        transcript: this.state.messages.filter(m => m.role !== 'system').slice(-10),
+        timestamp: Date.now(),
+      });
+
+      setTimeout(() => {
+        if (this._escalationStateMachine.getState().status === 'CONFIRMING') {
+          this._showNoAgentsMessage();
         }
       }, 60000);
     } catch (err) {
@@ -971,49 +989,35 @@ export default class ChatWidget {
     this.addMessage(transferringMsg);
 
     try {
-      if (!this._supabaseClient) {
-        this._supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-
-      if (!this._handoffChannel || this._handoffChannel.state === 'unsubscribed') {
-        this._handoffChannel = this._supabaseClient.channel('support-queue', {
-          config: { broadcast: { self: false } },
-        });
-
-        this._handoffChannel
-          .on('broadcast', { event: 'handoff_accepted' }, (payload: { userId: string; agentId?: string; agentName?: string; conversationId?: string }) => {
+      if (!this._handoffService) {
+        this._handoffService = new HandoffChannel(SUPABASE_URL, SUPABASE_ANON_KEY);
+        this._handoffService.setCallbacks({
+          onHandoffAccepted: ({ payload }) => {
             if (payload.userId !== this._sessionId) return;
             this._escalationStateMachine.transition('CONNECT');
             this._removeLastSystemMessage();
-            const connectedMsg = this._createSystemMessage(
-              "You're now connected with a human agent.", 'connected');
-            this.addMessage(connectedMsg);
-          })
-          .on('broadcast', { event: 'agent_message' }, (payload: { userId: string; text: string; timestamp?: number }) => {
+            this._hideReconnectBanner();
+            this.addMessage(this._createSystemMessage("You're now connected with a human agent.", 'connected'));
+          },
+          onAgentMessage: ({ payload }) => {
             if (payload.userId !== this._sessionId) return;
+            this._hideTypingIndicator();
             const humanMsg = this._createMessage(payload.text, 'agent');
             (humanMsg as ChatMessage).isHumanAgent = true;
             this.addMessage(humanMsg);
-          });
+          },
+          onStateChange: (s: HandoffChannelState) => {
+            if (s === 'reconnecting') this._showReconnectBanner();
+            else if (s === 'connected') this._hideReconnectBanner();
+          },
+        });
       }
 
-      this._handoffChannel.subscribe((status: string) => {
-        if (status === 'SUBSCRIBED') {
-          this._handoffChannel?.send({
-            type: 'broadcast',
-            event: 'handoff_request',
-            payload: {
-              userId: this._sessionId,
-              transcript: this.state.messages.filter(m => m.role !== 'system').slice(-10),
-              timestamp: Date.now(),
-            },
-          });
-        } else {
-          this._removeLastSystemMessage();
-          const failMsg = this._createMessage(
-            'Human support is currently unavailable. Please try again later.', 'agent');
-          this.addMessage(failMsg);
-        }
+      await this._handoffService.connect();
+      this._handoffService.sendHandoffRequest({
+        userId: this._sessionId,
+        transcript: this.state.messages.filter(m => m.role !== 'system').slice(-10),
+        timestamp: Date.now(),
       });
     } catch (err) {
       this._removeLastSystemMessage();
@@ -1035,6 +1039,62 @@ export default class ChatWidget {
     this.addMessage(cancelMsg);
   }
 
+  private _showTypingIndicator(): void {
+    if (this._typingIndicatorEl) return;
+    this._agentTyping = true;
+
+    const typingEl = document.createElement('div');
+    typingEl.className = 'chat-bubble--system chat-bubble--typing';
+    typingEl.innerHTML = `
+      <div class="chat-bubble__header">
+        <span class="chat-bubble__role">Human Agent</span>
+      </div>
+      <div class="chat-bubble__content">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      </div>
+    `;
+    this.messageList.appendChild(typingEl);
+    this._typingIndicatorEl = typingEl;
+    this._scrollToBottom();
+  }
+
+  private _hideTypingIndicator(): void {
+    if (this._typingIndicatorEl) {
+      this._typingIndicatorEl.remove();
+      this._typingIndicatorEl = null;
+    }
+    this._agentTyping = false;
+  }
+
+  private _showReconnectBanner(): void {
+    if (this._reconnectBannerEl) return;
+
+    const banner = document.createElement('div');
+    banner.className = 'chat-bubble--system chat-bubble--reconnect';
+    banner.textContent = 'Reconnecting to agent...';
+    this.messageList.appendChild(banner);
+    this._reconnectBannerEl = banner;
+    this._scrollToBottom();
+  }
+
+  private _hideReconnectBanner(): void {
+    if (this._reconnectBannerEl) {
+      this._reconnectBannerEl.remove();
+      this._reconnectBannerEl = null;
+    }
+  }
+
+  private _showNoAgentsMessage(): void {
+    this._removeLastSystemMessage();
+    const noAgentsMsg = this._createMessage(
+      'No human agents are currently online. Please try again during business hours.', 'agent');
+    this.addMessage(noAgentsMsg);
+    this._escalationStateMachine.transition('CANCEL');
+    this._escalationStateMachine.transition('RESET');
+  }
+
   private _removeLastSystemMessage(): void {
     const messages = this.messageList.querySelectorAll('.chat-bubble--system');
     const last = messages[messages.length - 1];
@@ -1042,6 +1102,16 @@ export default class ChatWidget {
   }
 
   destroy(): void {
+    const state = this._escalationStateMachine?.getState();
+    if (state && ['CONFIRMING', 'QUEUED', 'CONNECTED'].includes(state.status)) {
+      if (this._handoffService) {
+        this._handoffService.sendHandoffCancelled(this._sessionId);
+        this._handoffService.disconnect();
+      }
+    }
+
+    this._presenceTracker?.reset();
+
     this.toggleBtn.remove();
     this.widget.remove();
   }
