@@ -1,11 +1,22 @@
 <!-- generated-by: gsd-doc-writer -->
 # AI Customer Support Agent for Commerce
 
-**v1.0 — Shipped May 19, 2026** | 607 tests passing | 148 commits | 9 phases complete
+**v1.2 — Ship Ready May 20, 2026** | 605 tests passing | 148 commits | 10 phases complete
 
 A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Uses a **hybrid architecture**: in-browser semantic understanding (MiniLM embeddings via transformer.js) for intent routing + deterministic data retrieval for zero-hallucination answers.
 
 Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows: product lookup, stock checks, policy answers, order tracking, and live human handoff.
+
+## Why This System Feels Different
+
+| Traditional Chatbot | This System |
+|---------------------|-------------|
+| LLM API calls → hallucination risk | Zero LLM calls → deterministic answers |
+| Generic responses | Grounded in live Shopify data |
+| Cloud-dependent | Runs entirely in-browser |
+| Black box intent | Semantic routing + keyword fallback |
+| No escalation path | Real-time human handoff via Supabase |
+| Static UI | Response-type-aware surfaces |
 
 ## Prerequisites
 
@@ -20,7 +31,7 @@ Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows
 npm install
 ```
 
-### 2. Run unit tests (optional, 607 tests)
+### 2. Run unit tests (optional, 605 tests)
 
 ```bash
 npx vitest run
@@ -183,6 +194,8 @@ Greeting check / Fallback text
 - **All services run in-browser**: No backend required (except optional serverless proxy for order security).
 - **Semantic Router**: `@huggingface/transformers` with `all-MiniLM-L6-v2` — in-browser sentence embeddings for intent classification. Handles typos, synonyms, and natural phrasing.
 - **Live human handoff**: Escalation routes through Supabase Realtime WebSocket channel (`support-queue`). Agent console (`agent-console.html`) receives requests, accepts, and sends responses. Typing indicators, presence tracking, reconnect with exponential backoff.
+- **Response surfaces**: Structured product/order data rendered as inline commerce cards — not text-only responses. Each response type has distinct visual rhythm.
+- **Premium commerce UI**: Inter typography, cream/ink palette, structured surfaces, mobile-optimized with safe-area support.
 
 ## Testing
 
@@ -246,6 +259,7 @@ See `docs/PHASE1_SECURITY.md` for complete security implementation details.
 | 7. Return Processing | Complete | ReturnService, return eligibility checks, return submission flow |
 | 8. Escalation & Handoff | Complete | EscalationDetector, EscalationStateMachine, Supabase handoff channel, agent console |
 | 9. Gap Closure | Complete | B1-B2 blockers fixed, W2-W6 warnings resolved, all evals passing |
+| 10. UI Stabilization | Complete | Premium commerce UI, response surfaces, mobile optimization, production realism |
 
 ## Key Technologies
 
@@ -253,7 +267,7 @@ See `docs/PHASE1_SECURITY.md` for complete security implementation details.
 - **@huggingface/transformers** — in-browser MiniLM embeddings for semantic intent detection
 - **Supabase Realtime** — WebSocket broadcast channel for live human handoff
 - **Cloudflare Workers** — Edge runtime for secure Shopify Admin API proxy (rate limiting, CORS, HMAC verification)
-- **Vitest** — unit and integration tests (30 test files, 607 tests)
+- **Vitest** — unit and integration tests (30 test files, 605 tests)
 - **Playwright** — E2E browser tests (4 spec files, 12 tests)
 - **OpenCode + GSD** — development workflow engine (planning, execution, verification)
 
@@ -274,7 +288,37 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Screenshots
 
-*Screenshots to be added — widget UI is complete with Berkeley Mono typography, cream canvas, hairline borders, and action chips.*
+Widget UI features premium commerce design with:
+- Inter font family, cream/ink palette, hairline borders
+- Structured product cards with stock status badges
+- Response-type-aware message surfaces (product, order, policy, escalation)
+- Live store data indicator for trust reinforcement
+- Adaptive onboarding with example queries
+- Context-aware action chips and autocomplete dropdown
+- Mobile-optimized layout with safe-area support
+
+## Demo Walkthrough
+
+### Recommended Demo Script (4 minutes)
+
+| Time | Action | What to Say | What Judges See |
+|------|--------|-------------|-----------------|
+| 0:00 | Open widget | "This is a store-native AI support agent for Shopify." | Clean widget opens with "Store Support" onboarding |
+| 0:15 | Type: `do you have blue pants` | "Natural language — no exact keywords needed." | Semantic routing handles the query |
+| 0:30 | Type: `avialable` (typo) | "Handles typos naturally." | MiniLM embeddings match intent despite typo |
+| 0:45 | Type: `track order #1001 for john@example.com` | "Order tracking with authentication." | Order card with timeline, tracking, carrier |
+| 1:15 | Type: `what's your return policy` | "Policy answers grounded in live data." | Grounded policy response |
+| 1:45 | Type: `I want to speak to a human` | "Real-time escalation to human agents." | Escalation FSM → Supabase handoff |
+| 2:15 | Show agent console | "Agent receives request, accepts, responds." | Real-time WebSocket communication |
+| 2:45 | Show architecture | "Zero LLM calls. Semantic routing + deterministic data." | Hybrid architecture diagram |
+
+### Strongest Judging Moments
+
+1. **Typo handling** (0:30) — "avialable" → correct product match via embeddings
+2. **Product card surface** (0:45) — structured commerce data, not text-only
+3. **Order timeline** (1:00) — visual logistics tracking with carrier + ETA
+4. **Live handoff** (2:00) — real Supabase WebSocket, not simulated
+5. **Data source indicator** (always visible) — "Connected to store" trust signal
 
 ## Contribution Note
 

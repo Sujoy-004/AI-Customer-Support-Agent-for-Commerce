@@ -172,6 +172,49 @@ The system uses a browser-side layered architecture. All services run in the use
 | `shopify-proxy/src/worker.ts` | New | Cloudflare Worker — HMAC verification, Shopify Admin GraphQL query, filtered status response |
 | `shopify-widget/.env.example` | 3 | Template for Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) |
 
+## 1.4 Renderer Architecture (Stabilization Phase)
+
+The presentation layer was refactored from monolithic DOM rendering into modular renderers for maintainability and response-type-aware surfaces.
+
+```
+shopify-widget/src/renderers/
+├── renderUI.ts              # Widget shell (toggle, offline banner, data source indicator)
+├── renderMessage.ts         # User/agent/error message bubbles with sanitization
+├── renderSystemMessage.ts   # Escalation flow messages (offer, transfer, queue, connected)
+├── renderInputArea.ts       # Textarea with rotating placeholders
+├── renderActionChips.ts     # Context-aware suggestion chips
+├── renderAutocomplete.ts    # Product/order/policy dropdown
+├── renderOnboardingHint.ts  # Adaptive onboarding with example queries
+├── renderTypingIndicator.ts # Agent typing animation
+├── renderProductCard.ts     # Structured product cards with stock status
+├── renderResponseSurface.ts # Response-type-aware surface renderer
+└── renderTypes.ts           # Shared type definitions
+```
+
+### Response Surfaces
+
+Agent responses carry optional `ResponseSurface` data for structured rendering:
+
+| Surface Type | When Used | Visual |
+|-------------|-----------|--------|
+| `product-card` | Exact/partial product match | Card with title, price, variants, stock badge |
+| `product-list` | Search results (3+ products) | Compact list with result count header |
+| `stock-status` | Stock check query | Minimal product + stock status row |
+
+### Response Type Awareness
+
+Each agent message carries a `responseType` that controls spacing rhythm and hierarchy:
+
+| Type | Spacing | Use Case |
+|------|---------|----------|
+| `product` | Tight bottom padding | Catalog responses with product surfaces |
+| `order` | Tight bottom padding | Order found responses |
+| `policy` | Relaxed line-height | Policy answers with grounding |
+| `escalation` | Compact, muted | Escalation offers |
+| `tracking` | Tight bottom padding | Order tracking prompts |
+| `return` | Tight bottom padding | Return flow messages |
+| `general` | Default | Greetings, fallbacks |
+
 ## 2. AI/Deterministic Boundary
 
 This is the most important architectural property of the system. The boundary is explicitly defined and enforced.
