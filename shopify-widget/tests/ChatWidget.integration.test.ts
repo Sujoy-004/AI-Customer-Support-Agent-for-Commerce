@@ -274,6 +274,7 @@ describe('ChatWidget action chips', () => {
   let widget: ChatWidget;
 
   beforeEach(() => {
+    localStorage.removeItem('support-onboarding-seen');
     const container = document.createElement('div');
     container.id = 'test-chips-container';
     document.body.appendChild(container);
@@ -286,26 +287,38 @@ describe('ChatWidget action chips', () => {
     widget.destroy();
     const el = document.getElementById('test-chips-container');
     if (el) el.remove();
+    localStorage.removeItem('support-onboarding-seen');
   });
 
   it('should render 4 action chips on widget open when no messages sent', () => {
     widget.open();
     const chips = document.querySelectorAll('.action-chip');
     expect(chips.length).toBe(4);
-    expect(chips[0].textContent).toBe('[Track Order]');
-    expect(chips[1].textContent).toBe('[Check Stock]');
-    expect(chips[2].textContent).toBe('[Return Item]');
-    expect(chips[3].textContent).toBe('[View Policies]');
+    // Chips come from SuggestedActionsService (initial state)
+    expect(chips[0].textContent).toBe('[Browse Products]');
+    expect(chips[1].textContent).toBe('[Track Order]');
+    expect(chips[2].textContent).toBe('[View Policies]');
+    expect(chips[3].textContent).toBe('[Check Returns]');
   });
 
-  it('should remove chips after user sends first message', async () => {
+  it('should re-render chips with context-aware labels after agent response', async () => {
     widget.open();
-    // Simulate typing and sending
-    widget['textarea' as any].value = 'hello';
+    const initialChips = document.querySelectorAll('.action-chip');
+    expect(initialChips.length).toBe(4);
+
+    // Send a product-related query
+    widget['textarea' as any].value = 'classic hoodie';
     await widget['_sendMessage' as any]();
-    await new Promise(r => setTimeout(r, 50));
-    const chips = document.querySelectorAll('.action-chip');
-    expect(chips.length).toBe(0);
+    await new Promise(r => setTimeout(r, 100));
+
+    // Chips should re-render with context-aware suggestions
+    const newChips = document.querySelectorAll('.action-chip');
+    expect(newChips.length).toBeGreaterThan(0);
+    // Labels should differ from initial (product_search or policy_query state)
+    const labels = Array.from(newChips).map(c => c.textContent);
+    const initialLabels = ['[Browse Products]', '[Track Order]', '[View Policies]', '[Check Returns]'];
+    const hasDifferentLabel = labels.some(l => !initialLabels.includes(l!));
+    expect(hasDifferentLabel).toBe(true);
   });
 
   it('should fill textarea when Track Order chip clicked', () => {
@@ -313,34 +326,23 @@ describe('ChatWidget action chips', () => {
     const trackBtn = document.querySelector('[data-action="track-order"]') as HTMLButtonElement;
     expect(trackBtn).toBeTruthy();
     trackBtn.click();
-    expect(widget['textarea' as any].value).toBe('track order #');
+    expect(widget['textarea' as any].value).toBe('Track my order');
   });
 
-  it('should fill textarea when Check Stock chip clicked', () => {
+  it('should fill textarea when Browse Products chip clicked', () => {
     widget.open();
-    const stockBtn = document.querySelector('[data-action="check-stock"]') as HTMLButtonElement;
-    expect(stockBtn).toBeTruthy();
-    stockBtn.click();
-    expect(widget['textarea' as any].value).toBe('check stock for ');
+    const browseBtn = document.querySelector('[data-action="browse-products"]') as HTMLButtonElement;
+    expect(browseBtn).toBeTruthy();
+    browseBtn.click();
+    expect(widget['textarea' as any].value).toBe('Show me your products');
   });
 
-  it('should send immediately when Return Item chip clicked', async () => {
+  it('should fill textarea when View Policies chip clicked', () => {
     widget.open();
-    // Spy on _sendMessage to verify it's called
-    const sendSpy = vi.spyOn(widget as any, '_sendMessage');
-    const returnBtn = document.querySelector('[data-action="return-item"]') as HTMLButtonElement;
-    expect(returnBtn).toBeTruthy();
-    returnBtn.click();
-    expect(sendSpy).toHaveBeenCalled();
-  });
-
-  it('should send immediately when View Policies chip clicked', async () => {
-    widget.open();
-    const sendSpy = vi.spyOn(widget as any, '_sendMessage');
     const policiesBtn = document.querySelector('[data-action="view-policies"]') as HTMLButtonElement;
     expect(policiesBtn).toBeTruthy();
     policiesBtn.click();
-    expect(sendSpy).toHaveBeenCalled();
+    expect(widget['textarea' as any].value).toBe('What are your policies?');
   });
 
   it('should re-render chips on re-open if no message was sent', () => {
@@ -356,7 +358,7 @@ describe('ChatWidget action chips', () => {
     // Send a message
     widget['textarea' as any].value = 'hello';
     await widget['_sendMessage' as any]();
-    await new Promise(r => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 100));
     widget.close();
     widget.open();
     const chips = document.querySelectorAll('.action-chip');
@@ -370,6 +372,7 @@ describe('ChatWidget onboarding hint', () => {
   let widget: ChatWidget;
 
   beforeEach(() => {
+    localStorage.removeItem('support-onboarding-seen');
     const container = document.createElement('div');
     container.id = 'test-hint-container';
     document.body.appendChild(container);
@@ -382,13 +385,14 @@ describe('ChatWidget onboarding hint', () => {
     widget.destroy();
     const el = document.getElementById('test-hint-container');
     if (el) el.remove();
+    localStorage.removeItem('support-onboarding-seen');
   });
 
   it('should show onboarding hint on first open with no messages', () => {
     widget.open();
     const hint = document.querySelector('.chat-onboarding-hint');
     expect(hint).toBeTruthy();
-    expect(hint!.textContent).toContain('Ask about products');
+    expect(hint!.textContent).toContain('Try asking about products');
   });
 
   it('should hide onboarding hint after first message sent', async () => {
@@ -396,8 +400,115 @@ describe('ChatWidget onboarding hint', () => {
     expect(document.querySelector('.chat-onboarding-hint')).toBeTruthy();
     widget['textarea' as any].value = 'hello';
     await widget['_sendMessage' as any]();
-    await new Promise(r => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 100));
     expect(document.querySelector('.chat-onboarding-hint')).toBeFalsy();
+  });
+
+  it('should not show onboarding hint when localStorage flag is set', () => {
+    localStorage.setItem('support-onboarding-seen', String(Date.now()));
+    widget.open();
+    const hint = document.querySelector('.chat-onboarding-hint');
+    expect(hint).toBeFalsy();
+  });
+
+  it('should show onboarding hint after 7-day expiry', () => {
+    // Set flag to 8 days ago
+    const eightDaysAgo = Date.now() - (8 * 24 * 60 * 60 * 1000);
+    localStorage.setItem('support-onboarding-seen', String(eightDaysAgo));
+    widget.open();
+    const hint = document.querySelector('.chat-onboarding-hint');
+    expect(hint).toBeTruthy();
+  });
+});
+
+// ── Autocomplete Integration Tests (Phase 5-03) ──
+
+describe('ChatWidget autocomplete', () => {
+  let widget: ChatWidget;
+
+  beforeEach(async () => {
+    localStorage.removeItem('support-onboarding-seen');
+    const container = document.createElement('div');
+    container.id = 'test-autocomplete-container';
+    document.body.appendChild(container);
+    const semanticRouter = SemanticRouter.getInstance();
+    vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+
+    const catalogService = new CatalogService(new MockCatalogDataSource());
+    const catalogIntentDetector = new CatalogIntentDetector(catalogService, semanticRouter);
+
+    widget = new ChatWidget({
+      container,
+      catalogIntentDetector,
+      catalogService,
+      dataSource: 'mock',
+    });
+
+    // Wait for async product load to complete
+    await new Promise(r => setTimeout(r, 200));
+  });
+
+  afterEach(() => {
+    widget.destroy();
+    const el = document.getElementById('test-autocomplete-container');
+    if (el) el.remove();
+    localStorage.removeItem('support-onboarding-seen');
+  });
+
+  it('should show autocomplete dropdown when typing 2+ chars', async () => {
+    widget.open();
+
+    // Simulate typing "classic" (matches "Classic Hoodie")
+    widget['textarea' as any].value = 'classic';
+    widget['textarea' as any].dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Wait for debounce (150ms)
+    await new Promise(r => setTimeout(r, 200));
+
+    const dropdown = document.querySelector('.autocomplete-dropdown');
+    expect(dropdown).toBeTruthy();
+  });
+
+  it('should dismiss autocomplete on Escape key', async () => {
+    widget.open();
+
+    widget['textarea' as any].value = 'classic';
+    widget['textarea' as any].dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 200));
+
+    expect(document.querySelector('.autocomplete-dropdown')).toBeTruthy();
+
+    // Press Escape
+    widget['textarea' as any].dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(document.querySelector('.autocomplete-dropdown')).toBeFalsy();
+  });
+
+  it('should not show autocomplete for single character', async () => {
+    widget.open();
+
+    widget['textarea' as any].value = 'c';
+    widget['textarea' as any].dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 200));
+
+    expect(document.querySelector('.autocomplete-dropdown')).toBeFalsy();
+  });
+
+  it('should dismiss autocomplete when message is sent', async () => {
+    widget.open();
+
+    widget['textarea' as any].value = 'classic';
+    widget['textarea' as any].dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 200));
+
+    expect(document.querySelector('.autocomplete-dropdown')).toBeTruthy();
+
+    // Send message
+    widget['textarea' as any].value = 'classic hoodie';
+    await widget['_sendMessage' as any]();
+    await new Promise(r => setTimeout(r, 100));
+
+    expect(document.querySelector('.autocomplete-dropdown')).toBeFalsy();
   });
 });
 

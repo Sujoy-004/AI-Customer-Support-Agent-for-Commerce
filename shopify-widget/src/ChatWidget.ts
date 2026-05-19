@@ -18,7 +18,10 @@ import { CatalogSyncManager } from '../../src/services/catalogSync';
 import { PolicySyncManager } from '../../src/services/policySync';
 import { ShopifyStorefrontDataSource } from '../../src/services/shopifyStorefrontDataSource';
 import { ShopifyOrderProxyDataSource } from '../../src/services/shopifyOrderProxyDataSource';
-import type { CatalogDataSource, OrderDataSource, EscalationChatMessage } from '../../src/services/types';
+import type { CatalogDataSource, OrderDataSource, EscalationChatMessage, Product } from '../../src/services/types';
+import { SuggestedActionsService } from '../../src/services/suggestedActions';
+import { AutocompleteService } from '../../src/services/autocomplete';
+import type { SuggestedAction, ConversationState, AutocompleteResult } from '../../src/services/types';
 import { SemanticRouter } from './core/semanticRouter';
 
 // Initialize our services
@@ -108,6 +111,19 @@ export default class ChatWidget {
   private _hasSentMessage = false;
   private _chipContainer: HTMLDivElement | null = null;
   private _onboardingHint: HTMLDivElement | null = null;
+  // Suggested Actions (Phase 5-03)
+  private _suggestedActions = new SuggestedActionsService();
+  private _lastConversationState: ConversationState = 'initial';
+  private _lastResolvedQuery: unknown = null;
+  // Autocomplete (Phase 5-03)
+  private _autocompleteService = new AutocompleteService();
+  private _autocompleteDropdown: HTMLDivElement | null = null;
+  private _autocompleteHighlightedIndex = -1;
+  private _autocompleteResults: AutocompleteResult[] = [];
+  private _catalogProducts: Product[] = [];
+  private _autocompleteDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Adaptive onboarding (Phase 5-03)
+  private _onboardingFadeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: ChatWidgetOptions = {}) {
     this.container = options.container || document.getElementById('ai-support-widget') as HTMLElement;
@@ -163,6 +179,14 @@ export default class ChatWidget {
       const catalogService = options.catalogService || new CatalogService(catalogDataSource);
       // Inject SemanticRouter (D-02)
       this._catalogIntentDetector = new CatalogIntentDetector(catalogService, this._semanticRouter);
+    }
+
+    // Load catalog products for autocomplete (fire-and-forget, gracefully degrades)
+    const catSvc = options.catalogService ?? (this._catalogIntentDetector as any)._catalogService;
+    if (catSvc) {
+      catSvc.loadProducts()
+        .then((products: Product[]) => { this._catalogProducts = products; })
+        .catch(() => { /* autocomplete returns no results if load fails */ });
     }
 
     // Policy service with live fetch options (D-05, D-13)
@@ -303,6 +327,41 @@ export default class ChatWidget {
     this.toggleBtn.addEventListener('click', () => this._toggle());
 
     this.textarea.addEventListener('keydown', (e) => {
+      // Autocomplete keyboard navigation (before Enter-to-send check)
+      if (this._autocompleteDropdown && this._autocompleteResults.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          this._autocompleteHighlightedIndex = (this._autocompleteHighlightedIndex + 1) % this._autocompleteResults.length;
+          this._updateAutocompleteHighlight();
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          this._autocompleteHighlightedIndex = (this._autocompleteHighlightedIndex - 1 + this._autocompleteResults.length) % this._autocompleteResults.length;
+          this._updateAutocompleteHighlight();
+          return;
+        }
+        if (e.key === 'Enter' && this._autocompleteHighlightedIndex >= 0) {
+          e.preventDefault();
+          this._selectAutocompleteResult(this._autocompleteHighlightedIndex);
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this._dismissAutocomplete();
+          return;
+        }
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          if (this._autocompleteHighlightedIndex >= 0) {
+            this._selectAutocompleteResult(this._autocompleteHighlightedIndex);
+          } else if (this._autocompleteResults.length > 0) {
+            this._selectAutocompleteResult(0);
+          }
+          return;
+        }
+      }
+
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         this._sendMessage();
@@ -312,6 +371,7 @@ export default class ChatWidget {
     this.textarea.addEventListener('input', () => {
       this._autoGrow();
       this._updateSendButton();
+      this._handleAutocompleteInput();
     });
 
     this.sendBtn.addEventListener('click', () => this._sendMessage());
@@ -346,6 +406,9 @@ export default class ChatWidget {
       this.textarea.focus();
       this._renderActionChips();
       this._renderOnboardingHint();
+    } else {
+      this._removeActionChips();
+      this._dismissAutocomplete();
     }
   }
 
@@ -619,6 +682,7 @@ export default class ChatWidget {
     this._hasSentMessage = true;
     this._removeActionChips();
     this._removeOnboardingHint();
+    this._dismissAutocomplete();
 
     if (!this.state.isOnline) {
       this.setProcessing(false);
@@ -661,8 +725,14 @@ export default class ChatWidget {
       const agentResponse = await this._generateAgentResponse(text);
       this._updateMessageStatus(msg.id, 'delivered');
 
+      // Update conversation state based on response content
+      this._lastConversationState = this._determineConversationState(agentResponse);
+
       const agentMsg = this._createMessage(agentResponse, 'agent');
       this.addMessage(agentMsg);
+
+      // Re-render action chips with updated conversation context
+      this._renderActionChips(true);
     } catch (err) {
       this._updateMessageStatus(msg.id, 'error');
       const errorMsg = this._createMessage(
@@ -687,8 +757,14 @@ export default class ChatWidget {
       const agentResponse = await this._generateAgentResponse(text);
       this._updateMessageStatus(msg.id, 'delivered');
 
+      // Update conversation state based on response content
+      this._lastConversationState = this._determineConversationState(agentResponse);
+
       const agentMsg = this._createMessage(agentResponse, 'agent');
       this.addMessage(agentMsg);
+
+      // Re-render action chips with updated conversation context
+      this._renderActionChips(true);
     } catch (err) {
       this._updateMessageStatus(msg.id, 'error');
       const errorMsg = this._createMessage(
@@ -1166,33 +1242,37 @@ export default class ChatWidget {
 
   // ── Action Chips ────────────────────────────────
 
-  private _renderActionChips(): void {
-    if (this._hasSentMessage || this.state.messages.length > 0) {
-      this._removeActionChips();
+  private _renderActionChips(force = false): void {
+    // Remove existing chips first
+    if (this._chipContainer) {
+      this._chipContainer.remove();
+      this._chipContainer = null;
+    }
+
+    // Guard: don't show chips on re-open if message was already sent (unless forced)
+    if (!force && this._hasSentMessage) {
       return;
     }
-    if (this._chipContainer) return; // already rendered
+
+    const suggestions = this._suggestedActions.getSuggestions(this._lastConversationState, this._lastResolvedQuery);
 
     this._chipContainer = document.createElement('div');
     this._chipContainer.className = 'action-chips';
 
-    const chips = [
-      { action: 'track-order', label: '[Track Order]', immediate: false },
-      { action: 'check-stock', label: '[Check Stock]', immediate: false },
-      { action: 'return-item', label: '[Return Item]', immediate: true },
-      { action: 'view-policies', label: '[View Policies]', immediate: true },
-    ];
-
-    for (const chip of chips) {
+    for (const action of suggestions) {
       const btn = document.createElement('button');
       btn.className = 'action-chip';
-      btn.dataset.action = chip.action;
-      btn.textContent = chip.label;
-      btn.addEventListener('click', () => this._handleChipClick(chip));
+      btn.dataset.action = action.label.toLowerCase().replace(/\s+/g, '-');
+      btn.textContent = `[${action.label}]`;
+      btn.addEventListener('click', () => {
+        this.textarea.value = action.query;
+        this.textarea.focus();
+        this._autoGrow();
+        this._updateSendButton();
+      });
       this._chipContainer.appendChild(btn);
     }
 
-    // Insert between messageList and inputContainer per D-01
     this.widget.insertBefore(this._chipContainer, this.inputContainer);
   }
 
@@ -1203,25 +1283,18 @@ export default class ChatWidget {
     }
   }
 
-  // ── Onboarding Hint ────────────────────────────
-
-  private _renderOnboardingHint(): void {
-    if (this._hasSentMessage || this.state.messages.length > 0 || this._onboardingHint) return;
-
-    this._onboardingHint = document.createElement('div');
-    this._onboardingHint.className = 'chat-onboarding-hint';
-    this._onboardingHint.textContent =
-      '[+] Ask about products, track orders, or check policies. Type naturally — I understand typos.';
-
-    // Prepend to message list so it appears at the top
-    this.messageList.prepend(this._onboardingHint);
-  }
-
-  private _removeOnboardingHint(): void {
-    if (this._onboardingHint) {
-      this._onboardingHint.remove();
-      this._onboardingHint = null;
-    }
+  /**
+   * Determine conversation state from agent response text (heuristic, zero LLM calls).
+   */
+  private _determineConversationState(response: string): ConversationState {
+    const lower = response.toLowerCase();
+    if (lower.includes('stock') || lower.includes('in stock')) return 'stock_check';
+    if (lower.includes('order') && (lower.includes('tracking') || lower.includes('track'))) return 'order_tracking';
+    if (lower.includes('policy') || lower.includes('shipping') || lower.includes('warranty') || lower.includes('return policy')) return 'policy_query';
+    if (lower.includes('transfer') || lower.includes('human agent') || lower.includes('escalat')) return 'escalation_offer';
+    if (lower.includes('return')) return 'return_flow';
+    if (lower.includes('product')) return 'product_search';
+    return 'initial';
   }
 
   private _handleChipClick(chip: { action: string; label: string; immediate: boolean }): void {
@@ -1236,15 +1309,176 @@ export default class ChatWidget {
         'track-order': 'track order #',
         'check-stock': 'check stock for ',
       };
-      this.textarea.value = fillers[chip.action];
+      this.textarea.value = fillers[chip.action] || '';
       this.textarea.focus();
       this._autoGrow();
       this._updateSendButton();
     }
   }
 
+  // ── Onboarding Hint ────────────────────────────
+
+  private _renderOnboardingHint(): void {
+    if (this._hasSentMessage || this.state.messages.length > 0 || this._onboardingHint) return;
+
+    // Check localStorage for 7-day expiry
+    const seenFlag = localStorage.getItem('support-onboarding-seen');
+    if (seenFlag) {
+      const seenTime = parseInt(seenFlag, 10);
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      if (Date.now() - seenTime < sevenDays) {
+        return; // Still within 7-day window — skip onboarding
+      }
+    }
+
+    this._onboardingHint = document.createElement('div');
+    this._onboardingHint.className = 'chat-onboarding-hint chat-onboarding-hint--adaptive';
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent = 'Try asking about products, tracking orders, or checking policies. Type naturally — I understand typos.';
+    this._onboardingHint.appendChild(textSpan);
+
+    // Dismiss button
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'chat-onboarding-hint__dismiss';
+    dismissBtn.textContent = '\u00d7';
+    dismissBtn.addEventListener('click', () => {
+      this._dismissOnboarding();
+    });
+    this._onboardingHint.appendChild(dismissBtn);
+
+    // Start 3-second fade timer
+    this._onboardingFadeTimer = setTimeout(() => {
+      if (this._onboardingHint) {
+        this._onboardingHint.classList.add('chat-onboarding-hint--fading');
+        setTimeout(() => {
+          this._dismissOnboarding();
+        }, 500); // Match CSS transition duration
+      }
+    }, 3000);
+
+    // Prepend to message list so it appears at the top
+    this.messageList.prepend(this._onboardingHint);
+  }
+
+  private _dismissOnboarding(): void {
+    if (this._onboardingFadeTimer) {
+      clearTimeout(this._onboardingFadeTimer);
+      this._onboardingFadeTimer = null;
+    }
+    localStorage.setItem('support-onboarding-seen', String(Date.now()));
+    if (this._onboardingHint) {
+      this._onboardingHint.remove();
+      this._onboardingHint = null;
+    }
+  }
+
+  private _removeOnboardingHint(): void {
+    if (this._onboardingFadeTimer) {
+      clearTimeout(this._onboardingFadeTimer);
+      this._onboardingFadeTimer = null;
+    }
+    localStorage.setItem('support-onboarding-seen', String(Date.now()));
+    if (this._onboardingHint) {
+      this._onboardingHint.remove();
+      this._onboardingHint = null;
+    }
+  }
+
   private _sendImmediate(text: string): void {
     this.textarea.value = text;
     this._sendMessage();
+  }
+
+  // ── Autocomplete (Phase 5-03) ──────────────────
+
+  /**
+   * Handle textarea input for autocomplete (debounced 150ms per T-05-05).
+   */
+  private _handleAutocompleteInput(): void {
+    if (this._autocompleteDebounceTimer) {
+      clearTimeout(this._autocompleteDebounceTimer);
+    }
+    this._autocompleteDebounceTimer = setTimeout(() => {
+      const value = this.textarea.value.trim();
+      if (value.length >= 2) {
+        this._autocompleteResults = this._autocompleteService.getSuggestions(value, this._catalogProducts);
+        if (this._autocompleteResults.length > 0) {
+          this._renderAutocompleteDropdown(this._autocompleteResults);
+        } else {
+          this._dismissAutocomplete();
+        }
+      } else {
+        this._dismissAutocomplete();
+      }
+    }, 150);
+  }
+
+  private _renderAutocompleteDropdown(results: AutocompleteResult[]): void {
+    // Remove existing dropdown if present
+    if (this._autocompleteDropdown) {
+      this._autocompleteDropdown.remove();
+    }
+
+    this._autocompleteHighlightedIndex = -1;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown';
+
+    results.forEach((result, index) => {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.dataset.index = String(index);
+
+      const typeSpan = document.createElement('span');
+      typeSpan.className = 'autocomplete-item__type';
+      typeSpan.textContent = result.type === 'order' ? '#' : result.type === 'product' ? '📦' : '📋';
+
+      const labelSpan = document.createElement('span');
+      labelSpan.textContent = result.label;
+
+      item.appendChild(typeSpan);
+      item.appendChild(labelSpan);
+
+      item.addEventListener('click', () => {
+        this._selectAutocompleteResult(index);
+      });
+
+      dropdown.appendChild(item);
+    });
+
+    // Insert before inputContainer
+    this.widget.insertBefore(dropdown, this.inputContainer);
+    this._autocompleteDropdown = dropdown;
+  }
+
+  private _updateAutocompleteHighlight(): void {
+    if (!this._autocompleteDropdown) return;
+    const items = this._autocompleteDropdown.querySelectorAll('.autocomplete-item');
+    items.forEach((item, index) => {
+      item.classList.toggle('autocomplete-item--highlighted', index === this._autocompleteHighlightedIndex);
+    });
+  }
+
+  private _selectAutocompleteResult(index: number): void {
+    if (index < 0 || index >= this._autocompleteResults.length) return;
+    this.textarea.value = this._autocompleteResults[index].value;
+    this._dismissAutocomplete();
+    this._autoGrow();
+    this._updateSendButton();
+    this.textarea.focus();
+  }
+
+  private _dismissAutocomplete(): void {
+    if (this._autocompleteDebounceTimer) {
+      clearTimeout(this._autocompleteDebounceTimer);
+      this._autocompleteDebounceTimer = null;
+    }
+    if (this._autocompleteDropdown) {
+      this._autocompleteDropdown.remove();
+      this._autocompleteDropdown = null;
+    }
+    this._autocompleteHighlightedIndex = -1;
+    this._autocompleteResults = [];
   }
 }
