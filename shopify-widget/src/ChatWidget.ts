@@ -22,6 +22,7 @@ import type { CatalogDataSource, OrderDataSource, EscalationChatMessage, Product
 import { SuggestedActionsService } from '../../src/services/suggestedActions';
 import { AutocompleteService } from '../../src/services/autocomplete';
 import type { SuggestedAction, ConversationState, AutocompleteResult } from '../../src/services/types';
+import type { ReturnService } from '../../src/services/returnService';
 import { SemanticRouter } from './core/semanticRouter';
 
 // Initialize our services
@@ -638,7 +639,18 @@ export default class ChatWidget {
 
       const content = document.createElement('div');
       content.className = 'chat-bubble__content';
-      content.textContent = msg.text;
+      if (msg.role === 'agent' && msg.text.includes('<')) {
+        // Agent message contains HTML (e.g., OrderCard) — render as DOM
+        // Simple sanitization: strip script tags and event handlers before inserting
+        const sanitized = msg.text
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+          .replace(/javascript:/gi, '');
+        content.innerHTML = sanitized;
+      } else {
+        // User messages or plain text — use textContent to prevent XSS
+        content.textContent = msg.text;
+      }
 
       const statusEl = document.createElement('span');
       statusEl.className = `chat-bubble__status chat-bubble__status--${msg.status}`;

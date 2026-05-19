@@ -10,7 +10,7 @@
 - [x] **Phase 6: Semantic AI Router** - In-browser semantic intent detection replacing brittle keyword matching
 - [x] **Phase 7: Security & Live Data** - Serverless order proxy, live Shopify Storefront API integration, live policy fetch
 - [x] **Phase 8: UX & Demo** - Quick action chips, live human handoff, agent console, docs
-- [ ] **Phase 5.1: UX Refinement** - Context-aware action chips, autocomplete, adaptive onboarding
+- [x] **Phase 5.1: UX Refinement** - Context-aware action chips, autocomplete, adaptive onboarding
 
 ## Phase Details
 
@@ -139,13 +139,32 @@
    3. First-time users see adaptive onboarding that fades after interaction
    4. All 542 existing tests pass with zero regressions
    5. New services have 80%+ test coverage
-**Plans**: 3 plans
+**Plans**: 3 plans (all complete)
 **Context**: .planning/phases/05-ux-refinement/
 
 **Plans:**
-- [ ] 05-01-PLAN.md — SuggestedActionsService: types, service, 15+ tests
-- [ ] 05-02-PLAN.md — AutocompleteService: types, service, CSS, 12+ tests
-- [ ] 05-03-PLAN.md — ChatWidget integration, adaptive onboarding, integration tests
+- [x] 05-01-PLAN.md — SuggestedActionsService: types, service, 40 tests
+- [x] 05-02-PLAN.md — AutocompleteService: types, service, CSS, 22 tests
+- [x] 05-03-PLAN.md — ChatWidget integration, adaptive onboarding, integration tests (609 tests total)
+
+### Phase 9: Gap Closure
+**Goal**: Close critical blockers and major gaps from milestone v1 audit — compilation fixes, rendering bugs, grounding enforcement, and dead code removal.
+**Depends on**: Phase 5.1
+**Requirements**: SAFE-01, WORK-01, CORE-02, JUDGE-03, UX-04
+**Success Criteria** (what must be TRUE):
+   1. ChatWidget.ts compiles without TypeScript errors (ReturnService import resolved)
+   2. OrderCard HTML renders as DOM elements, not escaped text
+   3. Policy grounding violations return fallback messages instead of passing through silently
+   4. Natural language policy queries work via SemanticRouter, not just keyword matching
+   5. Demo page wires CF Worker proxy configuration
+   6. Dead code removed (generateSimpleRefusal, findSuggestions)
+   7. All 609 existing tests pass with zero regressions
+**Plans**: 2 plans
+**Context**: .planning/phases/09-gap-closure/
+
+**Plans:**
+- [ ] 09-01-PLAN.md — ChatWidget fixes: B1 (ReturnService import), B2 (OrderCard HTML rendering), W2 (grounding enforcement), W4 (semantic policy routing)
+- [ ] 09-02-PLAN.md — Demo config (W5), emoji replacement (W6), dead code removal
 
 ## Progress
 
@@ -159,4 +178,4 @@
 | 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
 | 7. Security & Live Data | 3/3 | Complete | 2026-05-18 |
 | 8. UX & Demo | 3/3 | Complete | 2026-05-19 |
-| 5.1. UX Refinement | 0/3 | Planned | — |
+| 5.1. UX Refinement | 3/3 | Complete | 2026-05-19 |
