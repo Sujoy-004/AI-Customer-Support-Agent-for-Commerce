@@ -174,6 +174,28 @@ function buildMockOrders(): Order[] {
         { date: '2026-05-13', description: 'On hold — address verification', location: 'Customer Service' },
       ],
     },
+    {
+      orderId: 'ord-009',
+      orderNumber: 1009,
+      email: 'outfordelivery@example.com',
+      createdAt: '2026-05-16T07:30:00Z',
+      status: 'out_for_delivery' as OrderStatus,
+      items: [
+        { productId: 'prod-11', title: 'Smart Watch', variantTitle: '42mm / Silver', quantity: 1, price: 249.99 },
+      ],
+      fulfillmentStatus: 'out_for_delivery',
+      financialStatus: 'paid',
+      trackingNumber: '1Z999AA10987654321',
+      carrier: 'UPS',
+      estimatedDelivery: '2026-05-19',
+      timeline: [
+        { date: '2026-05-16', description: 'Order placed', location: 'Online' },
+        { date: '2026-05-16', description: 'Payment confirmed', location: 'Online' },
+        { date: '2026-05-17', description: 'Shipped', location: 'San Francisco, CA' },
+        { date: '2026-05-18', description: 'In transit', location: 'Phoenix, AZ' },
+        { date: '2026-05-19', description: 'Out for delivery', location: 'Austin, TX' },
+      ],
+    },
   ];
 }
 
