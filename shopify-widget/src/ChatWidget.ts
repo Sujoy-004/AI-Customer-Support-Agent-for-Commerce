@@ -25,6 +25,17 @@ import type { SuggestedAction, ConversationState, AutocompleteResult } from '../
 import type { ReturnService } from '../../src/services/returnService';
 import { SemanticRouter } from './core/semanticRouter';
 
+// ── UI Renderers ────────────────────────────────────────────
+import { createWidgetShell } from './renderers/renderUI';
+import { createInputArea } from './renderers/renderInputArea';
+import { createUserMessage, createAgentMessage, createErrorMessage, updateMessageStatus as updateMsgStatus } from './renderers/renderMessage';
+import { createTypingIndicator } from './renderers/renderTypingIndicator';
+import { createActionChips } from './renderers/renderActionChips';
+import { createOnboardingHint, fadeOutOnboarding } from './renderers/renderOnboardingHint';
+import { createAutocompleteDropdown, highlightAutocompleteItem } from './renderers/renderAutocomplete';
+import { renderEscalationOffer, renderTransferring, renderQueueStatus, renderConnected, renderReconnectBanner, renderNoAgentsBanner, renderLoadingModel } from './renderers/renderSystemMessage';
+import type { EscalationCallbacks } from './renderers/renderTypes';
+
 // Initialize our services
 const policyService = new PolicyService();
 
@@ -91,8 +102,8 @@ export default class ChatWidget {
   private _policySync: PolicySyncManager | null = null;
   private _useMockData = false;
   private _agentTyping = false;
-  private _typingIndicatorEl: HTMLDivElement | null = null;
-  private _reconnectBannerEl: HTMLDivElement | null = null;
+  private _typingIndicatorEl: HTMLElement | null = null;
+  private _reconnectBannerEl: HTMLElement | null = null;
   private _sessionId: string;
   private _returnService: ReturnService | undefined;
   private _offTopicDetector!: OffTopicDetector;
@@ -110,15 +121,15 @@ export default class ChatWidget {
   private sendBtn!: HTMLButtonElement;
   private _messageIdCounter = 0;
   private _hasSentMessage = false;
-  private _chipContainer: HTMLDivElement | null = null;
-  private _onboardingHint: HTMLDivElement | null = null;
+  private _chipContainer: HTMLElement | null = null;
+  private _onboardingHint: HTMLElement | null = null;
   // Suggested Actions (Phase 5-03)
   private _suggestedActions = new SuggestedActionsService();
   private _lastConversationState: ConversationState = 'initial';
   private _lastResolvedQuery: unknown = null;
   // Autocomplete (Phase 5-03)
   private _autocompleteService = new AutocompleteService();
-  private _autocompleteDropdown: HTMLDivElement | null = null;
+  private _autocompleteDropdown: HTMLElement | null = null;
   private _autocompleteHighlightedIndex = -1;
   private _autocompleteResults: AutocompleteResult[] = [];
   private _catalogProducts: Product[] = [];
@@ -277,105 +288,73 @@ export default class ChatWidget {
   }
 
   _createDOM() {
-    // Toggle button
-    this.toggleBtn = document.createElement('button');
-    this.toggleBtn.className = 'chat-toggle';
-    this.toggleBtn.textContent = '[+] Support';
-    this.toggleBtn.setAttribute('aria-label', 'Toggle support chat');
+    const { toggleBtn, widget, offlineBanner, messageList } = createWidgetShell();
+    const { container: inputContainer, textarea, sendBtn } = createInputArea({
+      onSend: () => this._sendMessage(),
+      onInput: () => {
+        this._autoGrow();
+        this._updateSendButton();
+        this._handleAutocompleteInput();
+      },
+      onKeydown: (e) => {
+        if (this._autocompleteDropdown && this._autocompleteResults.length > 0) {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            this._autocompleteHighlightedIndex = (this._autocompleteHighlightedIndex + 1) % this._autocompleteResults.length;
+            this._updateAutocompleteHighlight();
+            return;
+          }
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            this._autocompleteHighlightedIndex = (this._autocompleteHighlightedIndex - 1 + this._autocompleteResults.length) % this._autocompleteResults.length;
+            this._updateAutocompleteHighlight();
+            return;
+          }
+          if (e.key === 'Enter' && this._autocompleteHighlightedIndex >= 0) {
+            e.preventDefault();
+            this._selectAutocompleteResult(this._autocompleteHighlightedIndex);
+            return;
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            this._dismissAutocomplete();
+            return;
+          }
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            if (this._autocompleteHighlightedIndex >= 0) {
+              this._selectAutocompleteResult(this._autocompleteHighlightedIndex);
+            } else if (this._autocompleteResults.length > 0) {
+              this._selectAutocompleteResult(0);
+            }
+            return;
+          }
+        }
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this._sendMessage();
+        }
+      },
+    });
 
-    // Widget container
-    this.widget = document.createElement('div');
-    this.widget.className = 'chat-widget';
-    this.widget.setAttribute('role', 'dialog');
-    this.widget.setAttribute('aria-label', 'AI Customer Support Chat');
+    this.toggleBtn = toggleBtn;
+    this.widget = widget;
+    this.offlineBanner = offlineBanner;
+    this.messageList = messageList;
+    this.textarea = textarea;
+    this.sendBtn = sendBtn;
+    this.inputContainer = inputContainer;
 
-    // Offline banner
-    this.offlineBanner = document.createElement('div');
-    this.offlineBanner.className = 'chat-offline-banner';
-    this.offlineBanner.textContent = 'Connection lost. You can still type — messages will send when you\'re back online.';
-    this.offlineBanner.hidden = true;
+    widget.appendChild(offlineBanner);
+    widget.appendChild(messageList);
+    widget.appendChild(inputContainer);
 
-    // Message list
-    this.messageList = document.createElement('div');
-    this.messageList.className = 'chat-message-list';
-
-    // Input area
-    this.inputContainer = document.createElement('div');
-    this.inputContainer.className = 'chat-input-container';
-
-    this.textarea = document.createElement('textarea');
-    this.textarea.className = 'chat-input__textarea';
-    this.textarea.placeholder = 'Ask about your order, products, or policies...';
-    this.textarea.rows = 1;
-
-    this.sendBtn = document.createElement('button');
-    this.sendBtn.className = 'chat-input__send';
-    this.sendBtn.textContent = '\u2192';
-    this.sendBtn.setAttribute('aria-label', 'Send message');
-
-    this.inputContainer.appendChild(this.textarea);
-    this.inputContainer.appendChild(this.sendBtn);
-
-    this.widget.appendChild(this.offlineBanner);
-    this.widget.appendChild(this.messageList);
-    this.widget.appendChild(this.inputContainer);
-
-    document.body.appendChild(this.toggleBtn);
-    document.body.appendChild(this.widget);
+    document.body.appendChild(toggleBtn);
+    document.body.appendChild(widget);
   }
 
   _bindEvents() {
     this.toggleBtn.addEventListener('click', () => this._toggle());
-
-    this.textarea.addEventListener('keydown', (e) => {
-      // Autocomplete keyboard navigation (before Enter-to-send check)
-      if (this._autocompleteDropdown && this._autocompleteResults.length > 0) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          this._autocompleteHighlightedIndex = (this._autocompleteHighlightedIndex + 1) % this._autocompleteResults.length;
-          this._updateAutocompleteHighlight();
-          return;
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          this._autocompleteHighlightedIndex = (this._autocompleteHighlightedIndex - 1 + this._autocompleteResults.length) % this._autocompleteResults.length;
-          this._updateAutocompleteHighlight();
-          return;
-        }
-        if (e.key === 'Enter' && this._autocompleteHighlightedIndex >= 0) {
-          e.preventDefault();
-          this._selectAutocompleteResult(this._autocompleteHighlightedIndex);
-          return;
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          this._dismissAutocomplete();
-          return;
-        }
-        if (e.key === 'Tab') {
-          e.preventDefault();
-          if (this._autocompleteHighlightedIndex >= 0) {
-            this._selectAutocompleteResult(this._autocompleteHighlightedIndex);
-          } else if (this._autocompleteResults.length > 0) {
-            this._selectAutocompleteResult(0);
-          }
-          return;
-        }
-      }
-
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        this._sendMessage();
-      }
-    });
-
-    this.textarea.addEventListener('input', () => {
-      this._autoGrow();
-      this._updateSendButton();
-      this._handleAutocompleteInput();
-    });
-
-    this.sendBtn.addEventListener('click', () => this._sendMessage());
   }
 
   _initNetworkDetection() {
@@ -385,23 +364,17 @@ export default class ChatWidget {
 
   _handleNetworkChange(isOnline: boolean): void {
     this.state.isOnline = isOnline;
-    if (!isOnline) {
-      this.offlineBanner.hidden = false;
-      this.offlineBanner.classList.add('chat-offline-banner--visible');
-      this._setInputEnabled(false);
+    this.offlineBanner.hidden = isOnline;
+    if (isOnline) {
+      if (!this.state.isProcessing) this._setInputEnabled(true);
     } else {
-      this.offlineBanner.hidden = true;
-      this.offlineBanner.classList.remove('chat-offline-banner--visible');
-      if (!this.state.isProcessing) {
-        this._setInputEnabled(true);
-      }
+      this._setInputEnabled(false);
     }
   }
 
   _toggle(): void {
     this.state.isOpen = !this.state.isOpen;
     this.widget.classList.toggle('chat-widget--open', this.state.isOpen);
-    this.toggleBtn.textContent = this.state.isOpen ? '[\u2212] Support' : '[+] Support';
 
     if (this.state.isOpen && !this.state.isProcessing) {
       this.textarea.focus();
@@ -494,192 +467,50 @@ export default class ChatWidget {
   }
 
   _renderMessage(msg: ChatMessage): void {
+    const callbacks: EscalationCallbacks = {
+      onConfirm: () => this._handleEscalationConfirm(),
+      onCancel: () => this._handleEscalationCancel(),
+    };
+
+    const formatTs = (ts: number) => this._formatTimestamp(ts);
+
+    let result: { bubble: HTMLElement };
+
     if (msg.role === 'system') {
-      const systemMsg = msg as EscalationChatMessage;
-      const bubble = document.createElement('div');
-      bubble.className = 'chat-bubble--system';
-
-      switch (systemMsg.subtype) {
+      const sys = msg as EscalationChatMessage;
+      switch (sys.subtype) {
         case 'escalation-offer':
-        case 'frustration-offer': {
-          bubble.className += ' chat-bubble--escalation-offer';
-          if (systemMsg.subtype === 'frustration-offer') {
-            bubble.classList.add('chat-bubble--frustration');
-          }
-          bubble.dataset.messageId = msg.id;
-
-          const header = document.createElement('div');
-          header.className = 'chat-bubble__header';
-          const roleLabel = document.createElement('span');
-          roleLabel.className = 'chat-bubble__role';
-          roleLabel.textContent = 'Support';
-          const time = document.createElement('time');
-          time.className = 'chat-bubble__time';
-          time.textContent = this._formatTimestamp(msg.timestamp);
-          header.appendChild(roleLabel);
-          header.appendChild(time);
-
-          const content = document.createElement('div');
-          content.className = 'chat-bubble__content';
-          content.textContent = msg.text;
-
-          const actions = document.createElement('div');
-          actions.className = 'chat-bubble__actions';
-
-          const confirmBtn = document.createElement('button');
-          confirmBtn.className = 'chat-bubble__action-btn chat-bubble__action-btn--confirm';
-          confirmBtn.textContent = systemMsg.subtype === 'frustration-offer' ? 'Yes, please' : 'Confirm';
-          confirmBtn.addEventListener('click', () => this._handleEscalationConfirm());
-
-          const cancelBtn = document.createElement('button');
-          cancelBtn.className = 'chat-bubble__action-btn chat-bubble__action-btn--cancel';
-          cancelBtn.textContent = systemMsg.subtype === 'frustration-offer' ? "No, I'll keep trying" : 'Cancel';
-          cancelBtn.addEventListener('click', () => this._handleEscalationCancel());
-
-          actions.appendChild(confirmBtn);
-          actions.appendChild(cancelBtn);
-
-          bubble.appendChild(header);
-          bubble.appendChild(content);
-          bubble.appendChild(actions);
+        case 'frustration-offer':
+          result = { bubble: renderEscalationOffer(sys.text, sys.subtype, formatTs, callbacks) };
           break;
-        }
-        case 'transferring': {
-          bubble.className += ' chat-bubble--transferring';
-          bubble.dataset.messageId = msg.id;
-
-          const header = document.createElement('div');
-          header.className = 'chat-bubble__header';
-          const roleLabel = document.createElement('span');
-          roleLabel.className = 'chat-bubble__role';
-          roleLabel.textContent = 'Support';
-          header.appendChild(roleLabel);
-
-          const content = document.createElement('div');
-          content.className = 'chat-bubble__content';
-          content.textContent = msg.text;
-
-          const dot = document.createElement('span');
-          dot.className = 'chat-bubble__dot';
-
-          content.appendChild(dot);
-
-          bubble.appendChild(header);
-          bubble.appendChild(content);
+        case 'transferring':
+          result = { bubble: renderTransferring() };
           break;
-        }
-        case 'queue': {
-          bubble.className += ' chat-bubble--queue';
-          bubble.dataset.messageId = msg.id;
-
-          const header = document.createElement('div');
-          header.className = 'chat-bubble__header';
-          const roleLabel = document.createElement('span');
-          roleLabel.className = 'chat-bubble__role';
-          roleLabel.textContent = 'Support';
-          header.appendChild(roleLabel);
-
-          const content = document.createElement('div');
-          content.className = 'chat-bubble__content';
-
-          const positionText = document.createElement('span');
-          positionText.textContent = msg.text;
-          content.appendChild(positionText);
-
-          const cancelBtn = document.createElement('button');
-          cancelBtn.className = 'chat-bubble__action-btn chat-bubble__action-btn--danger';
-          cancelBtn.textContent = 'Cancel escalation';
-          cancelBtn.addEventListener('click', () => this._handleEscalationCancel());
-
-          bubble.appendChild(header);
-          bubble.appendChild(content);
-          bubble.appendChild(cancelBtn);
+        case 'queue':
+          result = { bubble: renderQueueStatus(0) };
           break;
-        }
-        case 'connected': {
-          bubble.className += ' chat-bubble--connected';
-          bubble.dataset.messageId = msg.id;
-
-          const content = document.createElement('div');
-          content.className = 'chat-bubble__content';
-          content.textContent = msg.text;
-
-          bubble.appendChild(content);
+        case 'connected':
+          result = { bubble: renderConnected() };
           break;
-        }
+        default:
+          result = { bubble: renderLoadingModel() };
       }
-
-      this.messageList.appendChild(bubble);
-      return;
-    }
-
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble chat-bubble--${msg.role === 'user' ? 'user' : msg.role === 'agent' ? 'agent' : 'error'}`;
-    bubble.dataset.messageId = msg.id;
-
-    if (msg.role === 'error') {
-      const errorContent = document.createElement('div');
-      errorContent.className = 'chat-bubble__content';
-      errorContent.textContent = msg.text;
-      bubble.appendChild(errorContent);
+    } else if (msg.role === 'user') {
+      result = createUserMessage(msg, formatTs);
+    } else if (msg.role === 'agent') {
+      result = createAgentMessage(msg, formatTs);
     } else {
-      const header = document.createElement('div');
-      header.className = 'chat-bubble__header';
-
-      const roleLabel = document.createElement('span');
-      roleLabel.className = 'chat-bubble__role';
-      roleLabel.textContent = msg.role === 'user' ? 'You' : 'Support';
-
-      const time = document.createElement('time');
-      time.className = 'chat-bubble__time';
-      time.textContent = this._formatTimestamp(msg.timestamp);
-
-      header.appendChild(roleLabel);
-      header.appendChild(time);
-
-      const content = document.createElement('div');
-      content.className = 'chat-bubble__content';
-      if (msg.role === 'agent' && msg.text.includes('<')) {
-        // Agent message contains HTML (e.g., OrderCard) — render as DOM
-        // Simple sanitization: strip script tags and event handlers before inserting
-        const sanitized = msg.text
-          .replace(/<script[\s\S]*?<\/script>/gi, '')
-          .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
-          .replace(/javascript:/gi, '');
-        content.innerHTML = sanitized;
-      } else {
-        // User messages or plain text — use textContent to prevent XSS
-        content.textContent = msg.text;
-      }
-
-      const statusEl = document.createElement('span');
-      statusEl.className = `chat-bubble__status chat-bubble__status--${msg.status}`;
-      statusEl.textContent = msg.status === 'sending' ? 'Sending...' : msg.status === 'delivered' ? 'Delivered' : 'Failed';
-      statusEl.dataset.statusFor = msg.id;
-
-      bubble.appendChild(header);
-      bubble.appendChild(content);
-      bubble.appendChild(statusEl);
+      result = createErrorMessage(msg);
     }
 
-    if (msg.role === 'agent' && msg.isHumanAgent && bubble.querySelector('.chat-bubble__role')) {
-      const roleSpan = bubble.querySelector('.chat-bubble__role') as HTMLElement;
-      roleSpan.textContent = 'Human Agent';
-      roleSpan.classList.add('chat-bubble__role--human');
-    }
-
-    this.messageList.appendChild(bubble);
+    this.messageList.appendChild(result.bubble);
   }
 
   _updateMessageStatus(messageId: string, newStatus: ChatMessage['status']): void {
     const msg = this.state.messages.find(m => m.id === messageId);
     if (msg) {
       msg.status = newStatus;
-      const statusEl = this.messageList.querySelector(`[data-status-for="${messageId}"]`);
-      if (statusEl) {
-        statusEl.className = `chat-bubble__status chat-bubble__status--${newStatus}`;
-        statusEl.textContent = newStatus === 'sending' ? 'Sending...' : newStatus === 'delivered' ? 'Delivered' : 'Failed';
-      }
+      updateMsgStatus(this.messageList, messageId, newStatus);
     }
   }
 
@@ -713,12 +544,10 @@ export default class ChatWidget {
 
       try {
         // D-28: Retry handled internally by SemanticRouter._ensureModel()
-        await this._semanticRouter.embed('__warmup__'); // triggers lazy load
-        // Remove loading message
-        this._removeLastSystemMessage();
+        await this._semanticRouter.embed('__warmup__');
+        this._removeLastLoadingMsg();
       } catch {
-        // D-27: Silent fallback — model failed, remove loading message
-        this._removeLastSystemMessage();
+        this._removeLastLoadingMsg();
       }
 
       this.setProcessing(false);
@@ -790,8 +619,8 @@ export default class ChatWidget {
     }
   }
 
-  // Remove the last system message (used to clear loading indicator)
-  private _removeLastSystemMessage(): void {
+  // Remove loading message from state (used by first-query model loading flow)
+  private _removeLastLoadingMsg(): void {
     const lastIdx = this.state.messages.length - 1;
     if (lastIdx >= 0 && this.state.messages[lastIdx].role === 'system') {
       this.state.messages.splice(lastIdx, 1);
@@ -1227,21 +1056,9 @@ export default class ChatWidget {
   private _showTypingIndicator(): void {
     if (this._typingIndicatorEl) return;
     this._agentTyping = true;
-
-    const typingEl = document.createElement('div');
-    typingEl.className = 'chat-bubble--system chat-bubble--typing';
-    typingEl.innerHTML = `
-      <div class="chat-bubble__header">
-        <span class="chat-bubble__role">Human Agent</span>
-      </div>
-      <div class="chat-bubble__content">
-        <span class="typing-dot"></span>
-        <span class="typing-dot"></span>
-        <span class="typing-dot"></span>
-      </div>
-    `;
-    this.messageList.appendChild(typingEl);
-    this._typingIndicatorEl = typingEl;
+    const el = createTypingIndicator();
+    this.messageList.appendChild(el);
+    this._typingIndicatorEl = el;
     this._scrollToBottom();
   }
 
@@ -1255,10 +1072,7 @@ export default class ChatWidget {
 
   private _showReconnectBanner(): void {
     if (this._reconnectBannerEl) return;
-
-    const banner = document.createElement('div');
-    banner.className = 'chat-bubble--system chat-bubble--reconnect';
-    banner.textContent = 'Reconnecting to agent...';
+    const banner = renderReconnectBanner();
     this.messageList.appendChild(banner);
     this._reconnectBannerEl = banner;
     this._scrollToBottom();
@@ -1281,7 +1095,7 @@ export default class ChatWidget {
   }
 
   private _removeLastSystemMessage(): void {
-    const messages = this.messageList.querySelectorAll('.chat-bubble--system');
+    const messages = this.messageList.querySelectorAll('.sys-msg, .msg--loading');
     const last = messages[messages.length - 1];
     if (last) last.remove();
   }
@@ -1310,37 +1124,25 @@ export default class ChatWidget {
   // ── Action Chips ────────────────────────────────
 
   private _renderActionChips(force = false): void {
-    // Remove existing chips first
     if (this._chipContainer) {
       this._chipContainer.remove();
       this._chipContainer = null;
     }
 
-    // Guard: don't show chips on re-open if message was already sent (unless forced)
-    if (!force && this._hasSentMessage) {
-      return;
-    }
+    if (!force && this._hasSentMessage) return;
 
     const suggestions = this._suggestedActions.getSuggestions(this._lastConversationState, this._lastResolvedQuery);
 
-    this._chipContainer = document.createElement('div');
-    this._chipContainer.className = 'action-chips';
-
-    for (const action of suggestions) {
-      const btn = document.createElement('button');
-      btn.className = 'action-chip';
-      btn.dataset.action = action.label.toLowerCase().replace(/\s+/g, '-');
-      btn.textContent = `[${action.label}]`;
-      btn.addEventListener('click', () => {
-        this.textarea.value = action.query;
+    this._chipContainer = createActionChips(suggestions, {
+      onSelect: (query) => {
+        this.textarea.value = query;
         this.textarea.focus();
         this._autoGrow();
         this._updateSendButton();
-      });
-      this._chipContainer.appendChild(btn);
-    }
+      },
+    });
 
-    this.widget.insertBefore(this._chipContainer, this.inputContainer);
+    this.widget.insertBefore(this._chipContainer!, this.inputContainer);
   }
 
   private _removeActionChips(): void {
@@ -1369,44 +1171,23 @@ export default class ChatWidget {
   private _renderOnboardingHint(): void {
     if (this._hasSentMessage || this.state.messages.length > 0 || this._onboardingHint) return;
 
-    // Check localStorage for 7-day expiry
     const seenFlag = localStorage.getItem('support-onboarding-seen');
     if (seenFlag) {
       const seenTime = parseInt(seenFlag, 10);
       const sevenDays = 7 * 24 * 60 * 60 * 1000;
-      if (Date.now() - seenTime < sevenDays) {
-        return; // Still within 7-day window — skip onboarding
-      }
+      if (Date.now() - seenTime < sevenDays) return;
     }
 
-    this._onboardingHint = document.createElement('div');
-    this._onboardingHint.className = 'chat-onboarding-hint chat-onboarding-hint--adaptive';
+    this._onboardingHint = createOnboardingHint(() => this._dismissOnboarding());
 
-    const textSpan = document.createElement('span');
-    textSpan.textContent = 'Try asking about products, tracking orders, or checking policies. Type naturally — I understand typos.';
-    this._onboardingHint.appendChild(textSpan);
-
-    // Dismiss button
-    const dismissBtn = document.createElement('button');
-    dismissBtn.className = 'chat-onboarding-hint__dismiss';
-    dismissBtn.textContent = '\u00d7';
-    dismissBtn.addEventListener('click', () => {
-      this._dismissOnboarding();
-    });
-    this._onboardingHint.appendChild(dismissBtn);
-
-    // Start 3-second fade timer
     this._onboardingFadeTimer = setTimeout(() => {
       if (this._onboardingHint) {
-        this._onboardingHint.classList.add('chat-onboarding-hint--fading');
-        setTimeout(() => {
-          this._dismissOnboarding();
-        }, 500); // Match CSS transition duration
+        fadeOutOnboarding(this._onboardingHint);
+        setTimeout(() => this._dismissOnboarding(), 500);
       }
     }, 3000);
 
-    // Prepend to message list so it appears at the top
-    this.messageList.prepend(this._onboardingHint);
+    this.messageList.prepend(this._onboardingHint!);
   }
 
   private _dismissOnboarding(): void {
@@ -1463,49 +1244,23 @@ export default class ChatWidget {
   }
 
   private _renderAutocompleteDropdown(results: AutocompleteResult[]): void {
-    // Remove existing dropdown if present
     if (this._autocompleteDropdown) {
       this._autocompleteDropdown.remove();
     }
 
     this._autocompleteHighlightedIndex = -1;
 
-    const dropdown = document.createElement('div');
-    dropdown.className = 'autocomplete-dropdown';
-
-    results.forEach((result, index) => {
-      const item = document.createElement('div');
-      item.className = 'autocomplete-item';
-      item.dataset.index = String(index);
-
-      const typeSpan = document.createElement('span');
-      typeSpan.className = 'autocomplete-item__type';
-      typeSpan.textContent = result.type === 'order' ? '[#]' : result.type === 'product' ? '[P]' : '[S]';
-
-      const labelSpan = document.createElement('span');
-      labelSpan.textContent = result.label;
-
-      item.appendChild(typeSpan);
-      item.appendChild(labelSpan);
-
-      item.addEventListener('click', () => {
-        this._selectAutocompleteResult(index);
-      });
-
-      dropdown.appendChild(item);
+    const dropdown = createAutocompleteDropdown(results, -1, {
+      onSelect: (index) => this._selectAutocompleteResult(index),
     });
 
-    // Insert before inputContainer
     this.widget.insertBefore(dropdown, this.inputContainer);
     this._autocompleteDropdown = dropdown;
   }
 
   private _updateAutocompleteHighlight(): void {
     if (!this._autocompleteDropdown) return;
-    const items = this._autocompleteDropdown.querySelectorAll('.autocomplete-item');
-    items.forEach((item, index) => {
-      item.classList.toggle('autocomplete-item--highlighted', index === this._autocompleteHighlightedIndex);
-    });
+    highlightAutocompleteItem(this._autocompleteDropdown, this._autocompleteHighlightedIndex);
   }
 
   private _selectAutocompleteResult(index: number): void {

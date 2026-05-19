@@ -1,4 +1,4 @@
-import type { Order, OrderStatus, TrackingEvent } from '../../src/services/types';
+import type { Order, OrderStatus } from '../../src/services/types';
 
 const STATUS_ORDER: OrderStatus[] = [
   'confirmed', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered',
@@ -16,92 +16,48 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   on_hold: 'On Hold',
 };
 
-function getStatusColor(status: OrderStatus): string {
+function cssClassForStatus(status: OrderStatus): string {
   switch (status) {
-    case 'cancelled':
-      return 'var(--color-status-cancelled)';
-    case 'returned':
-      return 'var(--color-status-returned)';
-    case 'on_hold':
-      return 'var(--color-status-on-hold)';
-    case 'delivered':
-      return 'var(--color-status-delivered)';
-    default:
-      return 'var(--color-status-processing)';
+    case 'cancelled': return 'oc-status--cancelled';
+    case 'returned': return 'oc-status--returned';
+    case 'on_hold': return 'oc-status--hold';
+    case 'delivered': return 'oc-status--delivered';
+    default: return 'oc-status--active';
   }
 }
 
-function isActiveStatus(status: OrderStatus): boolean {
-  return !['cancelled', 'returned'].includes(status);
+function timelineClass(current: OrderStatus, step: OrderStatus): string {
+  const ci = STATUS_ORDER.indexOf(current);
+  const si = STATUS_ORDER.indexOf(step);
+  if (current === 'on_hold') return 'oc-tl--paused';
+  if (['cancelled', 'returned'].includes(current)) return 'oc-tl--inactive';
+  if (si < ci) return 'oc-tl--done';
+  if (si === ci) return 'oc-tl--current';
+  return 'oc-tl--upcoming';
 }
 
-function getStatusEmoji(status: OrderStatus): string {
-  switch (status) {
-    case 'confirmed':
-      return '\u2705';
-    case 'processing':
-      return '\u2699\uFE0F';
-    case 'shipped':
-      return '\uD83D\uDCE6';
-    case 'in_transit':
-      return '\uD83D\uDE9A';
-    case 'out_for_delivery':
-      return '\uD83D\uDEE5\uFE0F';
-    case 'delivered':
-      return '\u2705';
-    case 'cancelled':
-      return '\u274C';
-    case 'returned':
-      return '\uD83D\uDD04';
-    case 'on_hold':
-      return '\u23F3';
-  }
-}
-
-function getTimelineStatusClass(currentStatus: OrderStatus, stepStatus: OrderStatus): string {
-  const currentIndex = STATUS_ORDER.indexOf(currentStatus);
-  const stepIndex = STATUS_ORDER.indexOf(stepStatus);
-
-  if (currentStatus === 'on_hold') return 'timeline-paused';
-  if (!isActiveStatus(currentStatus)) return 'timeline-inactive';
-  if (stepIndex < currentIndex) return 'timeline-done';
-  if (stepIndex === currentIndex) return 'timeline-current';
-  return 'timeline-upcoming';
+function isTerminal(status: OrderStatus): boolean {
+  return ['cancelled', 'returned'].includes(status);
 }
 
 function renderTimeline(status: OrderStatus): string {
-  const activeSteps = ['confirmed', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered'];
-
-  return activeSteps.map((step, index) => {
-    const cls = getTimelineStatusClass(status, step as OrderStatus);
-    const label = STATUS_LABELS[step as OrderStatus];
-    const isFirst = index === 0;
-    const isLast = index === activeSteps.length - 1;
-
-    const dotStyle = (() => {
-      if (cls === 'timeline-done') return 'background:var(--color-status-delivered)';
-      if (cls === 'timeline-current') return 'background:var(--color-status-processing);box-shadow:0 0 0 3px rgba(37,99,235,0.2)';
-      if (cls === 'timeline-paused') return 'background:var(--color-status-on-hold);animation:pulse 2s infinite';
-      return 'background:var(--color-ash)';
-    })();
-
-    const textColor = (cls === 'timeline-upcoming' || cls === 'timeline-paused')
-      ? 'var(--color-ash)'
-      : 'var(--color-ink)';
-
-    return `
-        <div class="timeline-step ${cls}" style="display:flex;align-items:center;${isFirst ? '' : 'margin-top:var(--space-xs)'}">
-            <div style="width:16px;height:16px;border-radius:50%;${dotStyle};flex-shrink:0;margin-right:var(--space-xs);"></div>
-          <span style="color:${textColor}">${label}</span>
-        </div>`;
-  }).join('');
+  const steps = ['confirmed', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered'];
+  return steps.map((step, i) => {
+    const cls = timelineClass(status, step as OrderStatus);
+    return `<div class="oc-tl-step ${cls}">
+      <div class="oc-tl-dot"></div>
+      <span class="oc-tl-label">${STATUS_LABELS[step as OrderStatus]}</span>
+      ${i < steps.length - 1 ? '<div class="oc-tl-line"></div>' : ''}
+    </div>`;
+  }).join('\n');
 }
 
-function renderItemsSummary(order: Order): string {
-  if (order.items.length === 0) return '<div class="empty-state">No items in this order</div>';
-  return order.items.map(item =>
-    `        <div style="display:flex;justify-content:space-between;font-size:var(--font-size-caption);padding:var(--space-xs) 0">
-      <span>${item.title} ${item.variantTitle} x${item.quantity}</span>
+function renderItems(items: Order['items']): string {
+  if (items.length === 0) return '';
+  return items.map(item =>
+    `<div class="oc-item">
+      <span class="oc-item-name">${item.title}${item.variantTitle ? ' <span class="oc-item-variant">' + item.variantTitle + '</span>' : ''}</span>
+      <span class="oc-item-qty">x${item.quantity}</span>
     </div>`
   ).join('\n');
 }
@@ -111,36 +67,36 @@ export class OrderCard {
 
   render(): string {
     const o = this.order;
-    const color = getStatusColor(o.status);
-    const emoji = getStatusEmoji(o.status);
-    const isFailed = !isActiveStatus(o.status);
+    const statusCls = cssClassForStatus(o.status);
+    const isTerm = isTerminal(o.status);
 
-    return `<div class="order-card" style="border:1px solid var(--color-hairline-strong);border-radius:var(--radius-sm);padding:var(--space-lg);font-family:var(--font-mono);max-width:400px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md)">
-    <strong style="font-size:var(--font-size-lg);font-weight:var(--font-weight-bold)">Order #${o.orderNumber}</strong>
-    <span style="background:${color}15;color:${color};padding:var(--space-xs) var(--space-sm);border-radius:var(--radius-sm);font-size:var(--font-size-caption);font-weight:var(--font-weight-bold)">${emoji} ${STATUS_LABELS[o.status]}</span>
-  </div>
+    return `<div class="oc-card">
+      <div class="oc-head">
+        <div class="oc-head-left">
+          <div class="oc-order-label">Order</div>
+          <div class="oc-order-number">#${o.orderNumber}</div>
+        </div>
+        <div class="oc-badge ${statusCls}">${STATUS_LABELS[o.status]}</div>
+      </div>
 
-  ${o.items.length > 0 ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-bottom:var(--space-sm)">
-${renderItemsSummary(o)}
-  </div>` : ''}
+      ${o.items.length > 0 ? `<div class="oc-items">${renderItems(o.items)}</div>` : ''}
 
-  ${o.trackingNumber && o.carrier ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-bottom:var(--space-sm);font-size:var(--font-size-caption)">
-    <div><strong>${o.carrier}</strong> — ${o.trackingNumber}</div>
-    ${o.estimatedDelivery ? `<div style="color:var(--color-mute);margin-top:var(--space-xs)">Estimated delivery: ${o.estimatedDelivery}</div>` : ''}
-  </div>` : ''}
+      ${o.trackingNumber && o.carrier ? `<div class="oc-tracking">
+        <div class="oc-tracking-head">Tracking</div>
+        <div class="oc-tracking-row">
+          <span class="oc-tracking-carrier">${o.carrier}</span>
+          <span class="oc-tracking-number">${o.trackingNumber}</span>
+        </div>
+        ${o.estimatedDelivery ? `<div class="oc-tracking-est">Est. delivery ${o.estimatedDelivery}</div>` : ''}
+      </div>` : ''}
 
-  ${o.status === 'on_hold' ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-bottom:var(--space-sm)">
-    <div style="font-size:var(--font-size-xs);color:var(--color-status-on-hold);font-weight:var(--font-weight-bold);margin-bottom:var(--space-xs)">&#x23F3; On Hold — progress paused</div>
-  </div>` : ''}
-  ${!isFailed ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm)">
-    <div style="font-size:var(--font-size-xs);font-weight:var(--font-weight-bold);color:var(--color-mute);margin-bottom:var(--space-xs);text-transform:uppercase;letter-spacing:0.5px">Tracking Progress</div>
-${renderTimeline(o.status)}
-  </div>` : ''}
+      ${o.status === 'on_hold' ? `<div class="oc-hold-banner">On Hold — progress paused</div>` : ''}
 
-  ${o.notes ? `<div style="border-top:1px solid var(--color-hairline-strong);padding-top:var(--space-sm);margin-top:var(--space-sm);font-size:var(--font-size-caption);color:var(--color-mute)">
-    <em>${o.notes}</em>
-  </div>` : ''}
-</div>`;
+      ${!isTerm ? `<div class="oc-timeline"><div class="oc-tl-head">Progress</div><div class="oc-tl-steps">${renderTimeline(o.status)}</div></div>` : ''}
+
+      ${o.notes ? `<div class="oc-notes">${o.notes}</div>` : ''}
+    </div>`;
   }
 }
+
+export { OrderCard as default };
