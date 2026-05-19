@@ -209,6 +209,15 @@ export interface ReturnDataSource {
 // ==============================
 
 /**
+ * A single autocomplete suggestion returned to the user.
+ */
+export interface AutocompleteResult {
+  type: 'product' | 'order' | 'policy';
+  label: string;
+  value: string;
+}
+
+/**
  * A suggested action chip shown to the user based on conversation context.
  */
 export interface SuggestedAction {
