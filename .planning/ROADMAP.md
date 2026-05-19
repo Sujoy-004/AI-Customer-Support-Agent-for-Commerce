@@ -9,7 +9,7 @@
 - [x] **Phase 5: Graceful Escalation** - Seamless human handoff for complex or frustrated intents
 - [x] **Phase 6: Semantic AI Router** - In-browser semantic intent detection replacing brittle keyword matching
 - [x] **Phase 7: Security & Live Data** - Serverless order proxy, live Shopify Storefront API integration, live policy fetch
-- [ ] **Phase 8: UX & Demo** - Quick action chips, live human handoff, demo video
+- [x] **Phase 8: UX & Demo** - Quick action chips, live human handoff, agent console, docs
 
 ## Phase Details
 
@@ -126,7 +126,7 @@
 **Plans:**
 - [x] 08-01-PLAN.md — Action chips + onboarding hint (JUDGE-07)
 - [x] 08-02-PLAN.md — Supabase Realtime handoff (JUDGE-08)
-- [ ] 08-03-PLAN.md — Agent console + documentation updates (JUDGE-09)
+- [x] 08-03-PLAN.md — Agent console + documentation updates (JUDGE-09)
 
 ## Progress
 
@@ -139,4 +139,4 @@
 | 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
 | 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
 | 7. Security & Live Data | 3/3 | Complete | 2026-05-18 |
-| 8. UX & Demo | 2/3 | In progress | - |
+| 8. UX & Demo | 3/3 | Complete | 2026-05-19 |

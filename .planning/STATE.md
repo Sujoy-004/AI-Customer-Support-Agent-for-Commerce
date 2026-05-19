@@ -2,18 +2,18 @@
 
 ## Project Reference
 **Core Value**: Zero-hallucination, high-fidelity customer resolution grounded strictly in live Shopify data, powered by deterministic data retrieval augmented with semantic understanding.
-**Current Focus**: Phase 8 — UX & Demo
+**Current Focus**: Phase 8 — UX & Demo (Complete)
 
 ## Current Position
-**Phase**: 08-ux-demo
-**Plan**: 08-02 (Supabase Realtime Handoff)
-**Status**: Plan 08-02 complete. Supabase Realtime broadcast replaces fake queue simulators. Handoff pipeline uses live WebSocket channels — handoff_request, handoff_accepted, agent_message events. EscalationQueueSimulator and HumanAgentSimulator deleted. 50 tests passing.
+**Phase**: 08-ux-demo (Complete)
+**Plan**: None
+**Status**: Phase 8 complete. All 3 plans executed: 08-01 (action chips + onboarding hint), 08-02 (Supabase Realtime handoff), 08-03 (agent console + docs). 477 tests passing (427 main + 50 widget). JUDGE-07, JUDGE-08, JUDGE-09 resolved.
 
 ## Progress:
 [████████████████████████████████████] 100% (17/17 plans, 8/8 phases)
 
 ## Performance Metrics
-- **Test Coverage**: 50 tests across 3 test files (all passing)
+- **Test Coverage**: 477 tests across 23 test files (427 main + 50 widget, all passing)
 - **Build Passing**: Yes
 - **Judge Score**: 58/100 — Bronze Tier (hackathon submission)
 
@@ -34,7 +34,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Roadmap realigned from 6 phases to 8 phases. Original Phase 6 (Return Initiation) deferred in favor of architectural rewrite.
 - Phase 6: Semantic AI Router — In-browser semantic intent detection with transformer.js, replacing keyword matching across all intent detectors. COMPLETE.
 - Phase 7: Security & Live Data — Serverless order proxy (Cloudflare Worker), Shopify Storefront API integration, markdown config policies. Context captured.
-- Phase 8: UX & Demo — quick action chips, Supabase Realtime handoff, demo video recording, doc updates.
+- Phase 8: UX & Demo — quick action chips, Supabase Realtime handoff, agent console, doc updates. Complete.
 - Plan 07-03: PolicyService live markdown fetch, ChatWidget data source options, 426 tests. Complete.
 - Plan 08-01: Action chips (4 chips: Track Order, Check Stock, Return Item, View Policies) + onboarding hint. Complete.
 - Plan 08-02: Supabase Realtime handoff replacing fake queue simulators. Complete. JUDGE-08 resolved.
@@ -53,6 +53,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 7 (Plan 07-03): PolicyService + ChatWidget Integration — PolicyService live markdown fetch + YAML frontmatter parsing, ChatWidget data source selection options, policies.md, documentation update
 - Phase 8 (Plan 08-01): Action chips (Track Order, Check Stock, Return Item, View Policies) + onboarding hint on first open
 - Phase 8 (Plan 08-02): Supabase Realtime handoff — handoff_request/accepted/agent_message events, simulators deleted, 50 tests
+- Phase 8 (Plan 08-03): Agent console (split view, accept-first flow, Supabase broadcast) + doc updates (PRODUCT_DOC, TECHNICAL_DOC, DECISION_LOG, README)
 
 ### Requirements completed
 - Policy Execution (Phase 2) — Built ✓
@@ -66,10 +67,11 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - JUDGE-06 — PolicyService live markdown fetch + YAML frontmatter parsing (Plan 07-03): Policy data dynamically fetched from policies.md ✓
 - JUDGE-07 — Action chips + onboarding hint (Plan 08-01): Quick action chips and first-open guidance ✓
 - JUDGE-08 — Supabase Realtime handoff (Plan 08-02): Fake queue simulators replaced with live WebSocket broadcast channels ✓
+- JUDGE-09 — Agent console + docs (Plan 08-03): Standalone agent console with accept-first flow, all 4 docs updated ✓
 
 ### Remaining phases
 - Phase 7: Security & Live Data — All 3 plans complete.
-- Phase 8: UX & Demo — 2/3 plans complete (08-01 action chips, 08-02 Supabase handoff). Plan 08-03 (agent console + demo video) remaining.
+- Phase 8: UX & Demo — Complete. All 3 plans executed.
 
 ### Mandatory docs
 - PRODUCT_DOC.md — Updated ✓
@@ -90,8 +92,6 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 
 ## Session Continuity
 Last session: 2026-05-19
-Stopped at: Phase 8 Plan 2 (Supabase Realtime handoff) complete. JUDGE-08 resolved — fake queue simulators deleted, live Supabase broadcast channel with handoff_request/accepted/agent_message events. 50 tests all passing. EscalationStateMachine localStorage fix applied for test isolation.
+Stopped at: Phase 8 complete. All 3 plans executed. 477 tests passing.
 
-Next: Phase 8 Plan 3 (agent console + documentation updates + demo video)
-
-Resume file: `.planning/phases/08-ux-demo/08-02-SUMMARY.md`
+Next: Phase 9+ or project completion.
