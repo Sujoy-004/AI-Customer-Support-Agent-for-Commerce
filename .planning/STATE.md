@@ -5,12 +5,12 @@
 **Current Focus**: Phase 8 — UX & Demo (Complete)
 
 ## Current Position
-**Phase**: 05-ux-refinement (Plans 01, 02, 03 complete)
-**Plan**: 05-03 — ChatWidget integration: SuggestedActionsService, AutocompleteService, adaptive onboarding
-**Status**: Phase 5 UX Refinement COMPLETE. All 3 plans executed. 609 tests passing (zero regressions).
+**Phase**: 09-gap-closure (Plan 01 complete)
+**Plan**: 09-01 — ChatWidget gap closure: ReturnService import, OrderCard HTML rendering, grounding enforcement, semantic policy routing
+**Status**: Plan 09-01 COMPLETE. All 4 gaps fixed (B1, B2, W2, W4). 609 tests passing (zero regressions).
 
 ## Progress:
-[████████████████████████████████████] 100% (17/17 plans, 8/8 phases)
+[████████████████████████████████████] 100% (18/19 plans, 9/9 phases)
 
 ## Performance Metrics
 - **Test Coverage**: 609 tests across 30 test files (all passing)
@@ -40,6 +40,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Plan 07-03: PolicyService live markdown fetch, ChatWidget data source options, 426 tests. Complete.
 - Plan 08-01: Action chips (4 chips: Track Order, Check Stock, Return Item, View Policies) + onboarding hint. Complete.
 - Plan 08-02: Supabase Realtime handoff replacing fake queue simulators. Complete. JUDGE-08 resolved.
+- Plan 09-01: ChatWidget gap closure — classifyFromPhrases() added to SemanticRouter for dynamic phrase-based classification; all 4 gaps (B1, B2, W2, W4) fixed.
 - All existing deterministic data services (CatalogService, OrderService, PolicyService) preserved — only the intent detection layer changes.
 - Zero-hallucination guarantee remains: semantic understanding layer routes intent, but all data retrieval stays deterministic.
 
@@ -60,6 +61,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 8 (Plan 08-02): Supabase Realtime handoff — handoff_request/accepted/agent_message events, simulators deleted, 50 tests
 - Phase 8 (Plan 08-03): Agent console (split view, accept-first flow, Supabase broadcast) + doc updates (PRODUCT_DOC, TECHNICAL_DOC, DECISION_LOG, README)
 - Phase 5 UX Refinement (Plan 05-03): ChatWidget integration — SuggestedActionsService replaces static chips, AutocompleteService with debounced dropdown, adaptive onboarding with 7-day localStorage expiry
+- Phase 9 (Plan 09-01): ChatWidget gap closure — B1: ReturnService import, B2: OrderCard innerHTML rendering, W2: Grounding enforcement with fallback, W4: SemanticRouter policy routing with keyword fallback. 609 tests passing.
 
 ### Requirements completed
 - Policy Execution (Phase 2) — Built ✓
@@ -74,6 +76,10 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - JUDGE-07 — Action chips + onboarding hint (Plan 08-01): Quick action chips and first-open guidance ✓
 - JUDGE-08 — Supabase Realtime handoff (Plan 08-02): Fake queue simulators replaced with live WebSocket broadcast channels ✓
 - JUDGE-09 — Agent console + docs (Plan 08-03): Standalone agent console with accept-first flow, all 4 docs updated ✓
+- SAFE-01 — Grounding enforcement: Policy responses validated against live policy data, fallback on violation (Plan 09-01) ✓
+- WORK-01 — ReturnService import: ChatWidget compiles without TypeScript errors (Plan 09-01) ✓
+- CORE-02 — Semantic policy routing: Natural language policy queries matched via embeddings (Plan 09-01) ✓
+- JUDGE-03 — OrderCard rendering: HTML renders as DOM elements, not escaped text (Plan 09-01) ✓
 
 ### Remaining phases
 - Phase 7: Security & Live Data — All 3 plans complete.
@@ -98,6 +104,6 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 
 ## Session Continuity
 Last session: 2026-05-19
-Stopped at: Phase 5 UX Refinement COMPLETE — All 3 plans (05-01, 05-02, 05-03) executed. 609 tests passing.
+Stopped at: Phase 9 Plan 09-01 COMPLETE — All 4 gaps fixed (B1, B2, W2, W4). 609 tests passing.
 
-Next: Phase 5 UX Refinement is complete. Proceed to next milestone or phase as directed.
+Next: Phase 9 Plan 09-02 (if any remaining gaps) or proceed to next milestone.

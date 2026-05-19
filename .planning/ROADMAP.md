@@ -163,7 +163,7 @@
 **Context**: .planning/phases/09-gap-closure/
 
 **Plans:**
-- [ ] 09-01-PLAN.md — ChatWidget fixes: B1 (ReturnService import), B2 (OrderCard HTML rendering), W2 (grounding enforcement), W4 (semantic policy routing)
+- [x] 09-01-PLAN.md — ChatWidget fixes: B1 (ReturnService import), B2 (OrderCard HTML rendering), W2 (grounding enforcement), W4 (semantic policy routing)
 - [ ] 09-02-PLAN.md — Demo config (W5), emoji replacement (W6), dead code removal
 
 ## Progress
@@ -179,3 +179,4 @@
 | 7. Security & Live Data | 3/3 | Complete | 2026-05-18 |
 | 8. UX & Demo | 3/3 | Complete | 2026-05-19 |
 | 5.1. UX Refinement | 3/3 | Complete | 2026-05-19 |
+| 9. Gap Closure | 1/2 | In Progress | 2026-05-19 |
