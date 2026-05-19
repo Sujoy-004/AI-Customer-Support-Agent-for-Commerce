@@ -205,6 +205,32 @@ export interface ReturnDataSource {
 }
 
 // ==============================
+// UX Types
+// ==============================
+
+/**
+ * A suggested action chip shown to the user based on conversation context.
+ */
+export interface SuggestedAction {
+  label: string;
+  query: string;
+  icon?: string;
+}
+
+/**
+ * The current state of the conversation, used to determine which action chips to show.
+ */
+export type ConversationState =
+  | 'initial'
+  | 'product_search'
+  | 'stock_check'
+  | 'order_tracking'
+  | 'policy_query'
+  | 'escalation_offer'
+  | 'return_flow'
+  | 'general';
+
+// ==============================
 // Escalation Types
 // ==============================
 

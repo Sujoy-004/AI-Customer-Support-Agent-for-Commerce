@@ -10,6 +10,7 @@
 - [x] **Phase 6: Semantic AI Router** - In-browser semantic intent detection replacing brittle keyword matching
 - [x] **Phase 7: Security & Live Data** - Serverless order proxy, live Shopify Storefront API integration, live policy fetch
 - [x] **Phase 8: UX & Demo** - Quick action chips, live human handoff, agent console, docs
+- [ ] **Phase 5.1: UX Refinement** - Context-aware action chips, autocomplete, adaptive onboarding
 
 ## Phase Details
 
@@ -128,6 +129,24 @@
 - [x] 08-02-PLAN.md — Supabase Realtime handoff (JUDGE-08)
 - [x] 08-03-PLAN.md — Agent console + documentation updates (JUDGE-09)
 
+### Phase 5.1: UX Refinement
+**Goal**: Improve user experience with context-aware suggested actions, autocomplete for product names and order numbers, and adaptive onboarding
+**Depends on**: Phase 8
+**Requirements**: UX-01, UX-02, UX-03, UX-04, UX-05
+**Success Criteria** (what must be TRUE):
+   1. User sees relevant action chips that change based on conversation context (not static 4-chip array)
+   2. User gets autocomplete suggestions when typing product names or order numbers
+   3. First-time users see adaptive onboarding that fades after interaction
+   4. All 542 existing tests pass with zero regressions
+   5. New services have 80%+ test coverage
+**Plans**: 3 plans
+**Context**: .planning/phases/05-ux-refinement/
+
+**Plans:**
+- [ ] 05-01-PLAN.md — SuggestedActionsService: types, service, 15+ tests
+- [ ] 05-02-PLAN.md — AutocompleteService: types, service, CSS, 12+ tests
+- [ ] 05-03-PLAN.md — ChatWidget integration, adaptive onboarding, integration tests
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -140,3 +159,4 @@
 | 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
 | 7. Security & Live Data | 3/3 | Complete | 2026-05-18 |
 | 8. UX & Demo | 3/3 | Complete | 2026-05-19 |
+| 5.1. UX Refinement | 0/3 | Planned | — |
