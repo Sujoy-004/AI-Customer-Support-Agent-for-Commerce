@@ -2,8 +2,8 @@
 # Product Document: AI Customer Support Agent for Commerce
 
 > **Track:** Kasparro Agentic Commerce Hackathon — Track 4
-> **Stack:** TypeScript, Vitest, Playwright, @huggingface/transformers, OpenCode Plugin System
-> **Status:** 8 phases planned, 6 complete, Phase 7 in progress (May 2026)
+> **Stack:** TypeScript, Vitest, Playwright, @huggingface/transformers, Supabase Realtime, OpenCode Plugin System
+> **Status:** 8 phases planned, 7 complete, Phase 8 in progress (May 2026)
 
 ## What Problem Does This Solve?
 
@@ -66,15 +66,20 @@ Secure order status retrieval with fulfillment tracking. Rich HTML order card wi
 
 ### Phase 5 — Graceful Escalation (COMPLETE)
 - **EscalationDetector** (`src/services/escalationDetector.ts`) — Keyword-based detection for explicit handoff ("talk to human", "speak to agent") and frustration signals ("useless", "terrible", 3+ non-resolving messages)
-- **EscalationStateMachine** (`src/services/escalationStateMachine.ts`) — FSM with valid transition matrix (IDLE → OFFERED → CONFIRMING → TRANSFERRING → QUEUED → CONNECTED), localStorage persistence, duplicate request blocking
-- **EscalationQueueSimulator** (`src/services/escalationQueueSimulator.ts`) — Dynamic queue position (random 1-5), 8s refresh interval
-- **EscalationTransferHandler** (`src/services/escalationTransferHandler.ts`) — 20s transfer timeout with retry and email fallback
-- **HumanAgentSimulator** (`src/services/escalationHumanAgent.ts`) — 3-message canned script for connected state
+- **EscalationStateMachine** (`src/services/escalationStateMachine.ts`) — FSM with valid transition matrix (IDLE → OFFERED → CONFIRMING → TRANSFERRING → CONNECTED), localStorage persistence, duplicate request blocking
+- **EscalationTransferHandler** (`src/services/escalationTransferHandler.ts`) — 20s → 60s transfer timeout with retry
 - **ChatWidget integration** — Pipeline step 2 (after off-topic, before order), 5 system message bubble types (escalation-offer, frustration-offer, transferring, queue, connected)
+- **Upgraded in Phase 8:** EscalationQueueSimulator and HumanAgentSimulator replaced by live Supabase Realtime broadcast. Handoff is now genuinely real — agent responses come from `agent-console.html` via WebSocket, not canned scripts.
 - **CSS** — 13 new classes + pulse animation keyframes
 
 ### Phase 6 — Semantic AI Router (COMPLETE)
 In-browser semantic intent detection replacing keyword-based routing. Uses `@huggingface/transformers` with `all-MiniLM-L6-v2` for sentence embeddings. All three intent detectors (catalog, off-topic, order) use embedding cosine similarity as primary routing method, with keyword fallback below 0.6 confidence threshold. Singleton `SemanticRouter` class with lazy model load, embedding cache (5-min TTL), and silent fallback to keywords on model failure. Reference phrases pre-computed at build time via npm prebuild hook. Return service feature-flagged off by default. Mixed intent detection splits queries at conjunctions and provides context-aware secondary acknowledgments.
+
+### Phase 7 — Security & Live Data (COMPLETE)
+Secure order lookup via Cloudflare Workers proxy with HMAC request authentication. Shopify Storefront API integration for live product catalog reads. Shopify Admin GraphQL API via proxy for order status queries. Live policy data fetch from markdown config file. Configurable data source selection (`mock` vs `live`) per domain. All live sources include error handling with graceful fallback.
+
+### Phase 8 — UX & Demo (IN PROGRESS)
+Quick action chips below the textarea for rapid task initiation (Track Order, Check Stock, Return Item, View Policies). Onboarding hint on first open so users never face a blank screen. Supabase Realtime (WebSocket) replaces the fake EscalationQueueSimulator and HumanAgentSimulator — handoff is now genuinely live via a `support-queue` broadcast channel. Standalone agent console page (`agent-console.html`) with split-view layout, accept-first flow, and multi-line textarea for agent responses. Demo video recorded by the user after code freeze.
 
 ## How Is It Different from Generic Chatbot Solutions?
 
@@ -90,7 +95,7 @@ In-browser semantic intent detection replacing keyword-based routing. Uses `@hug
 | **LLM cost per query** | $0.01-0.10 (variable) | $0.00 for catalog/policy paths |
 | **Hallucination risk** | High | Zero — verifiable data only |
 
-The critical differentiator: **All data retrieval uses ZERO LLM calls.** Every product lookup, variant resolution, stock check, order lookup, and policy lookup goes through deterministic structured parsing. AI is used only for intent routing — the `SemanticRouter` uses MiniLM sentence embeddings to classify what the user wants, then hands off to deterministic data pipelines. No generative AI touches a price, a stock count, or a policy term.
+The critical differentiator: **All data retrieval uses ZERO LLM calls.** Every product lookup, variant resolution, stock check, order lookup, and policy lookup goes through deterministic structured parsing. AI is used only for intent routing — the **Semantic Router** (`SemanticRouter` class) uses MiniLM sentence embeddings to classify what the user wants, then hands off to deterministic data pipelines. No generative AI touches a price, a stock count, or a policy term. Human handoff is also real — when escalation is triggered, messages flow through a Supabase Realtime WebSocket channel (`support-queue`) to a live agent console and back, not through fake simulators or canned scripts.
 
 ## What Workflows Does It Support?
 
@@ -103,7 +108,7 @@ The critical differentiator: **All data retrieval uses ZERO LLM calls.** Every p
 6. **Policy queries** — "what's your return policy?" → grounded policy response
 7. **Off-topic refusal** — "what's the weather?" → polite refusal with redirect suggestions
 8. **Order tracking** — "track order #1234 for email@example.com" → rich order card with timeline
-9. **Graceful handoff** — "talk to human" → escalation offer → queue → human agent connection
+9. **Live human handoff** — "talk to human" → escalation offer → Supabase Realtime handoff → real agent from agent console
 10. **Return initiation** — "start a return for #1234" → eligibility check → item selection → in-chat submission (feature-flagged, off by default)
 
 ## User Experience
@@ -148,10 +153,10 @@ There is **no welcome message**. The widget opens to an empty message area. This
 | 2. Policy Grounding | Complete | PolicyService, OffTopicDetector, ResponseGrounder |
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderCard, multi-turn auth |
-| 5. Graceful Escalation | Complete | Human handoff with queue, transfer, canned script |
+| 5. Graceful Escalation | Complete | FSM + Supabase Realtime live handoff (simulators replaced) |
 | 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
-| 7. Security & Live Data | In progress | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
-| 8. UX & Demo | Planned | Quick action chips, realtime handoff, demo video |
+| 7. Security & Live Data | Complete | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
+| 8. UX & Demo | In Progress | Quick action chips, realtime handoff, agent console, demo video |
 
 ### Post-Hackathon
 - Live Shopify API integration (replacing mock data sources)

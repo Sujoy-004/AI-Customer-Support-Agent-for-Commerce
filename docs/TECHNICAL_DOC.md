@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Technical Document: AI Customer Support Agent for Commerce
 
-> **Last updated:** 2026-05-18
+> **Last updated:** 2026-05-19
 > **Repository:** AI Customer Support Agent for Commerce (Track 4)
 
 ## 1. Architecture Overview
@@ -23,7 +23,7 @@ The system uses a browser-side layered architecture. All services run in the use
 │     CatalogIntentDetector → PolicyService → Greeting →       │
 │     Fallback                                                  │
 ├─────────────────────────────────────────────────────────────┤
-│                   Semantic Layer (NEW in Phase 6)             │
+│                   Semantic Layer                              │
 │  ┌────────────────────────────────────────────────────┐      │
 │  │ SemanticRouter (singleton)                         │      │
 │  │ ├─ @huggingface/transformers (all-MiniLM-L6-v2)         │      │
@@ -66,13 +66,16 @@ The system uses a browser-side layered architecture. All services run in the use
 │  │(handoff + frustration)     │ │(FSM + localStorage)     │  │
 │  └────────────────────────────┘ └─────────────────────────┘  │
 │  ┌──────────────────────────┐ ┌──────────────────────────┐  │
-│  │EscalationQueueSimulator  │ │EscalationTransferHandler │  │
-│  │(position 1-5, refresh)   │ │(20s timeout, retry)      │  │
+│  │Supabase Realtime Channel │ │EscalationTransferHandler │  │
+│  │(support-queue broadcast) │ │(60s timeout, retry)      │  │
 │  └──────────────────────────┘ └──────────────────────────┘  │
-│  ┌──────────────────────────┐                                │
-│  │HumanAgentSimulator       │                                │
-│  │(3-message canned script) │                                │
-│  └──────────────────────────┘                                │
+│  ┌──────────────────────────────┐                            │
+│  │ Agent Console                │                            │
+│  │ (agent-console.html)         │                            │
+│  │ ← handoff_request            │                            │
+│  │ → handoff_accepted           │                            │
+│  │ → agent_message              │                            │
+│  └──────────────────────────────┘                            │
 ├─────────────────────────────────────────────────────────────┤
 │                   Data Layer                                  │
 │  ┌────────────────────┐  ┌────────────────────────────┐       │
@@ -120,9 +123,9 @@ The system uses a browser-side layered architecture. All services run in the use
 | `src/services/synonymResolver.ts` | 69 | Maps aliases to canonical option values |
 | `src/services/escalationDetector.ts` | 64 | Keyword-based escalation and frustration detection |
 | `src/services/escalationStateMachine.ts` | 142 | FSM for escalation workflow with localStorage persistence |
-| `src/services/escalationQueueSimulator.ts` | 45 | Dynamic queue position (1-5) with refresh capability |
-| `src/services/escalationTransferHandler.ts` | 48 | 20s transfer timeout, retry logic, email fallback |
-| `src/services/escalationHumanAgent.ts` | 26 | 3-message canned script player for connected state |
+| `src/services/escalationTransferHandler.ts` | 48 | 60s transfer timeout, retry logic |
+| `shopify-widget/agent-console.html` | 405 | Standalone agent console — split view, accept-first flow, Supabase Realtime broadcast |
+| `shopify-widget/.env.example` | 3 | Template for Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) |
 | `src/services/semanticRouter.ts` | New | Singleton SemanticRouter — lazy-loads all-MiniLM-L6-v2, classify(), embedding cache |
 | `shopify-widget/src/core/semanticRouter.ts` | New | Singleton SemanticRouter — lazy-loads all-MiniLM-L6-v2, classify(), embedding cache |
 | `shopify-widget/src/config/semantic/catalogIntents.ts` | New | 5-8 reference phrases per catalog intent category |
@@ -138,6 +141,7 @@ The system uses a browser-side layered architecture. All services run in the use
 | `src/services/cacheManager.ts` | 33 | Generic TTL cache |
 | `policies.md` | Example | Markdown config file with YAML frontmatter — live policy data source |
 | `shopify-proxy/src/worker.ts` | New | Cloudflare Worker — HMAC verification, Shopify Admin GraphQL query, filtered status response |
+| `shopify-widget/.env.example` | 3 | Template for Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) |
 
 ## 2. AI/Deterministic Boundary
 
@@ -371,7 +375,7 @@ What happens:
 ### 4.1 Test Architecture
 
 ```
-TypeScript Source ─→ Vitest (unit/integration) ─→ 366 tests, 20 test files
+TypeScript Source ─→ Vitest (unit/integration) ─→ 426 tests, 22 test files
 Browser Widget   ─→ Playwright (E2E)          ─→ 4 spec files (12 tests)
 Eval Harness     ─→ Catalog Intelligence Eval  ─→ 48 scenario eval tests
 ```
@@ -392,9 +396,7 @@ Eval Harness     ─→ Catalog Intelligence Eval  ─→ 48 scenario eval tests
 | `src/services/orderResponseFormatter.test.ts` | New | Order response formatting, error messages |
 | `src/services/escalationDetector.test.ts` | New | Explicit/frustration keyword detection, non-resolving counter |
 | `src/services/escalationStateMachine.test.ts` | New | FSM transitions, localStorage persistence, invalid transition rejection |
-| `src/services/escalationQueueSimulator.test.ts` | New | Queue position 1-5, refresh, interval updates |
-| `src/services/escalationTransferHandler.test.ts` | New | 20s timeout, retry logic |
-| `src/services/escalationHumanAgent.test.ts` | New | 3-message canned script sequence |
+| `src/services/escalationTransferHandler.test.ts` | New | 60s timeout, retry logic |
 | `src/services/returnService.test.ts` | New | Return intent detection, eligibility checks, return submission |
 | `shopify-widget/tests/ChatWidget.integration.test.ts` | Integration | End-to-end widget + service integration |
 | `shopify-widget/tests/NetworkDetector.test.ts` | Unit | Network state detection |
@@ -403,6 +405,8 @@ Eval Harness     ─→ Catalog Intelligence Eval  ─→ 48 scenario eval tests
 | `src/tests/eval/catalogIntelligence.eval.test.ts` | ~48 eval scenarios + semantic regression | Scenario-based eval for catalog queries + full regression through semantic pipeline |
 
 ### 4.3 E2E Tests (Playwright, 4 spec files, 12 tests)
+
+Phase 8 also adds 50 Supabase handoff integration tests and action chip tests in `shopify-widget/tests/ChatWidget.integration.test.ts`, bringing the total integration test count to ~426 across 22 test files.
 
 | Spec File | Tests | What It Verifies |
 |-----------|-------|------------------|
@@ -419,6 +423,7 @@ Playwright config: `e2e/playwright.config.ts` — builds widget via `tsc -p tsco
 - Framework: Vitest with `@vitest/coverage-v8`
 - Test environment: `jsdom` for DOM-dependent widget tests
 - `vitest.config.ts` includes patterns: `src/**/*.test.ts`, `shopify-widget/tests/**/*.test.ts`
+- Mock Supabase client uses `vi.hoisted()` pattern for shared mock state between factory and test assertions
 
 ### 4.5 Key Testing Patterns
 
@@ -534,10 +539,11 @@ User Input
     │ (not off-topic)
     ▼
 ┌──────────────────────────┐
-│ EscalationDetector      │──── escalation active? ──► system message (offer/queue/connected)
-│ ├─ detectIntent()       │──── escalation trigger ──► EscalationStateMachine ──► system message
-│ ├─ nonResolvingCount    │
-│ └─ isDuplicateRequest() │
+│ EscalationDetector      │──── escalation active? ──► Supabase Realtime 'support-queue' channel
+│ ├─ detectIntent()       │──── escalation trigger ──► EscalationStateMachine ──► handoff_request
+│ ├─ nonResolvingCount    │     → Agent Console receives
+│ └─ isDuplicateRequest() │     → Agent accepts (handoff_accepted)
+│                         │     → Agent sends message (agent_message)
 └──────────────────────────┘
     │ (not escalating)
     ▼
@@ -904,4 +910,92 @@ async function signRequest(payload, secret): Promise<string> {
   const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+## 11. Phase 8: UX & Demo Architecture
+
+### 11.1 Supabase Realtime Handoff
+
+Phase 8 replaces the fake EscalationQueueSimulator and HumanAgentSimulator with live WebSocket communication via Supabase Realtime. Handoff is now genuinely real — agent responses come from a human using `agent-console.html`, not from canned scripts.
+
+**Channel architecture (D-13):** Single channel named `support-queue` with 3 broadcast event types:
+
+| Event | Direction | Payload |
+|-------|-----------|---------|
+| `handoff_request` | Widget → Supabase | `{ userId, transcript: ChatMessage[], timestamp }` |
+| `handoff_accepted` | Agent Console → Supabase | `{ userId, agentId, timestamp }` |
+| `agent_message` | Agent Console → Supabase | `{ userId, text, timestamp }` |
+
+**Broadcast config:**
+- **Widget** (`ChatWidget.ts`): `{ broadcast: { self: false } }` — must not receive its own events
+- **Agent Console** (`agent-console.html`): `{ broadcast: { self: true } }` — needs to see own sent messages for UI feedback
+
+**Credential strategy (D-06):** SUPABASE_URL and SUPABASE_ANON_KEY are hardcoded as module constants in both ChatWidget.ts and agent-console.html. Anon key is safe to expose by Supabase's RLS design. `.env.example` documents where to get values.
+
+**CDN import for agent-console.html:**
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.106.0"
+  }
+}
+</script>
+```
+
+**Escalation fallback (D-12):** If Supabase is not configured or the channel fails to connect, show "Human support is currently unavailable. Please try again later." and keep the user in the normal flow. No fallback to queue or human simulators.
+
+### 11.2 Agent Console
+
+`shopify-widget/agent-console.html` — standalone HTML page (no build step) with:
+
+- **Split view layout (D-10):** Left sidebar (280px) with pending handoff requests. Right pane (flex: 1) with chat transcript and response textarea.
+- **Accept-first flow (D-09):** Agent clicks Accept to see full conversation transcript and begin responding. Shows handoff is a deliberate human action.
+- **Connection status indicator:** Green dot when connected, red when disconnected, amber when connecting.
+- **Multi-line textarea (D-11):** Matches widget's own input UX. Enter sends, Shift+Enter for newline.
+- **Self-contained:** All JavaScript in a single `<script type="module">` block. Imports Supabase JS SDK via importmap from esm.sh CDN.
+- **Terminal aesthetic consistent:** Uses the same `widget.css` CSS variables (`--font-mono`, `--color-canvas`, `--color-hairline`, etc.).
+- **Hardcoded demo credentials:** Same SUPABASE_URL and SUPABASE_ANON_KEY as ChatWidget.ts, per D-06.
+
+### 11.3 Pipeline Flow Update
+
+The escalation flow in the pipeline now routes through Supabase Realtime instead of simulators:
+
+```
+User Input → SemanticRouter → OffTopicDetector → EscalationDetector
+                                                      │
+                                                      ▼
+                                             active escalation?
+                                                      │
+                                              ┌───────┴───────┐
+                                              │                │
+                                             Yes              No
+                                              │                │
+                                              ▼                ▼
+                                     Supabase channel     Continue to
+                                     'support-queue'      next detector
+                                     ┌───────────────┐
+                                     │ handoff_request│
+                                     │ ───────────►   │
+                                     │ Agent Console  │
+                                     │ ◄────────────  │
+                                     │ handoff_accepted│
+                                     │ ◄────────────  │
+                                     │ agent_message  │
+                                     └───────────────┘
+```
+
+### 11.4 File Changes (Phase 8)
+
+| File | Change | Lines |
+|------|--------|-------|
+| `shopify-widget/agent-console.html` | **Created** — standalone agent console | ~405 |
+| `shopify-widget/.env.example` | **Created** — Supabase credential template | ~3 |
+| `shopify-widget/src/ChatWidget.ts` | **Modified** — Supabase channel subscribe/send, removed simulators | ~100 added |
+| `shopify-widget/tests/ChatWidget.integration.test.ts` | **Modified** — 4 Supabase handoff tests | ~150 added |
+| `shopify-widget/src/styles/widget.css` | **Modified** — action chip styles | ~40 added |
+| `src/services/escalationTransferHandler.ts` | **Modified** — timeout 20000→60000 | 1 line |
+| `src/services/escalationQueueSimulator.ts` | **Deleted** — replaced by Supabase | -45 |
+| `src/services/escalationQueueSimulator.test.ts` | **Deleted** — replaced by Supabase | -45 |
+| `src/services/escalationHumanAgent.ts` | **Deleted** — replaced by Supabase | -26 |
+| `src/services/escalationHumanAgent.test.ts` | **Deleted** — replaced by Supabase | -26 |
 ```

@@ -18,7 +18,7 @@ Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows
 npm install
 ```
 
-### 2. Run unit tests (optional, 366 tests)
+### 2. Run unit tests (optional, 426 tests)
 
 ```bash
 npx vitest run
@@ -38,7 +38,16 @@ npx playwright test --config=e2e/playwright.config.ts
 
 This builds the widget (tsc + vite), serves it on port 3000, runs tests.
 
-### 5. Open the widget demo in your browser
+### 5. Configure Supabase Realtime (for live human handoff)
+
+```bash
+# Copy and fill in your Supabase credentials
+cp shopify-widget/.env.example shopify-widget/.env
+# Then edit .env with your Supabase project URL and anon key
+# Create a free project at https://supabase.com (Settings → API)
+```
+
+### 6. Open the widget demo in your browser
 
 ```bash
 # Build the widget bundle (IIFE)
@@ -46,6 +55,10 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 
 # Then open shopify-widget/index.html in your browser
 ```
+
+### 7. Use the agent console (for live handoff)
+
+Open `shopify-widget/agent-console.html` in your browser. It connects to the same Supabase channel and shows pending handoff requests.
 
 ## Project Structure
 
@@ -57,6 +70,8 @@ npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.c
 │   └── src/worker.ts        # HMAC verification, Admin GraphQL query, filtered response
 ├── shopify-widget/          # Browser widget (ChatWidget DOM rendering)
 │   ├── index.html           # Demo page — loads dist/widget.js
+│   ├── agent-console.html   # Agent console — standalone, split view, Supabase handoff
+│   ├── .env.example         # Template for Supabase URL + anon key
 │   ├── src/ChatWidget.ts    # Main widget class — pipeline, events, DOM
 │   ├── src/orderCard.ts     # Order status HTML card renderer
 │   ├── src/styles/widget.css # CSS with escalation components
@@ -157,16 +172,18 @@ Greeting check / Fallback text
 - **Swappable data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration. `PolicyService` supports live markdown fetch.
 - **Bounded context**: Cross-turn context expires after 5 minutes or 3 turns.
 - **All services run in-browser**: No backend required (except optional serverless proxy for order security).
+- **Semantic Router**: `@huggingface/transformers` with `all-MiniLM-L6-v2` — in-browser sentence embeddings for intent classification. Handles typos, synonyms, and natural phrasing.
+- **Live human handoff**: Escalation routes through Supabase Realtime WebSocket channel (`support-queue`). Agent console (`agent-console.html`) receives requests, accepts, and sends responses. No fake simulators or canned scripts.
 
 ## Testing
 
-- **20+ unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, guard services, data sources
+- **22+ unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, Supabase handoff, guard services, data sources
 - **4 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks, DOM snapshot
 - **Eval suite** — 48 scenario-based catalog intelligence evals
-- **Coverage**: 403 unit tests + 12 E2E tests passing
+- **Coverage**: 426 unit tests + 12 E2E tests passing
 
 ```bash
-# Run all Vitest tests (403 passing)
+# Run all Vitest tests (426 passing)
 npx vitest run
 
 # Run with coverage
@@ -197,16 +214,17 @@ npm run dev:proxy
 | 2. Policy Grounding | Complete | PolicyService, OffTopicDetector, ResponseGrounder |
 | 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
 | 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
-| 5. Graceful Handoff | Complete | EscalationDetector, StateMachine, queue, transfer, human agent |
+| 5. Graceful Handoff | Complete | FSM + Supabase Realtime live handoff (simulators replaced) |
 | 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
-| 7. Security & Live Data | In progress | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
-| 8. UX & Demo | Planned | Quick action chips, realtime handoff, demo video |
+| 7. Security & Live Data | Complete | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
+| 8. UX & Demo | In Progress | Quick action chips, realtime handoff, agent console, demo video |
 
 ## Key Technologies
 
 - **TypeScript** — strict mode, discriminated unions, ES modules
 - **@huggingface/transformers** — in-browser MiniLM embeddings for semantic intent detection
-- **Vitest** — unit and integration tests (20 test files)
+- **Supabase Realtime** — WebSocket broadcast channel for live human handoff
+- **Vitest** — unit and integration tests (22 test files, 426 tests)
 - **Playwright** — E2E browser tests (4 spec files, 12 tests)
 - **OpenCode + GSD** — development workflow engine (planning, execution, verification)
 
@@ -216,13 +234,14 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Demo Video
 
-*To be recorded after Phase 8 completion (due May 20, 2026)*
+*Demo video coming soon — will be uploaded after submission freeze.*
 
 4-minute walkthrough showing:
-- Semantic understanding: typos, synonyms, natural phrasing
-- Product lookup → stock check → order tracking (full customer journey)
-- Live human handoff via Supabase Realtime
-- Architecture summary: semantic router + deterministic data
+1. **0:00-0:30** — Introduction: "This is an AI customer support agent for Shopify."
+2. **0:30-1:30** — Semantic understanding: "avialable?", "where's my stuff", "got medium blue pants?" — demonstrating typo and synonym handling
+3. **1:30-2:30** — Product lookup → order tracking flow: full customer journey
+4. **2:30-3:30** — Live human handoff: user requests agent, Supabase Realtime handoff, agent responds from console
+5. **3:30-4:00** — Architecture summary: "Semantic router → deterministic data → zero hallucinations"
 
 ## Screenshots
 

@@ -756,3 +756,217 @@ Source: `.planning/phases/06-semantic-ai-router/06-AI-SPEC.md` — full decision
 **Because:** Users don't need to know whether data comes from a live API or mock data. The experience and responses are the same. A data source badge would cause confusion ("why does it say Demo on my live store?").
 
 **Tradeoff:** Developers cannot visually confirm which data source is active.
+
+---
+
+## 2026-05-19: D-01 — Quick Action Chips Placement (Phase 8)
+
+**Context:** Users need clear affordances for first actions. The judge's finding identified "blank screen" as a UX problem.
+
+**Decision:** Render 4 action chips as inline `<button>` elements in a flex row below the textarea input. Chips disappear once user sends their first message. Chips use same Berkeley Mono font and hairline borders as the widget.
+
+**Rationale:**
+- Always visible — users can tap a chip at any time
+- Below input — follows the natural F-pattern (read output → type → see suggestions)
+- Terminal aesthetic preserved — chips use same CSS variables (`--font-mono`, `--color-hairline`)
+- Disappear after first message — reduces noise for returning users
+
+**Tradeoff:** Chips add vertical space below the input. Acceptable tradeoff for guiding first-time users.
+
+---
+
+## 2026-05-19: D-02 — Onboarding State (Phase 8)
+
+**Context:** The judge's finding #58 mentioned "blank screen leaves users stranded" on first open.
+
+**Decision:** On very first open (no conversation history in localStorage), show a subtle hint text in the message area: "[+] Ask about products, track orders, or check policies. Type naturally — I understand typos."
+
+**Rationale:**
+- Single line, no popup, no dismissable welcome message (respects D-14 from Phase 1: no welcome message)
+- Sets expectations: the widget handles natural language and typos
+- Removed on first send — disappears naturally as part of the conversation flow
+
+**Tradeoff:** First-time users who don't read the hint may still be briefly confused. The visible textarea cursor mitigates this.
+
+---
+
+## 2026-05-19: D-03 — Realtime Channel Choice (Phase 8)
+
+**Context:** Human handoff needs a realtime messaging channel. Options: Supabase Realtime, custom WebSocket server, polling-based queue.
+
+**Decision:** Supabase Realtime (WebSocket-based, free tier: 50 concurrent connections, 2GB bandwidth).
+
+**Rationale:**
+- Free tier handles demo requirements (50 concurrent connections, 2GB bandwidth)
+- WebSocket-based — no polling, no fake timers, true bidirectional communication
+- Simple API: `supabase.channel('support-queue').subscribe()`
+- Agent console subscribes to same channel — real bidirectional flow
+- Can be deployed in 30 minutes with a free Supabase account (no server setup)
+
+**Tradeoff:** Requires a Supabase account. Not configurable via constructor options (deferred to post-hackathon). If Supabase is unavailable, handoff shows "unavailable" message (D-12).
+
+---
+
+## 2026-05-19: D-04 — Agent Console Scope (Phase 8)
+
+**Context:** Need a way for human agents to receive handoff requests and respond. The agent console must prove handoff is real for the judge demo.
+
+**Decision:** Single HTML page that lists active handoff requests in a sidebar, shows chat history in a right pane, and lets the agent type responses. Built as a standalone HTML file — no framework, no build step.
+
+**Rationale:**
+- MVP — not a full helpdesk dashboard. Shows the judge that handoff is real.
+- Standalone HTML file (no framework, no npm dependencies)
+- Uses same Supabase channel to send responses back to the widget
+- Can be opened directly in a browser — no server needed
+
+**Tradeoff:** No authentication for demo agent. Uses fixed `agentId: 'agent-1'`. Production would authenticate via Supabase RLS.
+
+---
+
+## 2026-05-19: D-05 — Demo Video Structure (Phase 8)
+
+**Context:** Hackathon requires a demo video (3-5 minutes) showing the submission. Need a clear structure covering all features.
+
+**Decision:** 4-minute video with this structure:
+1. **0:00-0:30** — Introduction: "This is an AI customer support agent for Shopify."
+2. **0:30-1:30** — Semantic understanding: "avialable?", "where's my stuff", "got medium blue pants?" — typo/synonym handling
+3. **1:30-2:30** — Product lookup → order tracking flow: full customer journey
+4. **2:30-3:30** — Live human handoff: user requests agent, Supabase handoff, agent responds
+5. **3:30-4:00** — Architecture summary: "Semantic router → deterministic data → zero hallucinations"
+
+**Rationale:** Video recorded personally by user after code freeze (per user request). Not part of implementation scope. Unlisted YouTube or Google Drive link in README.
+
+**Tradeoff:** Video quality and timing depend on user availability.
+
+---
+
+## 2026-05-19: D-06 — Supabase Credential Strategy (Phase 8)
+
+**Considered:**
+- Constructor options — add `supabaseUrl` and `supabaseAnonKey` to ChatWidgetOptions
+- Data attributes — read from `data-supabase-url` on the container element
+- Hardcoded for demo — inline const values in ChatWidget.ts
+
+**Chose:** Hardcoded as inline constants in ChatWidget.ts. `.env.example` file documents where to get values. Supabase URL and anon key are safe to expose (anon key is public by RLS design).
+
+**Because:** Simplest approach for demo. Anon key is designed to be public. Post-hackathon flexibility (constructor options) is deferred.
+
+**Tradeoff:** The Supabase URL and anon key must be manually updated for each deployment. No runtime configurability.
+
+---
+
+## 2026-05-19: D-07 — Action Chip Behavior (Phase 8)
+
+**Considered:**
+- All chips insert text into textarea for user editing
+- Mixed: some chips fill textarea, some send immediately
+- All chips send immediately
+
+**Chose:**
+- Track Order — inserts "track order #" in textarea (user fills in order number)
+- Check Stock — inserts "check stock for " in textarea (user fills in product name)
+- Return Item — immediately sends "I'd like to start a return"
+- View Policies — immediately sends "what are your policies?"
+
+**Because:** Chips needing variable input (order number, product name) go to textarea for the user to complete. Self-contained queries (return initiation, policy lookup) send immediately without extra steps.
+
+**Tradeoff:** Inconsistent behavior — three chips require user action, two send immediately. Users must learn which does what.
+
+---
+
+## 2026-05-19: D-08 — Action Chip Persistence (Phase 8)
+
+**Considered:**
+- Never show chips after first use (localStorage flag)
+- Reappear every page refresh until first message sent
+
+**Chose:** Chips reappear on every page load until the user sends their first message in that session. No localStorage persistence flag — simple check against conversation history length.
+
+**Because:** Simplest implementation. Returning users who refresh will see chips until they send another message, which is fine — the chips are helpful suggestions.
+
+**Tradeoff:** Users who refresh mid-conversation see chips again, even though they already know about them.
+
+---
+
+## 2026-05-19: D-09 — Agent Console Interaction Model (Phase 8)
+
+**Considered:**
+- Immediate connection — agent console shows conversation live, agent just starts typing
+- Accept-first — handoff request appears, agent clicks Accept to see conversation
+
+**Chose:** Accept-first flow. Handoff requests appear in a sidebar list with user ID and conversation preview. Agent clicks Accept to see full transcript and begin responding.
+
+**Because:** More realistic UX for demo. Shows the judge that handoff is a deliberate human action, not an automatic script.
+
+**Tradeoff:** Users wait longer for a response while the agent evaluates and accepts. Acceptable for demo.
+
+---
+
+## 2026-05-19: D-10 — Agent Console Layout (Phase 8)
+
+**Considered:**
+- Split view — left sidebar + right chat pane
+- Two-step view — request list page → navigate to chat page
+
+**Chose:** Split view layout. Left sidebar shows pending handoff requests. Right pane shows the chat view for the accepted request.
+
+**Because:** Shows both views simultaneously. More professional appearance for the demo. Matches common helpdesk tool patterns.
+
+**Tradeoff:** More complex HTML/CSS than a single-view page. Must handle responsive layout.
+
+---
+
+## 2026-05-19: D-11 — Agent Console Input Method (Phase 8)
+
+**Considered:**
+- Simple single-line text input + send button
+- Multi-line textarea
+
+**Chose:** Multi-line textarea for agent responses, matching the widget's own input UX.
+
+**Because:** Allows longer, more detailed agent responses. Consistent UX with the customer-facing widget.
+
+**Tradeoff:** Textarea takes more vertical space in the console layout.
+
+---
+
+## 2026-05-19: D-12 — Escalation Fallback Strategy (Phase 8)
+
+**Considered:**
+- Keep EscalationQueueSimulator + HumanAgentSimulator as fallback if Supabase fails
+- Graceful failure — no simulators, show unavailability message
+
+**Chose:** Graceful failure. If Supabase is not configured or the channel fails to connect, show "Human support is currently unavailable. Please try again later." and keep the user in the normal flow.
+
+**Because:** The simulators are fake — keeping them would mean the handoff demo isn't real. Better to show honest unavailability than fake a queue and canned script responses.
+
+**Tradeoff:** If Supabase is down during the demo, the handoff feature cannot be demonstrated.
+
+---
+
+## 2026-05-19: D-13 — Supabase Channel Architecture (Phase 8)
+
+**Considered:**
+- Single channel with broadcast event types
+- Per-conversation channels for each handoff
+
+**Chose:** Single channel named 'support-queue' with distinct broadcast event types: `handoff_request`, `handoff_accepted`, `agent_message`.
+
+**Because:** Single channel simplifies subscription management. Event types route messages correctly without multiple channel subscriptions.
+
+**Tradeoff:** All handoff traffic shares one channel. At high scale, message filtering by event type adds overhead.
+
+---
+
+## 2026-05-19: D-14 — Demo Video (Phase 8)
+
+**Considered:**
+- Record during development
+- Record after code freeze
+- User handles personally
+
+**Chose:** User handles demo video personally after code freeze. Not part of implementation scope. Video uploaded as unlisted YouTube or Google Drive link in README.
+
+**Because:** Video recording requires a specific Shopify store, product catalog, and narration style that the user controls best.
+
+**Tradeoff:** Video quality and timing depend on user availability after code freeze.
