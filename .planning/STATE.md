@@ -5,15 +5,15 @@
 **Current Focus**: Phase 8 — UX & Demo (Complete)
 
 ## Current Position
-**Phase**: 08-ux-demo (Complete)
-**Plan**: None
-**Status**: Phase 8 complete. All 3 plans executed: 08-01 (action chips + onboarding hint), 08-02 (Supabase Realtime handoff), 08-03 (agent console + docs). 477 tests passing (427 main + 50 widget). JUDGE-07, JUDGE-08, JUDGE-09 resolved.
+**Phase**: 05-ux-refinement (Plan 01 complete)
+**Plan**: 05-01 — SuggestedActionsService with 40 tests
+**Status**: Phase 5 UX Refinement plan 01 complete. SuggestedActionsService implemented with 6 context states, max-4 chip enforcement, 40 unit tests passing. Plans 05-02 and 05-03 pending.
 
 ## Progress:
 [████████████████████████████████████] 100% (17/17 plans, 8/8 phases)
 
 ## Performance Metrics
-- **Test Coverage**: 477 tests across 23 test files (427 main + 50 widget, all passing)
+- **Test Coverage**: 517 tests across 24 test files (467 main + 50 widget, all passing)
 - **Build Passing**: Yes
 - **Judge Score**: 58/100 — Bronze Tier (hackathon submission)
 
@@ -32,6 +32,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 
 ### Decisions
 - Roadmap realigned from 6 phases to 8 phases. Original Phase 6 (Return Initiation) deferred in favor of architectural rewrite.
+- Phase 5 UX Refinement: SuggestedActionsService replaces static action chips with context-aware suggestions. Pure service, no DOM access.
 - Phase 6: Semantic AI Router — In-browser semantic intent detection with transformer.js, replacing keyword matching across all intent detectors. COMPLETE.
 - Phase 7: Security & Live Data — Serverless order proxy (Cloudflare Worker), Shopify Storefront API integration, markdown config policies. Context captured.
 - Phase 8: UX & Demo — quick action chips, Supabase Realtime handoff, agent console, doc updates. Complete.
@@ -47,6 +48,7 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 - Phase 3: Live Catalog Intelligence — CatalogService, CatalogIntentDetector, synonym resolver, mock data (7 products, 52 variants)
 - Phase 4: Order Tracking Workflow — OrderService, OrderIntentDetector, OrderCard, mock data (8 orders, 9 statuses)
 - Phase 5: Graceful Escalation — EscalationDetector, EscalationStateMachine, queue simulator, transfer handler, human agent simulator
+- Phase 5 UX Refinement (Plan 05-01): SuggestedActionsService — context-aware action chips, 6 states, 40 tests
 - Phase 6: Semantic AI Router — SemanticRouter class, build-time embeddings, all 3 detectors upgraded, first-query UX, feature flags
 - Phase 7 (Plan 07-01): Shopify Proxy Foundation — CF Worker with HMAC verification, Admin GraphQL integration, email hash matching, CORS, 17 tests
 - Phase 7 (Plan 07-02): Live Data Sources — ShopifyStorefrontDataSource (catalog), ShopifyOrderProxyDataSource (order lookup), HMAC signing, retry logic, 16 tests
@@ -92,6 +94,6 @@ The original Phase 6 (Return Initiation) is deferred. The project needs fundamen
 
 ## Session Continuity
 Last session: 2026-05-19
-Stopped at: Phase 8 complete. All 3 plans executed. 477 tests passing.
+Stopped at: Phase 5 UX Refinement Plan 05-01 complete. SuggestedActionsService with 40 tests. Plans 05-02, 05-03 pending.
 
-Next: Phase 9+ or project completion.
+Next: Phase 5 Plans 05-02 and 05-03 (ChatWidget integration of SuggestedActionsService).
