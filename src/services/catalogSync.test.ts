@@ -1,5 +1,5 @@
 // src/services/catalogSync.test.ts
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CatalogSyncManager } from './catalogSync';
 import type { Product, CatalogDataSource } from './types';
 
