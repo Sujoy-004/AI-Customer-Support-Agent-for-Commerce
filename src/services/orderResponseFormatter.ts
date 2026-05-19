@@ -19,6 +19,7 @@ export function formatOrderResponse(result: OrderQuery): string {
     case 'not_order':
       return '';
   }
+  return '';
 }
 
 function buildOrderResponse(order: Order): string {
