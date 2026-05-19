@@ -124,8 +124,8 @@
 **Context**: .planning/phases/08-ux-demo/
 
 **Plans:**
-- [ ] 08-01-PLAN.md — Action chips + onboarding hint (JUDGE-07)
-- [ ] 08-02-PLAN.md — Supabase Realtime handoff (JUDGE-08)
+- [x] 08-01-PLAN.md — Action chips + onboarding hint (JUDGE-07)
+- [x] 08-02-PLAN.md — Supabase Realtime handoff (JUDGE-08)
 - [ ] 08-03-PLAN.md — Agent console + documentation updates (JUDGE-09)
 
 ## Progress
@@ -139,4 +139,4 @@
 | 5. Graceful Escalation | 2/2 | Complete | 2026-05-17 |
 | 6. Semantic AI Router | 4/4 | Complete | 2026-05-18 |
 | 7. Security & Live Data | 3/3 | Complete | 2026-05-18 |
-| 8. UX & Demo | 0/3 | Not started | - |
+| 8. UX & Demo | 2/3 | In progress | - |
