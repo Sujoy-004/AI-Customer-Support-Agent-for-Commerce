@@ -265,18 +265,6 @@ export class CatalogIntentDetector {
   }
 
   /**
-   * Phase 1 helper: Match products against query.
-   * Runs intent detection and product search in parallel.
-   */
-  private async _matchProduct(
-    query: string,
-    lowerQuery: string
-  ): Promise<{ intent: CatalogIntent | null }> {
-    const detectedResult = await this.detectIntent(lowerQuery);
-    return { intent: detectedResult.intent };
-  }
-
-  /**
    * Phase 2 helper: Extract new options from query and merge with existing context.
    */
   private _mergeOptions(
