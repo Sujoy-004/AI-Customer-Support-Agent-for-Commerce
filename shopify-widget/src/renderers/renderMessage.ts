@@ -1,4 +1,5 @@
 import type { ChatMessage, TimestampFormatter, MessageBubbleElements } from './renderTypes';
+import { renderResponseSurface } from './renderResponseSurface';
 
 const ALLOWED_TAGS = new Set([
   'div', 'span', 'p', 'br', 'strong', 'em',
@@ -72,7 +73,7 @@ export function createUserMessage(msg: ChatMessage, formatTs: TimestampFormatter
 
 export function createAgentMessage(msg: ChatMessage, formatTs: TimestampFormatter): MessageBubbleElements {
   const bubble = document.createElement('div');
-  bubble.className = 'msg msg--agent';
+  bubble.className = `msg msg--agent msg--type-${msg.responseType ?? 'general'}`;
   bubble.dataset.messageId = msg.id;
 
   const header = createHeader(
@@ -93,10 +94,15 @@ export function createAgentMessage(msg: ChatMessage, formatTs: TimestampFormatte
     content.textContent = msg.text;
   }
 
-  const statusEl = createStatusEl(msg.status, msg.id);
-
   bubble.appendChild(header);
   bubble.appendChild(content);
+
+  if (msg.surface) {
+    const surfaceEl = renderResponseSurface(msg.surface);
+    bubble.appendChild(surfaceEl);
+  }
+
+  const statusEl = createStatusEl(msg.status, msg.id);
   bubble.appendChild(statusEl);
 
   return { bubble, statusEl };
