@@ -328,32 +328,59 @@ describe('worker POST /api/order-lookup', () => {
 });
 
 describe('CORS headers', () => {
-  it('returns CORS headers on OPTIONS preflight', async () => {
+  it('returns CORS headers on OPTIONS preflight for allowed origins', async () => {
     const request = new Request('http://localhost:8787/api/order-lookup', {
       method: 'OPTIONS',
+      headers: {
+        'Origin': 'http://localhost:5173',
+      },
     });
 
     const response = await worker.fetch(request, MOCK_ENV);
 
     expect(response.status).toBe(200);
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
     expect(response.headers.get('Access-Control-Allow-Methods')).toBe('POST, OPTIONS');
     expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type');
   });
 
-  it('includes CORS headers on POST response', async () => {
+  it('rejects OPTIONS preflight for non-allowed origins', async () => {
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': 'https://malicious-site.com',
+      },
+    });
+
+    const response = await worker.fetch(request, MOCK_ENV);
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('includes CORS headers on POST response for allowed origins', async () => {
     const emailHash = await sha256Hex('customer@example.com');
     const body = await makeSignedRequest(1001, emailHash, MOCK_ENV.HMAC_SECRET);
 
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(MOCK_SHOPIFY_ORDER), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
     const request = new Request('http://localhost:8787/api/order-lookup', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'http://localhost:5173',
+      },
       body: JSON.stringify(body),
     });
 
     const response = await worker.fetch(request, MOCK_ENV);
 
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
     expect(response.headers.get('Access-Control-Allow-Methods')).toBe('POST, OPTIONS');
     expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type');
   });
@@ -391,7 +418,7 @@ describe('Admin API query construction', () => {
 
     expect(fetchBody.query).toContain('$query: String!');
     expect(fetchBody.query).toContain('orders(first: 1, query: $query)');
-    expect(fetchBody.variables).toEqual({ query: 'name:1001' });
+    expect(fetchBody.variables).toEqual({ query: 'name:#1001' });
     expect(fetchBody.query).not.toMatch(/name:1001/);
   });
 
@@ -451,5 +478,264 @@ describe('Response mapping', () => {
         { date: '2026-05-05', message: 'Out for delivery', location: undefined },
       ],
     });
+  });
+});
+
+describe('Security: CORS origin validation', () => {
+  it('rejects requests from non-allowed origins', async () => {
+    const envWithRestrictedOrigins: Env = {
+      ...MOCK_ENV,
+      ALLOWED_ORIGINS: 'https://trusted-store.com,https://admin.trusted-store.com',
+    };
+
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = await makeSignedRequest(1001, emailHash, MOCK_ENV.HMAC_SECRET);
+
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://malicious-site.com',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const response = await worker.fetch(request, envWithRestrictedOrigins);
+    const headers = Object.fromEntries(response.headers.entries());
+
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('allows requests from allowed origins', async () => {
+    const envWithRestrictedOrigins: Env = {
+      ...MOCK_ENV,
+      ALLOWED_ORIGINS: 'https://trusted-store.com,http://localhost:5173',
+    };
+
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = await makeSignedRequest(1001, emailHash, MOCK_ENV.HMAC_SECRET);
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(MOCK_SHOPIFY_ORDER), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://trusted-store.com',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const response = await worker.fetch(request, envWithRestrictedOrigins);
+
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://trusted-store.com');
+  });
+
+  it('defaults to localhost origins when ALLOWED_ORIGINS not set', async () => {
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = await makeSignedRequest(1001, emailHash, MOCK_ENV.HMAC_SECRET);
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(MOCK_SHOPIFY_ORDER), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'http://localhost:5173',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const response = await worker.fetch(request, MOCK_ENV);
+
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+  });
+});
+
+describe('Security: Rate limiting', () => {
+  beforeEach(() => {
+    fetchMock.mockImplementation(() => 
+      new Response(JSON.stringify(MOCK_SHOPIFY_ORDER), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+  });
+
+  it('returns 429 when rate limit exceeded', async () => {
+    const envWithRateLimit: Env = {
+      ...MOCK_ENV,
+      RATE_LIMIT_WINDOW_MS: '1000',
+      RATE_LIMIT_MAX_REQUESTS: '2',
+    };
+
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = await makeSignedRequest(1001, emailHash, MOCK_ENV.HMAC_SECRET);
+
+    // First request — should pass
+    const request1 = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'CF-Connecting-IP': '192.168.1.100',
+      },
+      body: JSON.stringify(body),
+    });
+    const response1 = await worker.fetch(request1, envWithRateLimit);
+    expect(response1.status).toBe(200);
+
+    // Second request — should pass
+    const request2 = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'CF-Connecting-IP': '192.168.1.100',
+      },
+      body: JSON.stringify(body),
+    });
+    const response2 = await worker.fetch(request2, envWithRateLimit);
+    expect(response2.status).toBe(200);
+
+    // Third request — should be rate limited
+    const request3 = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'CF-Connecting-IP': '192.168.1.100',
+      },
+      body: JSON.stringify(body),
+    });
+    const response3 = await worker.fetch(request3, envWithRateLimit);
+    const data3 = (await response3.json()) as Record<string, unknown>;
+
+    expect(response3.status).toBe(429);
+    expect(data3.code).toBe('rate_limited');
+    expect(response3.headers.get('Retry-After')).toBe('1');
+  });
+
+  it('resets rate limit after window expires', async () => {
+    vi.useFakeTimers();
+
+    const envWithRateLimit: Env = {
+      ...MOCK_ENV,
+      RATE_LIMIT_WINDOW_MS: '100',
+      RATE_LIMIT_MAX_REQUESTS: '1',
+    };
+
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = await makeSignedRequest(1001, emailHash, MOCK_ENV.HMAC_SECRET);
+
+    const makeRequest = async () => {
+      const request = new Request('http://localhost:8787/api/order-lookup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CF-Connecting-IP': '10.0.0.1',
+        },
+        body: JSON.stringify(body),
+      });
+      return worker.fetch(request, envWithRateLimit);
+    };
+
+    // First request
+    const response1 = await makeRequest();
+    expect(response1.status).toBe(200);
+
+    // Second request — should be rate limited
+    const response2 = await makeRequest();
+    expect(response2.status).toBe(429);
+
+    // Advance time past window
+    vi.advanceTimersByTime(150);
+
+    // Third request — should pass again
+    const response3 = await makeRequest();
+    expect(response3.status).toBe(200);
+
+    vi.useRealTimers();
+  });
+});
+
+describe('Security: Input validation and sanitization', () => {
+  it('rejects negative order numbers', async () => {
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = await makeSignedRequest(-1001, emailHash, MOCK_ENV.HMAC_SECRET);
+
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const response = await worker.fetch(request, MOCK_ENV);
+    const data = (await response.json()) as Record<string, unknown>;
+
+    expect(response.status).toBe(400);
+    expect(data.code).toBe('invalid_request');
+  });
+
+  it('rejects non-finite order numbers', async () => {
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = {
+      orderNumber: NaN,
+      emailHash,
+      timestamp: Date.now(),
+      hmac: 'dummy',
+    };
+
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const response = await worker.fetch(request, MOCK_ENV);
+    const data = (await response.json()) as Record<string, unknown>;
+
+    expect(response.status).toBe(400);
+    expect(data.code).toBe('invalid_request');
+  });
+});
+
+describe('Security: Response headers', () => {
+  it('includes security headers on all responses', async () => {
+    const emailHash = await sha256Hex('customer@example.com');
+    const body = await makeSignedRequest(1001, emailHash, MOCK_ENV.HMAC_SECRET);
+
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const response = await worker.fetch(request, MOCK_ENV);
+    const headers = Object.fromEntries(response.headers.entries());
+
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['x-frame-options']).toBe('DENY');
+    expect(headers['strict-transport-security']).toContain('max-age=31536000');
+    expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+  });
+
+  it('includes CSP header preventing framing', async () => {
+    const request = new Request('http://localhost:8787/api/order-lookup', {
+      method: 'GET',
+    });
+
+    const response = await worker.fetch(request, MOCK_ENV);
+    const headers = Object.fromEntries(response.headers.entries());
+
+    expect(headers['content-security-policy']).toContain("default-src 'none'");
+    expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
   });
 });

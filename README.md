@@ -18,7 +18,7 @@ Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows
 npm install
 ```
 
-### 2. Run unit tests (optional, 426 tests)
+### 2. Run unit tests (optional, 427 tests)
 
 ```bash
 npx vitest run
@@ -177,13 +177,13 @@ Greeting check / Fallback text
 
 ## Testing
 
-- **22+ unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, Supabase handoff, guard services, data sources
+- **22+ unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, Supabase handoff, guard services, data sources, security
 - **4 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks, DOM snapshot
 - **Eval suite** — 48 scenario-based catalog intelligence evals
-- **Coverage**: 426 unit tests + 12 E2E tests passing
+- **Coverage**: 427 unit tests + 12 E2E tests passing
 
 ```bash
-# Run all Vitest tests (426 passing)
+# Run all Vitest tests (427 passing)
 npx vitest run
 
 # Run with coverage
@@ -197,7 +197,7 @@ npx playwright test --config=e2e/playwright.config.ts
 
 ```bash
 cd shopify-proxy
-cp .env.example .env         # Set SHOPIFY_ADMIN_TOKEN, SHOPIFY_STORE_DOMAIN
+cp .env.example .env         # Set SHOPIFY_ADMIN_TOKEN, SHOPIFY_STORE_DOMAIN, HMAC_SECRET
 npx wrangler dev             # Starts proxy at localhost:8787
 ```
 
@@ -205,6 +205,24 @@ Or from root:
 ```bash
 npm run dev:proxy
 ```
+
+### Proxy Security Configuration (Phase 1)
+
+The Shopify proxy now includes production-grade security hardening:
+
+```bash
+# Required environment variables
+SHOPIFY_ADMIN_TOKEN=your-admin-api-token
+SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+HMAC_SECRET=your-32-byte-secret-key
+
+# Optional security configuration
+ALLOWED_ORIGINS=https://your-store.com,https://admin.your-store.com
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=20
+```
+
+See `docs/PHASE1_SECURITY.md` for complete security implementation details.
 
 ## Phases
 
@@ -217,6 +235,7 @@ npm run dev:proxy
 | 5. Graceful Handoff | Complete | FSM + Supabase Realtime live handoff (simulators replaced) |
 | 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
 | 7. Security & Live Data | Complete | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
+| **Rebuild Phase 1** | **Complete** | **Security hardening: CORS allowlist, rate limiting, input validation, structured logging, security headers** |
 | 8. UX & Demo | In Progress | Quick action chips, realtime handoff, agent console, demo video |
 
 ## Key Technologies
@@ -224,7 +243,8 @@ npm run dev:proxy
 - **TypeScript** — strict mode, discriminated unions, ES modules
 - **@huggingface/transformers** — in-browser MiniLM embeddings for semantic intent detection
 - **Supabase Realtime** — WebSocket broadcast channel for live human handoff
-- **Vitest** — unit and integration tests (22 test files, 426 tests)
+- **Cloudflare Workers** — Edge runtime for secure Shopify Admin API proxy (rate limiting, CORS, HMAC verification)
+- **Vitest** — unit and integration tests (22 test files, 427 tests)
 - **Playwright** — E2E browser tests (4 spec files, 12 tests)
 - **OpenCode + GSD** — development workflow engine (planning, execution, verification)
 

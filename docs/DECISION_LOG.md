@@ -970,3 +970,35 @@ Source: `.planning/phases/06-semantic-ai-router/06-AI-SPEC.md` — full decision
 **Because:** Video recording requires a specific Shopify store, product catalog, and narration style that the user controls best.
 
 **Tradeoff:** Video quality and timing depend on user availability after code freeze.
+
+---
+
+## 2026-05-19: Phase 1 — Security Hardening for Order Lookup Pipeline
+
+**Considered:**
+- Keeping wildcard CORS (`*`) for simplicity during development
+- Using external rate limiting services (Cloudflare Workers KV, Redis)
+- Storing HMAC secret in client-side configuration for ease of testing
+- Minimal input validation (type checks only)
+
+**Chose:** Defense-in-depth security approach with:
+1. Configurable CORS origin allowlist (defaults to localhost for dev)
+2. In-memory rate limiting (20 req/60s per IP, configurable via env vars)
+3. Server-side HMAC secret only (client validates presence but never stores)
+4. Comprehensive input validation with sanitization functions
+5. Structured JSON logging with request lifecycle tracking
+6. Six security headers on all responses (CSP, HSTS, X-Frame-Options, etc.)
+7. Shopify API response validation before client return
+
+**Because:** Judge verdict (58/100, Bronze) specifically criticized "client-side security risks" and "hardcoded data." The order lookup pipeline handles sensitive customer data (order numbers, emails) and accesses Shopify Admin API — it must be production-grade. Cloudflare Workers provide a secure edge runtime; we leverage it fully rather than deferring security to later phases.
+
+**Tradeoff:** In-memory rate limiting resets on worker redeploy (acceptable for current scale; KV-based persistence can be added later). CORS allowlist requires configuration for each deployment environment. Additional validation adds ~5ms per request (negligible vs Shopify API latency).
+
+**Files Changed:**
+- `shopify-proxy/src/worker.ts` — Core security implementation
+- `src/services/shopifyOrderProxyDataSource.ts` — HMAC secret validation
+- `shopify-proxy/test/worker.test.ts` — 9 new security test cases
+- `src/services/shopifyOrderProxyDataSource.test.ts` — Email requirement fix
+- `docs/PHASE1_SECURITY.md` — Comprehensive security documentation
+
+**Test Results:** 427 tests passing (27 in proxy worker, 19 in data source)

@@ -10,6 +10,10 @@ export const ON_TOPIC_CLUSTERS: Record<string, string[]> = {
     'i want to buy a hoodie',
     'show me your collection',
     'what products do you carry',
+    // Expanded coverage
+    'do you have this item',
+    'what colors come in',
+    'show me your best sellers',
   ],
   orders: [
     'where is my order',
@@ -20,6 +24,10 @@ export const ON_TOPIC_CLUSTERS: Record<string, string[]> = {
     'cancel my order',
     'tracking number',
     'has my order shipped',
+    // Expanded coverage
+    'where did my order go',
+    'my package has not arrived',
+    'still waiting on my delivery',
   ],
   policies: [
     'what is your return policy',
@@ -30,6 +38,10 @@ export const ON_TOPIC_CLUSTERS: Record<string, string[]> = {
     'shipping options',
     'return window',
     'how long does shipping take',
+    // Expanded coverage
+    'can i get a refund',
+    'do you offer exchanges',
+    'what is your warranty coverage',
   ],
 };
 

@@ -1,12 +1,12 @@
-# Graph Report - C:\Users\KIIT0001\Documents\antigravity skills\AI Customer Support Agent for Commerce  (2026-05-18)
+# Graph Report - C:\Users\KIIT0001\Documents\antigravity skills\AI Customer Support Agent for Commerce  (2026-05-19)
 
 ## Corpus Check
-- 104 files · ~70,195 words
+- 107 files · ~82,567 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 423 nodes · 601 edges · 54 communities detected
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 58 edges (avg confidence: 0.79)
+- 465 nodes · 673 edges · 55 communities detected
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 67 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -64,18 +64,19 @@
 - [[_COMMUNITY_Community 51|Community 51]]
 - [[_COMMUNITY_Community 52|Community 52]]
 - [[_COMMUNITY_Community 53|Community 53]]
+- [[_COMMUNITY_Community 54|Community 54]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `ChatWidget` - 41 edges
-2. `Vitest Testing Framework` - 22 edges
+1. `ChatWidget` - 47 edges
+2. `Vitest Testing Framework` - 23 edges
 3. `CatalogIntentDetector` - 21 edges
 4. `EscalationStateMachine` - 12 edges
 5. `OrderIntentDetector` - 12 edges
-6. `SemanticRouter` - 9 edges
-7. `CatalogService` - 9 edges
-8. `EscalationQueueSimulator` - 9 edges
-9. `EscalationDetector` - 8 edges
-10. `ResponseGrounder` - 8 edges
+6. `ShopifyOrderProxyDataSource` - 10 edges
+7. `fetch()` - 9 edges
+8. `SemanticRouter` - 9 edges
+9. `CatalogService` - 9 edges
+10. `EscalationDetector` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `SynonymResolver` --references--> `Color Synonym Config Table`  [INFERRED]
@@ -84,9 +85,9 @@
   PRODUCT_DOC.md → src/config/synonyms/CHANGELOG.md
 - `SynonymResolver` --references--> `Material Synonym Config Table`  [INFERRED]
   PRODUCT_DOC.md → src/config/synonyms/CHANGELOG.md
+- `safeFetch()` --calls--> `fetch()`  [INFERRED]
+  C:\Users\KIIT0001\Documents\antigravity skills\AI Customer Support Agent for Commerce\src\integrations\context7.ts → C:\Users\KIIT0001\Documents\antigravity skills\AI Customer Support Agent for Commerce\shopify-proxy\src\worker.ts
 - `AI Customer Support Agent for Commerce` --conceptually_related_to--> `Kasparro Agentic Commerce Hackathon`  [EXTRACTED]
-  README.md → hackathon.md
-- `AI Customer Support Agent for Commerce` --conceptually_related_to--> `Track 4: AI Customer Support Agent`  [EXTRACTED]
   README.md → hackathon.md
 
 ## Hyperedges (group relationships)
@@ -97,56 +98,56 @@
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.1
+Cohesion: 0.07
 Nodes (2): ChatWidget, EscalationTransferHandler
 
 ### Community 1 - "Community 1"
-Cohesion: 0.05
-Nodes (7): fixtureFor(), makeFixture(), createWidget(), createDetector(), Playwright E2E Framework, Playwright E2E over Vitest-Only Decision, Vitest Testing Framework
+Cohesion: 0.04
+Nodes (9): fixtureFor(), makeFixture(), createWidget(), createDetector(), Playwright E2E Framework, Playwright E2E over Vitest-Only Decision, Vitest Testing Framework, makeSignedRequest() (+1 more)
 
 ### Community 2 - "Community 2"
+Cohesion: 0.09
+Nodes (12): buildAmbiguousMessage(), CatalogIntentDetector, escapeRegex(), formatCatalogResponse(), formatStockBadge(), summarizeStock(), buildMockProducts(), buildProduct() (+4 more)
+
+### Community 3 - "Community 3"
 Cohesion: 0.06
 Nodes (42): Browser-Side Services vs Server-Side API Decision, 2-Min Catalog Cache NEVER Cache Inventory Decision, CatalogDataSource Interface, CatalogIntentDetector, CatalogService, ChatWidget, ConversationContextManager, Cross-Turn Context 5min 3turn Decision (+34 more)
 
-### Community 3 - "Community 3"
-Cohesion: 0.07
-Nodes (5): EscalationDetector, createDefaultState(), EscalationStateMachine, OffTopicDetector, RefusalResponseService
-
 ### Community 4 - "Community 4"
-Cohesion: 0.11
-Nodes (10): buildAmbiguousMessage(), CatalogIntentDetector, escapeRegex(), formatCatalogResponse(), formatStockBadge(), summarizeStock(), getSynonymTableForOption(), normalizeOptionValue() (+2 more)
+Cohesion: 0.07
+Nodes (5): CacheManager, ConversationContextManager, OffTopicDetector, RefusalResponseService, SemanticRouter
 
 ### Community 5 - "Community 5"
-Cohesion: 0.1
-Nodes (4): OrderService, PolicyService, MockReturnDataSource, ReturnService
+Cohesion: 0.09
+Nodes (3): OrderIntentDetector, OrderService, ShopifyOrderProxyDataSource
 
 ### Community 6 - "Community 6"
-Cohesion: 0.11
-Nodes (3): CacheManager, ConversationContextManager, SemanticRouter
+Cohesion: 0.13
+Nodes (6): mapFrontmatterToPolicyData(), parseFrontmatter(), parseYamlValue(), PolicyService, MockReturnDataSource, ReturnService
 
 ### Community 7 - "Community 7"
-Cohesion: 0.27
-Nodes (9): getStatusColor(), getStatusEmoji(), getTimelineStatusClass(), isActiveStatus(), OrderCard, renderItemsSummary(), renderTimeline(), buildOrderResponse() (+1 more)
+Cohesion: 0.19
+Nodes (5): CatalogService, getSynonymTableForOption(), normalizeOptionValue(), resolveSynonyms(), tryResolveToken()
 
 ### Community 8 - "Community 8"
 Cohesion: 0.27
-Nodes (11): addSortIndicators(), enableUI(), getNthColumn(), getTable(), getTableBody(), getTableHeader(), loadColumns(), loadData() (+3 more)
+Nodes (9): getStatusColor(), getStatusEmoji(), getTimelineStatusClass(), isActiveStatus(), OrderCard, renderItemsSummary(), renderTimeline(), buildOrderResponse() (+1 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.24
-Nodes (1): OrderIntentDetector
+Cohesion: 0.27
+Nodes (11): addSortIndicators(), enableUI(), getNthColumn(), getTable(), getTableBody(), getTableHeader(), loadColumns(), loadData() (+3 more)
 
 ### Community 10 - "Community 10"
+Cohesion: 0.26
+Nodes (10): enrichWithContext7(), getContext7RuntimeConfig(), getEnv(), safeFetch(), fetch(), hexToBytes(), jsonResponse(), mapOrderResponse() (+2 more)
+
+### Community 11 - "Community 11"
 Cohesion: 0.35
 Nodes (8): a(), B(), D(), g(), i(), k(), Q(), y()
 
-### Community 11 - "Community 11"
-Cohesion: 0.27
-Nodes (1): EscalationQueueSimulator
-
 ### Community 12 - "Community 12"
 Cohesion: 0.31
-Nodes (1): CatalogService
+Nodes (2): createDefaultState(), EscalationStateMachine
 
 ### Community 13 - "Community 13"
 Cohesion: 0.33
@@ -154,15 +155,15 @@ Nodes (1): ResponseGrounder
 
 ### Community 14 - "Community 14"
 Cohesion: 0.25
-Nodes (8): AI Customer Support Agent for Commerce, Graphify Knowledge Graph Output, GSD Protocol, Kasparro Agentic Commerce Hackathon, OpenCode Plugin System, Store-Native Approach, Track 4: AI Customer Support Agent, Zero Hallucination Principle
+Nodes (1): EscalationDetector
 
 ### Community 15 - "Community 15"
-Cohesion: 0.57
-Nodes (4): enrichWithContext7(), getContext7RuntimeConfig(), getEnv(), safeFetch()
+Cohesion: 0.25
+Nodes (8): AI Customer Support Agent for Commerce, Graphify Knowledge Graph Output, GSD Protocol, Kasparro Agentic Commerce Hackathon, OpenCode Plugin System, Store-Native Approach, Track 4: AI Customer Support Agent, Zero Hallucination Principle
 
 ### Community 16 - "Community 16"
-Cohesion: 0.57
-Nodes (5): buildMockProducts(), buildProduct(), buildSynonymRecord(), generateVariants(), MockCatalogDataSource
+Cohesion: 0.38
+Nodes (1): EscalationQueueSimulator
 
 ### Community 17 - "Community 17"
 Cohesion: 0.48
@@ -173,12 +174,12 @@ Cohesion: 0.33
 Nodes (1): NetworkDetector
 
 ### Community 19 - "Community 19"
-Cohesion: 0.33
-Nodes (1): HumanAgentSimulator
-
-### Community 20 - "Community 20"
 Cohesion: 0.7
 Nodes (4): goToNext(), goToPrevious(), makeCurrent(), toggleClass()
+
+### Community 20 - "Community 20"
+Cohesion: 0.4
+Nodes (1): HumanAgentSimulator
 
 ### Community 21 - "Community 21"
 Cohesion: 0.67
@@ -302,13 +303,17 @@ Nodes (0):
 
 ### Community 51 - "Community 51"
 Cohesion: 1.0
-Nodes (1): EscalationTransferHandler
+Nodes (0): 
 
 ### Community 52 - "Community 52"
 Cohesion: 1.0
-Nodes (1): HumanAgentSimulator
+Nodes (1): EscalationTransferHandler
 
 ### Community 53 - "Community 53"
+Cohesion: 1.0
+Nodes (1): HumanAgentSimulator
+
+### Community 54 - "Community 54"
 Cohesion: 1.0
 Nodes (1): Phase 6: Return Initiation Workflow
 
@@ -343,43 +348,45 @@ Nodes (1): Phase 6: Return Initiation Workflow
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 34`** (1 nodes): `stockCheck.spec.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 35`** (1 nodes): `vite.config.ts`
+- **Thin community `Community 35`** (1 nodes): `vitest.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 36`** (1 nodes): `vitest.config.ts`
+- **Thin community `Community 36`** (1 nodes): `vite.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 37`** (1 nodes): `catalogIntents.ts`
+- **Thin community `Community 37`** (1 nodes): `vitest.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 38`** (1 nodes): `offTopicIntents.ts`
+- **Thin community `Community 38`** (1 nodes): `catalogIntents.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 39`** (1 nodes): `orderIntents.ts`
+- **Thin community `Community 39`** (1 nodes): `offTopicIntents.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 40`** (1 nodes): `colors.js`
+- **Thin community `Community 40`** (1 nodes): `orderIntents.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (1 nodes): `index.js`
+- **Thin community `Community 41`** (1 nodes): `colors.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (1 nodes): `materials.js`
+- **Thin community `Community 42`** (1 nodes): `index.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 43`** (1 nodes): `sizes.js`
+- **Thin community `Community 43`** (1 nodes): `materials.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 44`** (1 nodes): `index.js`
+- **Thin community `Community 44`** (1 nodes): `sizes.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 45`** (1 nodes): `types.js`
+- **Thin community `Community 45`** (1 nodes): `index.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 46`** (1 nodes): `colors.ts`
+- **Thin community `Community 46`** (1 nodes): `types.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 47`** (1 nodes): `index.ts`
+- **Thin community `Community 47`** (1 nodes): `colors.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 48`** (1 nodes): `materials.ts`
+- **Thin community `Community 48`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 49`** (1 nodes): `sizes.ts`
+- **Thin community `Community 49`** (1 nodes): `materials.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 50`** (1 nodes): `index.ts`
+- **Thin community `Community 50`** (1 nodes): `sizes.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (1 nodes): `EscalationTransferHandler`
+- **Thin community `Community 51`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (1 nodes): `HumanAgentSimulator`
+- **Thin community `Community 52`** (1 nodes): `EscalationTransferHandler`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (1 nodes): `Phase 6: Return Initiation Workflow`
+- **Thin community `Community 53`** (1 nodes): `HumanAgentSimulator`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 54`** (1 nodes): `Phase 6: Return Initiation Workflow`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
@@ -387,15 +394,15 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Sort Arrow Sprite` and `Code Coverage Report`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
-- **Why does `ChatWidget` connect `Community 0` to `Community 3`, `Community 5`?**
-  _High betweenness centrality (0.134) - this node is a cross-community bridge._
+- **Why does `ChatWidget` connect `Community 0` to `Community 1`, `Community 6`?**
+  _High betweenness centrality (0.157) - this node is a cross-community bridge._
+- **Why does `SemanticRouter` connect `Community 4` to `Community 1`?**
+  _High betweenness centrality (0.077) - this node is a cross-community bridge._
 - **What connects `Response`, `Kasparro Agentic Commerce Hackathon`, `Track 4: AI Customer Support Agent` to the rest of the system?**
   _34 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.1 - nodes in this community are weakly interconnected._
-- **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.06 - nodes in this community are weakly interconnected._
-- **Should `Community 3` be split into smaller, more focused modules?**
   _Cohesion score 0.07 - nodes in this community are weakly interconnected._
+- **Should `Community 1` be split into smaller, more focused modules?**
+  _Cohesion score 0.04 - nodes in this community are weakly interconnected._
+- **Should `Community 2` be split into smaller, more focused modules?**
+  _Cohesion score 0.09 - nodes in this community are weakly interconnected._

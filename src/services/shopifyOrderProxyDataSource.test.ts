@@ -254,6 +254,7 @@ describe('ShopifyOrderProxyDataSource', () => {
       const dsWithSlash = new ShopifyOrderProxyDataSource({
         proxyUrl: 'https://proxy.example.com/',
         hmacSecret: 'test-secret',
+        email: 'test@example.com',
       });
       mockFetch.mockResolvedValueOnce(
         new Response(
@@ -272,6 +273,7 @@ describe('ShopifyOrderProxyDataSource', () => {
       const dsNoSlash = new ShopifyOrderProxyDataSource({
         proxyUrl: 'https://proxy.example.com',
         hmacSecret: 'test-secret',
+        email: 'test@example.com',
       });
       mockFetch.mockResolvedValueOnce(
         new Response(

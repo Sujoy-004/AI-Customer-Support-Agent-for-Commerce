@@ -9,6 +9,11 @@ export const CATALOG_INTENT_PHRASES: Record<string, string[]> = {
     'any left',
     'still available',
     'do you have more',
+    // Expanded coverage
+    'in stock',
+    'is it avaliable',
+    'can i buy this',
+    'do you have this item',
   ],
   sizing_inquiry: [
     'what sizes do you have',
@@ -27,6 +32,10 @@ export const CATALOG_INTENT_PHRASES: Record<string, string[]> = {
     'do your sneakers fit normal',
     'do these shorts run big',
     'jacket sizing guide',
+    // Expanded coverage
+    'what size should i order',
+    'does this run small',
+    'true to size',
   ],
   product_search: [
     'looking for',
@@ -45,6 +54,10 @@ export const CATALOG_INTENT_PHRASES: Record<string, string[]> = {
     'need some sneakers',
     'show me jackets',
     'browse shorts collection',
+    // Expanded coverage
+    'do you carry',
+    'show me products',
+    'i need',
   ],
   variant_lookup: [
     'blue hoodie',
@@ -55,5 +68,9 @@ export const CATALOG_INTENT_PHRASES: Record<string, string[]> = {
     'which colors',
     'in black',
     'do you have this in blue',
+    // Expanded coverage
+    'in red',
+    'large size',
+    'do you have this in medium',
   ],
 };
