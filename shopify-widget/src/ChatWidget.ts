@@ -1364,25 +1364,6 @@ export default class ChatWidget {
     return 'initial';
   }
 
-  private _handleChipClick(chip: { action: string; label: string; immediate: boolean }): void {
-    if (chip.immediate) {
-      const queries: Record<string, string> = {
-        'return-item': "I'd like to start a return",
-        'view-policies': 'what are your policies?',
-      };
-      this._sendImmediate(queries[chip.action]);
-    } else {
-      const fillers: Record<string, string> = {
-        'track-order': 'track order #',
-        'check-stock': 'check stock for ',
-      };
-      this.textarea.value = fillers[chip.action] || '';
-      this.textarea.focus();
-      this._autoGrow();
-      this._updateSendButton();
-    }
-  }
-
   // ── Onboarding Hint ────────────────────────────
 
   private _renderOnboardingHint(): void {
