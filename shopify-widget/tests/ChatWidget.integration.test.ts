@@ -225,3 +225,136 @@ describe('ChatWidget data source options', () => {
     });
   });
 });
+
+// ── Action Chip Tests ─────────────────────────
+
+describe('ChatWidget action chips', () => {
+  let widget: ChatWidget;
+
+  beforeEach(() => {
+    const container = document.createElement('div');
+    container.id = 'test-chips-container';
+    document.body.appendChild(container);
+    const semanticRouter = SemanticRouter.getInstance();
+    vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+    widget = new ChatWidget({ container });
+  });
+
+  afterEach(() => {
+    widget.destroy();
+    const el = document.getElementById('test-chips-container');
+    if (el) el.remove();
+  });
+
+  it('should render 4 action chips on widget open when no messages sent', () => {
+    widget.open();
+    const chips = document.querySelectorAll('.action-chip');
+    expect(chips.length).toBe(4);
+    expect(chips[0].textContent).toBe('[Track Order]');
+    expect(chips[1].textContent).toBe('[Check Stock]');
+    expect(chips[2].textContent).toBe('[Return Item]');
+    expect(chips[3].textContent).toBe('[View Policies]');
+  });
+
+  it('should remove chips after user sends first message', async () => {
+    widget.open();
+    // Simulate typing and sending
+    widget['textarea' as any].value = 'hello';
+    await widget['_sendMessage' as any]();
+    await new Promise(r => setTimeout(r, 50));
+    const chips = document.querySelectorAll('.action-chip');
+    expect(chips.length).toBe(0);
+  });
+
+  it('should fill textarea when Track Order chip clicked', () => {
+    widget.open();
+    const trackBtn = document.querySelector('[data-action="track-order"]') as HTMLButtonElement;
+    expect(trackBtn).toBeTruthy();
+    trackBtn.click();
+    expect(widget['textarea' as any].value).toBe('track order #');
+  });
+
+  it('should fill textarea when Check Stock chip clicked', () => {
+    widget.open();
+    const stockBtn = document.querySelector('[data-action="check-stock"]') as HTMLButtonElement;
+    expect(stockBtn).toBeTruthy();
+    stockBtn.click();
+    expect(widget['textarea' as any].value).toBe('check stock for ');
+  });
+
+  it('should send immediately when Return Item chip clicked', async () => {
+    widget.open();
+    // Spy on _sendMessage to verify it's called
+    const sendSpy = vi.spyOn(widget as any, '_sendMessage');
+    const returnBtn = document.querySelector('[data-action="return-item"]') as HTMLButtonElement;
+    expect(returnBtn).toBeTruthy();
+    returnBtn.click();
+    expect(sendSpy).toHaveBeenCalled();
+  });
+
+  it('should send immediately when View Policies chip clicked', async () => {
+    widget.open();
+    const sendSpy = vi.spyOn(widget as any, '_sendMessage');
+    const policiesBtn = document.querySelector('[data-action="view-policies"]') as HTMLButtonElement;
+    expect(policiesBtn).toBeTruthy();
+    policiesBtn.click();
+    expect(sendSpy).toHaveBeenCalled();
+  });
+
+  it('should re-render chips on re-open if no message was sent', () => {
+    widget.open();
+    widget.close();
+    widget.open();
+    const chips = document.querySelectorAll('.action-chip');
+    expect(chips.length).toBe(4);
+  });
+
+  it('should NOT re-render chips on re-open if message was sent', async () => {
+    widget.open();
+    // Send a message
+    widget['textarea' as any].value = 'hello';
+    await widget['_sendMessage' as any]();
+    await new Promise(r => setTimeout(r, 50));
+    widget.close();
+    widget.open();
+    const chips = document.querySelectorAll('.action-chip');
+    expect(chips.length).toBe(0);
+  });
+});
+
+// ── Onboarding Hint Tests ────────────────────
+
+describe('ChatWidget onboarding hint', () => {
+  let widget: ChatWidget;
+
+  beforeEach(() => {
+    const container = document.createElement('div');
+    container.id = 'test-hint-container';
+    document.body.appendChild(container);
+    const semanticRouter = SemanticRouter.getInstance();
+    vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+    widget = new ChatWidget({ container });
+  });
+
+  afterEach(() => {
+    widget.destroy();
+    const el = document.getElementById('test-hint-container');
+    if (el) el.remove();
+  });
+
+  it('should show onboarding hint on first open with no messages', () => {
+    widget.open();
+    const hint = document.querySelector('.chat-onboarding-hint');
+    expect(hint).toBeTruthy();
+    expect(hint!.textContent).toContain('Ask about products');
+  });
+
+  it('should hide onboarding hint after first message sent', async () => {
+    widget.open();
+    expect(document.querySelector('.chat-onboarding-hint')).toBeTruthy();
+    widget['textarea' as any].value = 'hello';
+    await widget['_sendMessage' as any]();
+    await new Promise(r => setTimeout(r, 50));
+    expect(document.querySelector('.chat-onboarding-hint')).toBeFalsy();
+  });
+});
