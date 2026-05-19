@@ -473,21 +473,9 @@ export default class ChatWidget {
           const content = document.createElement('div');
           content.className = 'chat-bubble__content';
 
-          const positionRow = document.createElement('div');
-          positionRow.className = 'chat-bubble__position-row';
-
           const positionText = document.createElement('span');
           positionText.textContent = msg.text;
-
-          const refreshBtn = document.createElement('button');
-          refreshBtn.className = 'chat-bubble__refresh-btn';
-          refreshBtn.textContent = '↻';
-          refreshBtn.title = 'Refresh position';
-          refreshBtn.addEventListener('click', () => this._handleQueueRefresh());
-
-          positionRow.appendChild(positionText);
-          positionRow.appendChild(refreshBtn);
-          content.appendChild(positionRow);
+          content.appendChild(positionText);
 
           const cancelBtn = document.createElement('button');
           cancelBtn.className = 'chat-bubble__action-btn chat-bubble__action-btn--danger';
@@ -890,6 +878,9 @@ export default class ChatWidget {
     }
   }
 
+  // ── Typed event payloads for Supabase broadcast ──
+  // Flat structure matching the broadcast send() call
+
   private async _handleEscalationConfirm(): Promise<void> {
     const state = this._escalationStateMachine.getState();
 
@@ -906,75 +897,133 @@ export default class ChatWidget {
     this._removeLastSystemMessage();
     this.addMessage(transferringMsg);
 
-    if (!this._escalationTransferHandler) {
-      this._escalationTransferHandler = new EscalationTransferHandler(20000);
-    }
+    try {
+      this._supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const result = await this._escalationTransferHandler.startTransfer();
+      this._handoffChannel = this._supabaseClient.channel('support-queue', {
+        config: { broadcast: { self: false } }, // D-13: Widget does NOT receive its own events
+      });
 
-    if (result === 'connected') {
-      this._escalationStateMachine.transition('QUEUE');
-      this._showQueueBubble();
-    } else {
-      this._escalationStateMachine.transition('FAIL');
-      const failText = "I'm sorry, no human agents are available right now. I can keep helping you, or you can try again later.";
-      const retryMsg = this._createSystemMessage(failText, 'escalation-offer');
+      // Set up event listeners before subscribing
+      this._handoffChannel
+        .on('broadcast', { event: 'handoff_accepted' }, (payload: { userId: string; agentId?: string; agentName?: string; conversationId?: string }) => {
+          if (payload.userId !== this._sessionId) return;
+          this._escalationStateMachine.transition('CONNECT');
+          this._removeLastSystemMessage();
+          const connectedMsg = this._createSystemMessage(
+            "You're now connected with a human agent.", 'connected');
+          this.addMessage(connectedMsg);
+        })
+        .on('broadcast', { event: 'agent_message' }, (payload: { userId: string; text: string; timestamp?: number }) => {
+          if (payload.userId !== this._sessionId) return;
+          const humanMsg = this._createMessage(payload.text, 'agent');
+          (humanMsg as ChatMessage).isHumanAgent = true;
+          this.addMessage(humanMsg);
+        })
+        .subscribe((status: string) => {
+          if (status === 'SUBSCRIBED') {
+            this._handoffChannel?.send({
+              type: 'broadcast',
+              event: 'handoff_request',
+              payload: {
+                userId: this._sessionId,
+                transcript: this.state.messages.filter(m => m.role !== 'system').slice(-10),
+                timestamp: Date.now(),
+              },
+            });
+          } else {
+            // D-12: Graceful failure — show unavailable and cancel escalation
+            this._removeLastSystemMessage();
+            const failMsg = this._createMessage(
+              'Human support is currently unavailable. Please try again later.', 'agent');
+            this.addMessage(failMsg);
+            this._escalationStateMachine.transition('CANCEL');
+            this._escalationStateMachine.transition('RESET');
+          }
+        });
+
+      // D-03, D-12: 60s timeout — if no agent accepts, show unavailable
+      setTimeout(() => {
+        if (this._handoffChannel && this._escalationStateMachine.getState().status === 'CONFIRMING') {
+          this._handoffChannel.unsubscribe();
+          this._handoffChannel = null;
+          this._removeLastSystemMessage();
+          const timeoutMsg = this._createMessage(
+            'No agents are currently available. Please try again later.', 'agent');
+          this.addMessage(timeoutMsg);
+          this._escalationStateMachine.transition('CANCEL');
+          this._escalationStateMachine.transition('RESET');
+        }
+      }, 60000);
+    } catch (err) {
       this._removeLastSystemMessage();
-      this.addMessage(retryMsg);
+      const failMsg = this._createMessage(
+        'Human support is currently unavailable. Please try again later.', 'agent');
+      this.addMessage(failMsg);
+      this._escalationStateMachine.transition('CANCEL');
+      this._escalationStateMachine.transition('RESET');
     }
   }
 
   private async _executeTransferRetry(): Promise<void> {
     this._removeLastSystemMessage();
-
     const transferringMsg = this._createSystemMessage('Retrying transfer...', 'transferring');
     this.addMessage(transferringMsg);
 
-    const result = await this._escalationTransferHandler!.retry();
-
-    if (result === 'connected') {
-      this._escalationStateMachine.transition('QUEUE');
-      this._showQueueBubble();
-    } else {
-      const fallbackText = "Something went wrong while trying to transfer you. Please try again, or contact support@store.com directly.";
-      const fallbackMsg = this._createSystemMessage(fallbackText, 'transferring');
-      this._removeLastSystemMessage();
-      this.addMessage(fallbackMsg);
-    }
-  }
-
-  private _showQueueBubble(): void {
-    const position = this._escalationQueueSimulator
-      ? this._escalationQueueSimulator.getPosition()
-      : Math.floor(Math.random() * 5) + 1;
-
-    const queueMsg = this._createSystemMessage(`You're number ${position} in the queue. An agent will be with you shortly.`, 'queue');
-    this._removeLastSystemMessage();
-    this.addMessage(queueMsg);
-
-    setTimeout(() => this._transferToAgent(), 8000);
-  }
-
-  private _transferToAgent(): void {
-    this._escalationStateMachine.transition('CONNECT');
-    const connectedMsg = this._createSystemMessage("You're now connected with a human agent.", 'connected');
-    this.addMessage(connectedMsg);
-
-    if (!this._humanAgentSimulator) {
-      this._humanAgentSimulator = new HumanAgentSimulator();
-    }
-    this._humanAgentSimulator.reset();
-    const timer = setInterval(() => {
-      const msg = this._humanAgentSimulator!.next();
-      if (msg === null) {
-        clearInterval(timer);
-        return;
+    try {
+      if (!this._supabaseClient) {
+        this._supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
-      const humanMsg = this._createMessage(msg, 'agent');
-      (humanMsg as ChatMessage).isHumanAgent = true;
-      this.addMessage(humanMsg);
-    }, 2000);
+
+      if (!this._handoffChannel || this._handoffChannel.state === 'unsubscribed') {
+        this._handoffChannel = this._supabaseClient.channel('support-queue', {
+          config: { broadcast: { self: false } },
+        });
+
+        this._handoffChannel
+          .on('broadcast', { event: 'handoff_accepted' }, (payload: { userId: string; agentId?: string; agentName?: string; conversationId?: string }) => {
+            if (payload.userId !== this._sessionId) return;
+            this._escalationStateMachine.transition('CONNECT');
+            this._removeLastSystemMessage();
+            const connectedMsg = this._createSystemMessage(
+              "You're now connected with a human agent.", 'connected');
+            this.addMessage(connectedMsg);
+          })
+          .on('broadcast', { event: 'agent_message' }, (payload: { userId: string; text: string; timestamp?: number }) => {
+            if (payload.userId !== this._sessionId) return;
+            const humanMsg = this._createMessage(payload.text, 'agent');
+            (humanMsg as ChatMessage).isHumanAgent = true;
+            this.addMessage(humanMsg);
+          });
+      }
+
+      this._handoffChannel.subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          this._handoffChannel?.send({
+            type: 'broadcast',
+            event: 'handoff_request',
+            payload: {
+              userId: this._sessionId,
+              transcript: this.state.messages.filter(m => m.role !== 'system').slice(-10),
+              timestamp: Date.now(),
+            },
+          });
+        } else {
+          this._removeLastSystemMessage();
+          const failMsg = this._createMessage(
+            'Human support is currently unavailable. Please try again later.', 'agent');
+          this.addMessage(failMsg);
+        }
+      });
+    } catch (err) {
+      this._removeLastSystemMessage();
+      const failMsg = this._createMessage(
+        'Human support is currently unavailable. Please try again later.', 'agent');
+      this.addMessage(failMsg);
+    }
   }
+
+
 
   private _handleEscalationCancel(): void {
     this._escalationStateMachine.transition('CANCEL');
@@ -984,14 +1033,6 @@ export default class ChatWidget {
     const cancelMsg = this._createMessage('Escalation cancelled. How else can I help you?', 'agent');
     this._removeLastSystemMessage();
     this.addMessage(cancelMsg);
-  }
-
-  private _handleQueueRefresh(): void {
-    if (!this._escalationQueueSimulator) return;
-    const newPosition = this._escalationQueueSimulator.refresh();
-    const refreshMsg = this._createSystemMessage(`You're number ${newPosition} in the queue. An agent will be with you shortly.`, 'queue');
-    this._removeLastSystemMessage();
-    this.addMessage(refreshMsg);
   }
 
   private _removeLastSystemMessage(): void {

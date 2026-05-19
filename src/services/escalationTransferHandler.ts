@@ -12,7 +12,7 @@ export class EscalationTransferHandler {
   private readonly TIMEOUT_MS: number;
   private retryAttempted = false;
 
-  constructor(timeoutMs = 20000) {
+  constructor(timeoutMs = 60000) {
     this.TIMEOUT_MS = timeoutMs;
   }
 
