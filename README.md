@@ -1,6 +1,8 @@
 <!-- generated-by: gsd-doc-writer -->
 # AI Customer Support Agent for Commerce
 
+**v1.0 — Shipped May 19, 2026** | 607 tests passing | 148 commits | 9 phases complete
+
 A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Uses a **hybrid architecture**: in-browser semantic understanding (MiniLM embeddings via transformer.js) for intent routing + deterministic data retrieval for zero-hallucination answers.
 
 Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows: product lookup, stock checks, policy answers, order tracking, and live human handoff.
@@ -18,7 +20,7 @@ Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows
 npm install
 ```
 
-### 2. Run unit tests (optional, 427 tests)
+### 2. Run unit tests (optional, 607 tests)
 
 ```bash
 npx vitest run
@@ -75,39 +77,44 @@ Open `shopify-widget/agent-console.html` in your browser. It connects to the sam
 │   ├── src/ChatWidget.ts    # Main widget class — pipeline, events, DOM
 │   ├── src/orderCard.ts     # Order status HTML card renderer
 │   ├── src/styles/widget.css # CSS with escalation components
-│   ├── tests/               # Widget integration tests
+│   ├── tests/               # Widget integration tests (13 test files)
 │   ├── vite.config.ts       # Vite IIFE library build config
 │   └── vitest.config.ts     # Widget-specific Vitest config
 ├── src/
 │   ├── integrations/        # IDE integrations (Antigravity, Context7)
-│   ├── services/            # All core services
+│   ├── services/            # All core services (22 test files)
 │   │   ├── catalogService.ts          # Product search, stock, variants
 │   │   ├── catalogIntentDetector.ts   # Intent classification + parsing
+│   │   ├── catalogSync.ts             # Periodic catalog sync manager (5-min TTL)
+│   │   ├── policySync.ts              # Policy change detection (SHA-256 hashing)
+│   │   ├── synonymConstants.ts        # Decoupled synonym mappings (SIZE, COLOR, MATERIAL)
 │   │   ├── orderService.ts            # Order lookup by ID/email/number
 │   │   ├── orderIntentDetector.ts     # Order intent + email/number extraction
 │   │   ├── orderResponseFormatter.ts  # Order query → formatted response
 │   │   ├── returnService.ts           # Return eligibility + submission
-│   │   ├── mockOrderData.ts           # Mock orders for testing
+│   │   ├── mockOrderData.ts           # Mock orders (testing only)
 │   │   ├── offTopicDetector.ts        # Off-topic guard
 │   │   ├── responseGrounder.ts        # Policy grounding check
 │   │   ├── refusalResponses.ts        # Polite refusal messages
 │   │   ├── policyService.ts           # Policy data management
-│   │   ├── mockCatalogData.ts         # 7 products, 52 variants (mock)
+│   │   ├── mockCatalogData.ts         # 7 products, 52 variants (testing only)
 │   │   ├── synonymResolver.ts         # Canonical → alias mapping
 │   │   ├── conversationContext.ts     # 5min/3turn context manager
 │   │   ├── cacheManager.ts            # Generic TTL cache
-│   │   ├── escalationDetector.ts       # Handoff + frustration detection
-│   │   ├── escalationStateMachine.ts   # FSM with localStorage
-│   │   ├── escalationQueueSimulator.ts # Queue position (1-5)
+│   │   ├── escalationDetector.ts      # Handoff + frustration detection
+│   │   ├── escalationStateMachine.ts  # FSM with localStorage
 │   │   ├── escalationTransferHandler.ts # 20s timeout, retry
-│   │   ├── escalationHumanAgent.ts     # 3-message canned script
+│   │   ├── suggestedActions.ts        # Context-aware action chips (6 states)
+│   │   ├── autocomplete.ts            # Prefix-matching product/order dropdown
 │   │   ├── shopifyStorefrontDataSource.ts # Live Shopify Storefront API client
 │   │   ├── shopifyOrderProxyDataSource.ts # HMAC-signed proxy client
+│   │   ├── handoffChannel.ts          # Supabase Realtime channel management
+│   │   ├── agentPresence.ts           # Agent online/offline presence tracking
 │   │   └── types.ts                   # All TypeScript definitions
 │   ├── config/synonyms/     # Size, color, material synonym tables
 │   ├── config/semantic/     # Reference phrases + pre-computed embeddings for SemanticRouter
 │   └── tests/eval/          # Scenario evaluation tests
-├── e2e/                     # Playwright E2E tests
+├── e2e/                     # Playwright E2E tests (4 spec files)
 │   ├── playwright.config.ts       # Main E2E config
 │   ├── playwright.dom.config.ts   # DOM snapshot config
 │   ├── dev-server.mjs             # Dev server helper
@@ -115,7 +122,7 @@ Open `shopify-widget/agent-console.html` in your browser. It connects to the sam
 │       ├── catalogQuery.spec.ts    # Catalog query tests (3)
 │       ├── offTopic.spec.ts        # Off-topic detection tests (4)
 │       ├── stockCheck.spec.ts      # Stock check tests (4)
-│               └── domSnapshot.spec.ts     # DOM snapshot test (1)
+│       └── domSnapshot.spec.ts     # DOM snapshot test (1)
 ├── tsconfig.json            # Root TypeScript config
 ├── tsconfig.widget.json     # Widget-specific TS config
 ├── vitest.config.ts         # Vitest configuration
@@ -125,6 +132,7 @@ Open `shopify-widget/agent-console.html` in your browser. It connects to the sam
 ├── DESIGN.md                # Berkeley Mono design system spec (in docs/)
 ├── hackathon.md             # Hackathon rules & requirements (in docs/)
 └── package.json
+```
 
 ## Architecture
 
@@ -167,23 +175,24 @@ Greeting check / Fallback text
 
 ### Key Design Properties
 
-- **No hallucinations**: Data retrieval pipeline uses zero LLM calls — every product lookup, stock check, and variant resolution goes through deterministic code.
+- **No hallucinations**: Data retrieval pipeline uses zero LLM calls — every product lookup, variant resolution, stock check, order lookup, and policy lookup goes through deterministic structured parsing.
 - **Hybrid AI approach**: MiniLM sentence embeddings for semantic intent detection (in-browser), structured code for all data lookups. Best of both worlds.
-- **Swappable data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration. `PolicyService` supports live markdown fetch.
+- **Live-by-default data sources**: `CatalogDataSource` and `OrderDataSource` interfaces for mock → live Shopify API migration. `PolicyService` supports live markdown fetch. Production uses live sources; tests explicitly use mock.
+- **Periodic sync**: `CatalogSyncManager` pulls fresh catalog every 5 minutes. `PolicySyncManager` checks policy changes via SHA-256 hashing every 10 minutes. Both configurable via constructor.
 - **Bounded context**: Cross-turn context expires after 5 minutes or 3 turns.
 - **All services run in-browser**: No backend required (except optional serverless proxy for order security).
 - **Semantic Router**: `@huggingface/transformers` with `all-MiniLM-L6-v2` — in-browser sentence embeddings for intent classification. Handles typos, synonyms, and natural phrasing.
-- **Live human handoff**: Escalation routes through Supabase Realtime WebSocket channel (`support-queue`). Agent console (`agent-console.html`) receives requests, accepts, and sends responses. No fake simulators or canned scripts.
+- **Live human handoff**: Escalation routes through Supabase Realtime WebSocket channel (`support-queue`). Agent console (`agent-console.html`) receives requests, accepts, and sends responses. Typing indicators, presence tracking, reconnect with exponential backoff.
 
 ## Testing
 
-- **22+ unit/integration test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, Supabase handoff, guard services, data sources, security
+- **30 test files** (Vitest) — covering catalog, policy, order, escalation, semantic router, Supabase handoff, guard services, data sources, security, sync managers, suggested actions, autocomplete
 - **4 E2E spec files** (Playwright) — catalog queries, off-topic detection, stock checks, DOM snapshot
 - **Eval suite** — 48 scenario-based catalog intelligence evals
-- **Coverage**: 427 unit tests + 12 E2E tests passing
+- **Coverage**: 607 unit tests + 12 E2E tests passing
 
 ```bash
-# Run all Vitest tests (427 passing)
+# Run all Vitest tests (607 passing)
 npx vitest run
 
 # Run with coverage
@@ -228,15 +237,15 @@ See `docs/PHASE1_SECURITY.md` for complete security implementation details.
 
 | Phase | Status | What It Delivers |
 |-------|--------|------------------|
-| 1. UI Foundation | Complete | ChatWidget, NetworkDetector, CSS design system |
-| 2. Policy Grounding | Complete | PolicyService, OffTopicDetector, ResponseGrounder |
-| 3. Catalog Intelligence | Complete | CatalogService, IntentDetector, synonym resolution |
-| 4. Order Tracking | Complete | OrderService, OrderIntentDetector, OrderCard, email + number matching |
-| 5. Graceful Handoff | Complete | FSM + Supabase Realtime live handoff (simulators replaced) |
-| 6. Semantic AI Router | Complete | In-browser semantic intent detection (transformer.js) |
-| 7. Security & Live Data | Complete | Cloudflare Workers proxy + HMAC auth, Shopify Storefront API, live policy fetch |
-| **Rebuild Phase 1** | **Complete** | **Security hardening: CORS allowlist, rate limiting, input validation, structured logging, security headers** |
-| 8. UX & Demo | In Progress | Quick action chips, realtime handoff, agent console, demo video |
+| 1. Security Hardening | Complete | CORS allowlist, rate limiting, input validation, structured logging, security headers |
+| 2. Semantic Router | Complete | In-browser semantic intent detection (transformer.js, MiniLM embeddings) |
+| 3. Realtime Human Handoff | Complete | Supabase Realtime WebSocket, typing indicators, presence tracking, reconnect logic |
+| 4. Dynamic Store Sync | Complete | Live-by-default data sources, CatalogSyncManager (5-min sync), PolicySyncManager (SHA-256 detection) |
+| 5. UX Refinement | Complete | Context-aware action chips, autocomplete, adaptive onboarding (May 2026) |
+| 6. Order Management | Complete | OrderIntentDetector, OrderService, order card with timeline, email + order number auth |
+| 7. Return Processing | Complete | ReturnService, return eligibility checks, return submission flow |
+| 8. Escalation & Handoff | Complete | EscalationDetector, EscalationStateMachine, Supabase handoff channel, agent console |
+| 9. Gap Closure | Complete | B1-B2 blockers fixed, W2-W6 warnings resolved, all evals passing |
 
 ## Key Technologies
 
@@ -244,7 +253,7 @@ See `docs/PHASE1_SECURITY.md` for complete security implementation details.
 - **@huggingface/transformers** — in-browser MiniLM embeddings for semantic intent detection
 - **Supabase Realtime** — WebSocket broadcast channel for live human handoff
 - **Cloudflare Workers** — Edge runtime for secure Shopify Admin API proxy (rate limiting, CORS, HMAC verification)
-- **Vitest** — unit and integration tests (22 test files, 427 tests)
+- **Vitest** — unit and integration tests (30 test files, 607 tests)
 - **Playwright** — E2E browser tests (4 spec files, 12 tests)
 - **OpenCode + GSD** — development workflow engine (planning, execution, verification)
 
@@ -254,7 +263,7 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Demo Video
 
-*Demo video coming soon — will be uploaded after submission freeze.*
+*Demo video pending — to be recorded after code freeze (per D-14).*
 
 4-minute walkthrough showing:
 1. **0:00-0:30** — Introduction: "This is an AI customer support agent for Shopify."
@@ -265,7 +274,7 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 
 ## Screenshots
 
-*To be added after Phase 8 completion*
+*Screenshots to be added — widget UI is complete with Berkeley Mono typography, cream canvas, hairline borders, and action chips.*
 
 ## Contribution Note
 

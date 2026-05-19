@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Technical Document: AI Customer Support Agent for Commerce
 
-> **Last updated:** 2026-05-19
+> **Last updated:** 2026-05-19 (v1.0 milestone — 9 phases complete, 607 tests)
 > **Repository:** AI Customer Support Agent for Commerce (Track 4)
 
 ## 1. Architecture Overview
@@ -62,9 +62,21 @@ The system uses a browser-side layered architecture. All services run in the use
 │  │ (return intent, eligibility, submission)     │            │
 │  └──────────────────────────────────────────────┘            │
 │  ┌────────────────────────────┐ ┌─────────────────────────┐  │
-│  │EscalationDetector          │ │EscalationStateMachine   │  │
-│  │(handoff + frustration)     │ │(FSM + localStorage)     │  │
-│  └────────────────────────────┘ └─────────────────────────┘  │
+  │ │EscalationDetector          │ │EscalationStateMachine   │  │
+  │ │(handoff + frustration)     │ │(FSM + localStorage)     │  │
+  │ └────────────────────────────┘ └─────────────────────────┘  │
+  │  ┌──────────────────────────┐ ┌──────────────────────────┐  │
+  │ │SuggestedActionsService    │ │AutocompleteService       │  │
+  │ │(context-aware chips)      │ │(prefix-match dropdown)   │  │
+  │ └──────────────────────────┘ └──────────────────────────┘  │
+  │  ┌──────────────────────────┐ ┌──────────────────────────┐  │
+  │ │CatalogSyncManager         │ │PolicySyncManager         │  │
+  │ │(5-min periodic sync)      │ │(10-min periodic sync)    │  │
+  │ └──────────────────────────┘ └──────────────────────────┘  │
+  │  ┌──────────────────────────┐ ┌──────────────────────────┐  │
+  │ │HandoffChannel             │ │AgentPresence             │  │
+  │ │(Supabase Realtime wrapper)│ │(agent online/offline)    │  │
+  │ └──────────────────────────┘ └──────────────────────────┘  │
 │  ┌──────────────────────────┐ ┌──────────────────────────┐  │
 │  │Supabase Realtime Channel │ │EscalationTransferHandler │  │
 │  │(support-queue broadcast) │ │(60s timeout, retry)      │  │
@@ -99,8 +111,8 @@ The system uses a browser-side layered architecture. All services run in the use
 |-------|-----------|-----------|----------------|
 | Presentation | `shopify-widget/src/` | `ChatWidget.ts` | DOM rendering, event handling, message state |
 | Orchestration | `ChatWidget.ts` | `_generateAgentResponse()` | Routes queries through service pipeline |
-| Services | `src/services/` | `policyService.ts`, `catalogService.ts`, `orderService.ts`, `offTopicDetector.ts`, `responseGrounder.ts`, `refusalResponses.ts`, `catalogIntentDetector.ts`, `orderIntentDetector.ts` | Domain logic — policies, catalog, orders, guardrails |
-| Data | `src/services/` | `mockCatalogData.ts`, `mockOrderData.ts`, `conversationContext.ts`, `cacheManager.ts` | Data sources, caching, context management |
+| Services | `src/services/` | `policyService.ts`, `catalogService.ts`, `orderService.ts`, `offTopicDetector.ts`, `responseGrounder.ts`, `refusalResponses.ts`, `catalogIntentDetector.ts`, `orderIntentDetector.ts`, `suggestedActions.ts`, `autocomplete.ts`, `escalationDetector.ts`, `escalationStateMachine.ts`, `escalationTransferHandler.ts`, `handoffChannel.ts`, `agentPresence.ts`, `catalogSync.ts`, `policySync.ts` | Domain logic — policies, catalog, orders, guardrails, UX helpers, sync managers, handoff |
+| Data | `src/services/` | `mockCatalogData.ts`, `mockOrderData.ts`, `shopifyStorefrontDataSource.ts`, `shopifyOrderProxyDataSource.ts`, `conversationContext.ts`, `cacheManager.ts` | Data sources (mock + live), caching, context management |
 | Config | `src/config/synonyms/` | `colors.ts`, `sizes.ts`, `materials.ts` | Synonym maps for natural language → canonical values |
 | Semantic Config | `shopify-widget/src/config/semantic/` | `catalogIntents.ts`, `offTopicIntents.ts`, `orderIntents.ts`, `embeddings.json` | Reference phrases + pre-computed embeddings for semantic router |
 
@@ -108,24 +120,39 @@ The system uses a browser-side layered architecture. All services run in the use
 
 | File | Lines | Role |
 |------|-------|------|
-| `shopify-widget/src/ChatWidget.ts` | 440+ | Main widget — DOM creation, order support in pipeline |
-| `shopify-widget/src/OrderCard.ts` | ~120 | DOM component for rich order card with timeline |
-| `src/services/catalogService.ts` | 134 | Product search, variant resolution, stock check, caching |
-| `src/services/catalogIntentDetector.ts` | 637 | Intent classification, option extraction, cross-turn context |
-| `src/services/orderService.ts` | ~85 | Order lookup, status resolution, tracking events |
-| `src/services/orderIntentDetector.ts` | ~350 | Order intent detection with keyword groups + structured parsing |
-| `src/services/orderResponseFormatter.ts` | ~80 | Formats order responses with order card HTML |
-| `src/services/offTopicDetector.ts` | 184 | Keyword-based off-topic detection with confidence scoring |
-| `src/services/responseGrounder.ts` | 457 | Validates agent responses against actual policy data |
-| `src/services/refusalResponses.ts` | 178 | Generates contextual polite refusal messages |
-| `src/services/policyService.ts` | 93 | Policy data management with caching |
-| `src/services/types.ts` | 210+ | All TypeScript interfaces — includes Order, OrderStatus, TrackingEvent, OrderDataSource, Escalation* types |
-| `src/services/synonymResolver.ts` | 69 | Maps aliases to canonical option values |
-| `src/services/escalationDetector.ts` | 64 | Keyword-based escalation and frustration detection |
-| `src/services/escalationStateMachine.ts` | 142 | FSM for escalation workflow with localStorage persistence |
-| `src/services/escalationTransferHandler.ts` | 48 | 60s transfer timeout, retry logic |
-| `shopify-widget/agent-console.html` | 405 | Standalone agent console — split view, accept-first flow, Supabase Realtime broadcast |
+| `shopify-widget/src/ChatWidget.ts` | 1329 | Main widget — DOM creation, full service pipeline integration, Supabase handoff, action chips, autocomplete, network detection |
+| `shopify-widget/src/orderCard.ts` | 126 | DOM component for rich order card with timeline |
+| `src/services/catalogService.ts` | 114 | Product search, variant resolution, stock check, caching |
+| `src/services/catalogIntentDetector.ts` | 561 | Intent classification, option extraction, cross-turn context, semantic routing |
+| `src/services/orderService.ts` | 25 | Order lookup via OrderDataSource interface |
+| `src/services/orderIntentDetector.ts` | 188 | Order intent detection with keyword groups + structured parsing |
+| `src/services/orderResponseFormatter.ts` | 26 | Formats order responses with order card HTML |
+| `src/services/offTopicDetector.ts` | 220 | Keyword-based off-topic detection with confidence scoring + semantic fallback |
+| `src/services/responseGrounder.ts` | 445 | Validates agent responses against actual policy data |
+| `src/services/refusalResponses.ts` | 155 | Generates contextual polite refusal messages |
+| `src/services/policyService.ts` | 247 | Policy data management with caching, live fetch from markdown URL |
+| `src/services/types.ts` | 239 | All TypeScript interfaces — Order, OrderStatus, TrackingEvent, OrderDataSource, Escalation*, Handoff*, AgentPresence types |
+| `src/services/synonymResolver.ts` | 64 | Maps aliases to canonical option values |
+| `src/services/synonymConstants.ts` | 23 | Shared synonym constants (colors, sizes, materials) |
+| `src/services/escalationDetector.ts` | 50 | Keyword-based escalation and frustration detection |
+| `src/services/escalationStateMachine.ts` | 125 | FSM for escalation workflow with localStorage persistence |
+| `src/services/escalationTransferHandler.ts` | 37 | 60s transfer timeout, retry logic |
+| `src/services/handoffChannel.ts` | 128 | Supabase Realtime channel wrapper — broadcast/subscribe for handoff events |
+| `src/services/agentPresence.ts` | 57 | Agent online/offline presence detection via Supabase presence |
+| `src/services/catalogSync.ts` | 67 | Periodic catalog sync manager (5-min interval, live → mock cache update) |
+| `src/services/policySync.ts` | 58 | Periodic policy sync manager (10-min interval, live → mock cache update) |
+| `src/services/suggestedActions.ts` | 44 | Context-aware action chips — 6 states (initial, product_search, stock_check, order_tracking, policy_query, escalation_offer) |
+| `src/services/autocomplete.ts` | 85 | Prefix-matching dropdown — triggers at 2+ chars, max 5 results, product names + order numbers |
+| `src/services/mockCatalogData.ts` | 291 | 7 products with 52 variants, stock overrides |
+| `src/services/mockOrderData.ts` | 221 | Mock orders with 9 statuses, full timeline events |
+| `src/services/shopifyStorefrontDataSource.ts` | 186 | Live Shopify Storefront API integration — GraphQL product query, maps to Product/Variant types |
+| `src/services/shopifyOrderProxyDataSource.ts` | 164 | HMAC-signed proxy client — SHA-256 email hash, HMAC signing, retry on 5xx |
+| `src/services/conversationContext.ts` | 42 | Cross-turn context manager (5-min/3-turn expiry) |
+| `src/services/cacheManager.ts` | 26 | Generic TTL cache |
+| `shopify-widget/agent-console.html` | ~405 | Standalone agent console — split view, accept-first flow, Supabase Realtime broadcast |
 | `shopify-widget/.env.example` | 3 | Template for Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) |
+| `shopify-proxy/src/worker.ts` | — | Cloudflare Worker — HMAC verification, Shopify Admin GraphQL query, filtered status response |
+| `policies.md` | — | Markdown config file with YAML frontmatter — live policy data source |
 | `src/services/semanticRouter.ts` | New | Singleton SemanticRouter — lazy-loads all-MiniLM-L6-v2, classify(), embedding cache |
 | `shopify-widget/src/core/semanticRouter.ts` | New | Singleton SemanticRouter — lazy-loads all-MiniLM-L6-v2, classify(), embedding cache |
 | `shopify-widget/src/config/semantic/catalogIntents.ts` | New | 5-8 reference phrases per catalog intent category |
@@ -139,6 +166,8 @@ The system uses a browser-side layered architecture. All services run in the use
 | `src/services/shopifyOrderProxyDataSource.ts` | 142 | HMAC-signed proxy client — SHA-256 email hash, HMAC signing, retry on 5xx |
 | `src/services/conversationContext.ts` | 49 | Cross-turn context manager |
 | `src/services/cacheManager.ts` | 33 | Generic TTL cache |
+| `src/services/suggestedActions.ts` | 44 | Context-aware action chips — 6 states (initial, product_search, stock_check, order_tracking, policy_query, escalation_offer) |
+| `src/services/autocomplete.ts` | 85 | Prefix-matching dropdown — triggers at 2+ chars, max 5 results, product names + order number matching |
 | `policies.md` | Example | Markdown config file with YAML frontmatter — live policy data source |
 | `shopify-proxy/src/worker.ts` | New | Cloudflare Worker — HMAC verification, Shopify Admin GraphQL query, filtered status response |
 | `shopify-widget/.env.example` | 3 | Template for Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) |
@@ -213,7 +242,9 @@ NO LLM call anywhere in this chain.
 
 **What stays purely deterministic (no semantic change):**
 - CatalogService, OrderService, PolicyService — data retrieval, zero changes
+- CatalogSyncManager, PolicySyncManager — periodic background sync, deterministic fetch
 - EscalationDetector — uses keywords + frustration signals by design, not semantic routing
+- HandoffChannel, AgentPresence — Supabase Realtime wrapper, deterministic event dispatch
 - ReturnService — feature-flagged (disabled by default), uses keyword detection
 - ResponseGrounder — policy validation unchanged
 
@@ -347,7 +378,7 @@ What happens:
     → Returns { type: 'context_expired', message: "Your previous product inquiry has expired..." }
 ```
 
-### 3.9 Return Not Eligible
+### 3.8 Return Not Eligible
 
 ```
 Scenario: User wants to return an item but order is not delivered
@@ -360,7 +391,7 @@ What happens:
       available for delivered items."
 ```
 
-### 3.10 API Timeout
+### 3.9 API Timeout
 
 ```
 Scenario: _generateAgentResponse() takes longer than 10 seconds
@@ -375,47 +406,49 @@ What happens:
 ### 4.1 Test Architecture
 
 ```
-TypeScript Source ─→ Vitest (unit/integration) ─→ 426 tests, 22 test files
-Browser Widget   ─→ Playwright (E2E)          ─→ 4 spec files (12 tests)
-Eval Harness     ─→ Catalog Intelligence Eval  ─→ 48 scenario eval tests
+TypeScript Source ─→ Vitest (unit/integration) ─→ 607 tests, 30 test files
+Browser Widget   ─→ Playwright (E2E)          ─→ integrated in test suite
+Eval Harness     ─→ Catalog Intelligence Eval  ─→ scenario-based eval tests
 ```
 
-### 4.2 Test Files (20 suites + 3 E2E specs)
+### 4.2 Test Files (30 files)
 
-| Test File | Tests | Scope |
-|-----------|-------|-------|
-| `src/services/policyService.test.ts` | ~80 lines | Policy loading, caching, TTL refresh |
-| `src/services/offTopicDetector.test.ts` | ~163 lines | Off-topic detection, edge cases, override logic |
-| `src/services/responseGrounder.test.ts` | ~457 lines | Grounding for shipping, warranty, returns |
-| `src/services/refusalResponses.test.ts` | ~178 lines | Contextual refusal generation |
-| `src/services/catalogService.test.ts` | ~599 lines | Product search, variant resolution, caching, error handling |
-| `src/services/catalogIntentDetector.test.ts` | ~428 lines | Intent detection, exact/partial/ambiguous, context expiry |
-| `src/services/mockCatalogData.test.ts` | ~332 lines | Variant counts across all 7 products |
-| `src/services/orderService.test.ts` | New | Order lookup, auth validation, status resolution |
-| `src/services/orderIntentDetector.test.ts` | New | Order intent detection, multi-turn auth flow, context expiry |
-| `src/services/orderResponseFormatter.test.ts` | New | Order response formatting, error messages |
-| `src/services/escalationDetector.test.ts` | New | Explicit/frustration keyword detection, non-resolving counter |
-| `src/services/escalationStateMachine.test.ts` | New | FSM transitions, localStorage persistence, invalid transition rejection |
-| `src/services/escalationTransferHandler.test.ts` | New | 60s timeout, retry logic |
-| `src/services/returnService.test.ts` | New | Return intent detection, eligibility checks, return submission |
-| `shopify-widget/tests/ChatWidget.integration.test.ts` | Integration | End-to-end widget + service integration |
-| `shopify-widget/tests/NetworkDetector.test.ts` | Unit | Network state detection |
-| `src/services/semanticRouter.test.ts` | New | SemanticRouter model load, classify(), fallback, embedding cache, retry logic |
-| `src/config/semantic/catalogIntents.test.ts` | New | Reference phrase coverage, intent classification accuracy |
-| `src/tests/eval/catalogIntelligence.eval.test.ts` | ~48 eval scenarios + semantic regression | Scenario-based eval for catalog queries + full regression through semantic pipeline |
+| Test File | Scope |
+|-----------|-------|
+| `src/services/policyService.test.ts` | Policy loading, caching, TTL refresh, live fetch from markdown |
+| `src/services/offTopicDetector.test.ts` | Off-topic detection, edge cases, override logic |
+| `src/services/responseGrounder.test.ts` | Grounding for shipping, warranty, returns |
+| `src/services/refusalResponses.test.ts` | Contextual refusal generation |
+| `src/services/catalogService.test.ts` | Product search, variant resolution, caching, error handling |
+| `src/services/catalogIntentDetector.test.ts` | Intent detection, exact/partial/ambiguous, context expiry |
+| `src/services/mockCatalogData.test.ts` | Variant counts across all 7 products |
+| `src/services/orderService.test.ts` | Order lookup, auth validation, status resolution |
+| `src/services/orderIntentDetector.test.ts` | Order intent detection, multi-turn auth flow, context expiry |
+| `src/services/orderResponseFormatter.test.ts` | Order response formatting, error messages |
+| `src/services/escalationDetector.test.ts` | Explicit/frustration keyword detection, non-resolving counter |
+| `src/services/escalationStateMachine.test.ts` | FSM transitions, localStorage persistence, invalid transition rejection |
+| `src/services/escalationTransferHandler.test.ts` | 60s timeout, retry logic |
+| `src/services/returnService.test.ts` | Return intent detection, eligibility checks, return submission |
+| `src/services/handoffChannel.test.ts` | Supabase Realtime channel broadcast/subscribe, event handling |
+| `src/services/agentPresence.test.ts` | Agent online/offline presence detection |
+| `src/services/catalogSync.test.ts` | Periodic catalog sync, 5-min interval, live data refresh |
+| `src/services/policySync.test.ts` | Periodic policy sync, 10-min interval, live data refresh |
+| `src/services/shopifyStorefrontDataSource.test.ts` | Live Storefront API integration, GraphQL query mapping |
+| `src/services/shopifyOrderProxyDataSource.test.ts` | HMAC-signed proxy requests, retry logic, error handling |
+| `src/services/synonymConstants.test.ts` | Synonym constant coverage |
+| `src/services/synonymResolver.test.ts` | Alias-to-canonical value resolution |
+| `shopify-widget/src/core/semanticRouter.test.ts` | Model load, classify(), fallback, embedding cache, retry logic |
+| `shopify-widget/tests/ChatWidget.integration.test.ts` | End-to-end widget + service integration, Supabase handoff, action chips |
+| `shopify-widget/tests/NetworkDetector.test.ts` | Network state detection |
+| `shopify-widget/src/tests/eval/semanticRouter.eval.test.ts` | Semantic router evaluation scenarios |
+| `shopify-widget/src/tests/eval/thresholdValidation.test.ts` | Confidence threshold validation |
+| `src/tests/suggestedActions.test.ts` | Context-aware chip rendering across 6 states, transition logic |
+| `src/tests/autocomplete.test.ts` | Prefix matching, 2-char threshold, 5-result cap, product name + order number matching |
+| `src/tests/eval/catalogIntelligence.eval.test.ts` | Scenario-based eval for catalog queries + full regression through semantic pipeline |
 
-### 4.3 E2E Tests (Playwright, 4 spec files, 12 tests)
+### 4.3 E2E and Integration Tests
 
-Phase 8 also adds 50 Supabase handoff integration tests and action chip tests in `shopify-widget/tests/ChatWidget.integration.test.ts`, bringing the total integration test count to ~426 across 22 test files.
-
-| Spec File | Tests | What It Verifies |
-|-----------|-------|------------------|
-| `e2e/specs/catalogQuery.spec.ts` | 3 | Widget loads, responds to catalog query, shows OOS badge, handles sizing |
-| `e2e/specs/offTopic.spec.ts` | 4 | Weather, competitor, personal advice, technical support refusals |
-| `e2e/specs/stockCheck.spec.ts` | 4 | In-stock badge, low stock warning, OOS badge, stock summary |
-| `e2e/specs/domSnapshot.spec.ts` | 1 | Captures DOM snapshot, console errors, console warnings, and screenshot for visual review |
-
-Playwright config: `e2e/playwright.config.ts` — builds widget via `tsc -p tsconfig.widget.json && vite build --config shopify-widget/vite.config.ts`, serves `shopify-widget/` on port 3000 via `npx serve`, 30s timeout, 1 retry, `reuseExistingServer: false`.
+Phase 8 adds Supabase handoff integration tests and action chip tests in `shopify-widget/tests/ChatWidget.integration.test.ts`. Phase 5 adds tests for SuggestedActionsService and AutocompleteService. Phase 9 (Gap Closure) adds tests for catalog sync, policy sync, handoff channel, agent presence, and live data sources. Total: 607 tests across 30 test files.
 
 ### 4.4 Coverage Approach
 
@@ -434,7 +467,27 @@ Playwright config: `e2e/playwright.config.ts` — builds widget via `tsc -p tsco
 
 ## 5. Data Flow
 
-### 5.1 End-to-End Query Trace: "is the classic hoodie in stock?"
+### 5.1 Live-by-Default Architecture
+
+The system operates in **live-by-default** mode. When initialized without explicit `dataSource` configuration, it uses live Shopify data sources with periodic sync to keep local caches fresh:
+
+- **Catalog**: `ShopifyStorefrontDataSource` with 5-minute periodic sync via `CatalogSyncManager`
+- **Policy**: Live markdown fetch via `PolicyService` with 10-minute periodic sync via `PolicySyncManager`
+- **Orders**: `ShopifyOrderProxyDataSource` (HMAC-signed Cloudflare Worker proxy)
+- **Fallback**: Mock data sources (`MockCatalogDataSource`, `MockOrderDataSource`) used only when live sources are unavailable or explicitly configured
+
+This ensures the widget always serves current store data without requiring manual cache invalidation.
+
+### 5.2 Periodic Sync
+
+| Sync Manager | Interval | Source | Target |
+|-------------|----------|--------|--------|
+| `CatalogSyncManager` | 5 minutes | Shopify Storefront API | Local product cache |
+| `PolicySyncManager` | 10 minutes | `policies.md` URL | Local policy cache |
+
+Sync runs silently in the background. On failure, the previous cached data remains in place — no user-facing error.
+
+### 5.3 End-to-End Query Trace: "is the classic hoodie in stock?"
 
 ```
 Step 1: ChatWidget → DOM Event
@@ -510,7 +563,7 @@ Step 6: Message Rendering
   → Scrolls to bottom
 ```
 
-### 5.2 Pipeline Flow Diagram
+### 5.4 Pipeline Flow Diagram
 
 ```
 User Input
@@ -700,6 +753,8 @@ Implemented by `MockCatalogDataSource` (for testing/development) with an interfa
 | Policies | 5 minutes (300000ms) | `clearCache()` method | `policyService.ts` |
 | Conversation context | 5 minutes (300000ms) | 3-turn max, `clearContext()` | `catalogIntentDetector.ts` |
 | Generic cache | Configurable per key | `CacheManager.delete()` | `cacheManager.ts` |
+| Catalog sync | 5-minute periodic refresh | `CatalogSyncManager` | `catalogSync.ts` |
+| Policy sync | 10-minute periodic refresh | `PolicySyncManager` | `policySync.ts` |
 
 ## 9. Build Pipeline
 
@@ -884,10 +939,10 @@ interface ChatWidgetOptions {
 ```
 
 **Data source selection logic:**
-- Default (`dataSource` not set or `'mock'`): Uses `MockCatalogDataSource`, `MockOrderDataSource`, and mock PolicyService
-- `catalog: 'live'`: Creates `ShopifyStorefrontDataSource` (requires `storeDomain`)
-- `order: 'live'`: Creates `ShopifyOrderProxyDataSource` (requires `proxyUrl`, `hmacSecret`)
-- `policy: 'live'`: PolicyService uses `useMockData: false` (requires `policyUrl`)
+- Default (`dataSource` not set): Uses `ShopifyStorefrontDataSource` (catalog), `ShopifyOrderProxyDataSource` (orders), and live PolicyService — **live-by-default**
+- `catalog: 'mock'`: Falls back to `MockCatalogDataSource` (development/testing)
+- `order: 'mock'`: Falls back to `MockOrderDataSource` (development/testing)
+- `policy: 'mock'`: PolicyService uses `useMockData: true` (hardcoded policies)
 - Silent by design (D-14) — no UI indicator of data source mode
 
 ### 10.6 Error Handling Per Data Source
@@ -901,21 +956,29 @@ interface ChatWidgetOptions {
 
 ### 10.7 HMAC Request Authentication (Browser-Side)
 
-Widget signs requests with a shared secret before sending to proxy:
+Widget signs requests with a shared secret before sending to the Cloudflare Worker proxy:
 
 ```typescript
-async function signRequest(payload, secret): Promise<string> {
+async function signRequest(payload: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+```
+
+**Security properties:**
+- SHA-256 email hash — customer email never sent in plaintext
+- HMAC-SHA256 signature — `orderNumber + emailHash + timestamp` signed with shared secret
+- 5-minute timestamp window — prevents replay attacks
+- Constant-time verification — `crypto.subtle.verify()` on the Worker side
+- Retry on 5xx — single retry after 2s delay for transient failures
 
 ## 11. Phase 8: UX & Demo Architecture
 
 ### 11.1 Supabase Realtime Handoff
 
-Phase 8 replaces the fake EscalationQueueSimulator and HumanAgentSimulator with live WebSocket communication via Supabase Realtime. Handoff is now genuinely real — agent responses come from a human using `agent-console.html`, not from canned scripts.
+Phase 8 replaces the fake EscalationQueueSimulator and HumanAgentSimulator with live WebSocket communication via Supabase Realtime. Handoff is now genuinely real — agent responses come from a human using `agent-console.html`, not from canned scripts. The handoff logic is encapsulated in `HandoffChannel` and `AgentPresence` services.
 
 **Channel architecture (D-13):** Single channel named `support-queue` with 3 broadcast event types:
 
@@ -925,8 +988,12 @@ Phase 8 replaces the fake EscalationQueueSimulator and HumanAgentSimulator with 
 | `handoff_accepted` | Agent Console → Supabase | `{ userId, agentId, timestamp }` |
 | `agent_message` | Agent Console → Supabase | `{ userId, text, timestamp }` |
 
+**Service encapsulation:**
+- `HandoffChannel` (`src/services/handoffChannel.ts`) — Wraps Supabase Realtime channel subscribe/broadcast. Handles connection lifecycle, event dispatching, and reconnection.
+- `AgentPresence` (`src/services/agentPresence.ts`) — Tracks agent online/offline status via Supabase presence. Widget shows "Agent is online/offline" indicator.
+
 **Broadcast config:**
-- **Widget** (`ChatWidget.ts`): `{ broadcast: { self: false } }` — must not receive its own events
+- **Widget** (`ChatWidget.ts` via `HandoffChannel`): `{ broadcast: { self: false } }` — must not receive its own events
 - **Agent Console** (`agent-console.html`): `{ broadcast: { self: true } }` — needs to see own sent messages for UI feedback
 
 **Credential strategy (D-06):** SUPABASE_URL and SUPABASE_ANON_KEY are hardcoded as module constants in both ChatWidget.ts and agent-console.html. Anon key is safe to expose by Supabase's RLS design. `.env.example` documents where to get values.
@@ -984,18 +1051,29 @@ User Input → SemanticRouter → OffTopicDetector → EscalationDetector
                                      └───────────────┘
 ```
 
-### 11.4 File Changes (Phase 8)
+### 11.4 File Changes (Phase 8 + Phase 9)
 
 | File | Change | Lines |
 |------|--------|-------|
 | `shopify-widget/agent-console.html` | **Created** — standalone agent console | ~405 |
 | `shopify-widget/.env.example` | **Created** — Supabase credential template | ~3 |
-| `shopify-widget/src/ChatWidget.ts` | **Modified** — Supabase channel subscribe/send, removed simulators | ~100 added |
-| `shopify-widget/tests/ChatWidget.integration.test.ts` | **Modified** — 4 Supabase handoff tests | ~150 added |
-| `shopify-widget/src/styles/widget.css` | **Modified** — action chip styles | ~40 added |
-| `src/services/escalationTransferHandler.ts` | **Modified** — timeout 20000→60000 | 1 line |
+| `shopify-widget/src/ChatWidget.ts` | **Modified** — full service pipeline integration, Supabase handoff, action chips, autocomplete, network detection | 1329 |
+| `shopify-widget/src/orderCard.ts` | **Created** — DOM component for order cards | 126 |
+| `shopify-widget/src/core/semanticRouter.ts` | **Created** — SemanticRouter singleton with MiniLM embeddings | — |
+| `shopify-widget/tests/ChatWidget.integration.test.ts` | **Modified** — Supabase handoff tests, action chip tests | — |
+| `src/services/handoffChannel.ts` | **Created** — Supabase Realtime channel wrapper | 128 |
+| `src/services/agentPresence.ts` | **Created** — Agent online/offline presence detection | 57 |
+| `src/services/catalogSync.ts` | **Created** — Periodic catalog sync (5-min interval) | 67 |
+| `src/services/policySync.ts` | **Created** — Periodic policy sync (10-min interval) | 58 |
+| `src/services/suggestedActions.ts` | **Created** — Context-aware action chips | 44 |
+| `src/services/autocomplete.ts` | **Created** — Prefix-matching dropdown | 85 |
+| `src/services/synonymConstants.ts` | **Created** — Shared synonym constants | 23 |
+| `src/services/shopifyStorefrontDataSource.ts` | **Created** — Live Storefront API integration | 186 |
+| `src/services/shopifyOrderProxyDataSource.ts` | **Created** — HMAC-signed proxy client | 164 |
+| `src/services/policyService.ts` | **Modified** — live fetch from markdown URL, frontmatter parser | 247 |
+| `src/services/escalationTransferHandler.ts` | **Modified** — timeout 20000→60000 | 37 |
 | `src/services/escalationQueueSimulator.ts` | **Deleted** — replaced by Supabase | -45 |
 | `src/services/escalationQueueSimulator.test.ts` | **Deleted** — replaced by Supabase | -45 |
 | `src/services/escalationHumanAgent.ts` | **Deleted** — replaced by Supabase | -26 |
 | `src/services/escalationHumanAgent.test.ts` | **Deleted** — replaced by Supabase | -26 |
-```
+| `shopify-proxy/src/worker.ts` | **Created** — Cloudflare Worker for order lookup | — |
