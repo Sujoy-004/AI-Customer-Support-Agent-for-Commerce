@@ -14,6 +14,8 @@ import { EscalationDetector } from '../../src/services/escalationDetector';
 import { EscalationStateMachine } from '../../src/services/escalationStateMachine';
 import { HandoffChannel, HandoffChannelState } from '../../src/services/handoffChannel';
 import { AgentPresenceTracker } from '../../src/services/agentPresence';
+import { CatalogSyncManager } from '../../src/services/catalogSync';
+import { PolicySyncManager } from '../../src/services/policySync';
 import { ShopifyStorefrontDataSource } from '../../src/services/shopifyStorefrontDataSource';
 import { ShopifyOrderProxyDataSource } from '../../src/services/shopifyOrderProxyDataSource';
 import type { CatalogDataSource, OrderDataSource, EscalationChatMessage } from '../../src/services/types';
@@ -81,6 +83,9 @@ export default class ChatWidget {
   private _escalationStateMachine!: EscalationStateMachine;
   private _handoffService: HandoffChannel | null = null;
   private _presenceTracker: AgentPresenceTracker | null = null;
+  private _catalogSync: CatalogSyncManager | null = null;
+  private _policySync: PolicySyncManager | null = null;
+  private _useMockData = false;
   private _agentTyping = false;
   private _typingIndicatorEl: HTMLDivElement | null = null;
   private _reconnectBannerEl: HTMLDivElement | null = null;
@@ -124,10 +129,11 @@ export default class ChatWidget {
     this._offTopicDetector = new OffTopicDetector(policyService, this._semanticRouter);
     this._refusalResponseService = new RefusalResponseService(this._offTopicDetector);
 
-    // Data source selection (D-06, D-14 — silent, no UI indication)
-    const useMockOrder = options.dataSource?.order !== 'live';
-    const useMockCatalog = options.dataSource?.catalog !== 'live';
-    const useMockPolicy = options.dataSource?.policy !== 'live';
+    // Data source selection — default to live, mock only when explicit (D-06, D-14)
+    this._useMockData = options.dataSource === 'mock';
+    const useMockOrder = this._useMockData || options.dataSource?.order === 'mock';
+    const useMockCatalog = this._useMockData || options.dataSource?.catalog === 'mock';
+    const useMockPolicy = this._useMockData || options.dataSource?.policy === 'mock';
 
     // Order services — optionally injectable for tests
     const orderDataSource: OrderDataSource = useMockOrder
@@ -191,6 +197,42 @@ export default class ChatWidget {
     this._bindEvents();
     this._initNetworkDetection();
     this._render();
+    this._startSyncManagers();
+  }
+
+  private _startSyncManagers(): void {
+    if (this._useMockData) return;
+
+    // Start catalog sync (5 min interval)
+    if (this._catalogIntentDetector) {
+      const catalogService = (this._catalogIntentDetector as any)._catalogService;
+      if (catalogService) {
+        const dataSource = (catalogService as any)._dataSource;
+        if (dataSource) {
+          this._catalogSync = new CatalogSyncManager({
+            dataSource,
+            syncIntervalMs: 300000,
+          });
+          this._catalogSync.start().catch(() => {
+            // Sync failure is handled internally — stale cache preserved
+          });
+        }
+      }
+    }
+
+    // Start policy sync (10 min interval)
+    if (this._policyService) {
+      this._policySync = new PolicySyncManager({
+        policyService: this._policyService,
+        checkIntervalMs: 600000,
+      });
+      this._policySync.onPolicyChange(() => {
+        this._policyService?.invalidateCache();
+      });
+      this._policySync.start().catch(() => {
+        // Sync failure is handled internally
+      });
+    }
   }
 
   // D-31: Lazy async init — constructor can't be async, so the dynamic
@@ -1111,6 +1153,8 @@ export default class ChatWidget {
     }
 
     this._presenceTracker?.reset();
+    this._catalogSync?.stop();
+    this._policySync?.stop();
 
     this.toggleBtn.remove();
     this.widget.remove();

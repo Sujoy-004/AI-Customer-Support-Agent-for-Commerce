@@ -61,7 +61,8 @@ function createWidget(): ChatWidget {
   const widget = new ChatWidget({
     container,
     catalogIntentDetector,
-    catalogService
+    catalogService,
+    dataSource: 'mock',
   });
 
   return widget;
@@ -147,7 +148,7 @@ describe('ChatWidget data source options', () => {
     it('should use mock catalog data source by default', () => {
       const container = document.createElement('div');
       document.body.appendChild(container);
-      const widget = new ChatWidget({ container });
+      const widget = new ChatWidget({ container, dataSource: 'mock' });
       // _catalogIntentDetector should be set up (injected with mock catalog)
       expect((widget as any)._catalogIntentDetector).toBeDefined();
       // _policyService should be PolicyService with useMockData=true
@@ -160,7 +161,7 @@ describe('ChatWidget data source options', () => {
     it('should use mock order data source by default', () => {
       const container = document.createElement('div');
       document.body.appendChild(container);
-      const widget = new ChatWidget({ container });
+      const widget = new ChatWidget({ container, dataSource: 'mock' });
       expect((widget as any)._orderIntentDetector).toBeDefined();
       widget.destroy();
     });
@@ -173,7 +174,7 @@ describe('ChatWidget data source options', () => {
       const widget = new ChatWidget({
         container,
         storeDomain: 'test-store.myshopify.com',
-        dataSource: { catalog: 'live' },
+        dataSource: { catalog: 'live', order: 'mock' },
       });
       expect((widget as any)._catalogIntentDetector).toBeDefined();
       widget.destroy();
@@ -185,7 +186,7 @@ describe('ChatWidget data source options', () => {
       const widget = new ChatWidget({
         container,
         storeDomain: 'test-store.myshopify.com',
-        dataSource: { catalog: 'live' },
+        dataSource: { catalog: 'live', order: 'mock' },
       });
       expect((widget as any)._policyService).toBeDefined();
       widget.destroy();
@@ -200,7 +201,7 @@ describe('ChatWidget data source options', () => {
         container,
         proxyUrl: 'https://proxy.example.com',
         hmacSecret: 'test-secret',
-        dataSource: { order: 'live' },
+        dataSource: { order: 'live', catalog: 'mock' },
       });
       expect((widget as any)._orderIntentDetector).toBeDefined();
       widget.destroy();
@@ -214,6 +215,7 @@ describe('ChatWidget data source options', () => {
       const widget = new ChatWidget({
         container,
         policyUrl: 'https://example.com/policies.md',
+        dataSource: 'mock',
       });
       const ps = (widget as any)._policyService;
       expect(ps).toBeInstanceOf(PolicyService);
@@ -224,7 +226,7 @@ describe('ChatWidget data source options', () => {
     it('should use default policyUrl when not specified', () => {
       const container = document.createElement('div');
       document.body.appendChild(container);
-      const widget = new ChatWidget({ container });
+      const widget = new ChatWidget({ container, dataSource: 'mock' });
       const ps = (widget as any)._policyService;
       expect((ps as any).policyUrl).toBe('./policies.md');
       widget.destroy();
@@ -238,7 +240,7 @@ describe('ChatWidget data source options', () => {
       const widget = new ChatWidget({
         container,
         policyUrl: 'https://example.com/policies.md',
-        dataSource: { policy: 'live' },
+        dataSource: { policy: 'live', catalog: 'mock', order: 'mock' },
       });
       const ps = (widget as any)._policyService;
       expect((ps as any).useMockData).toBe(false);
@@ -277,7 +279,7 @@ describe('ChatWidget action chips', () => {
     document.body.appendChild(container);
     const semanticRouter = SemanticRouter.getInstance();
     vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
-    widget = new ChatWidget({ container });
+    widget = new ChatWidget({ container, dataSource: 'mock' });
   });
 
   afterEach(() => {
@@ -373,7 +375,7 @@ describe('ChatWidget onboarding hint', () => {
     document.body.appendChild(container);
     const semanticRouter = SemanticRouter.getInstance();
     vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
-    widget = new ChatWidget({ container });
+    widget = new ChatWidget({ container, dataSource: 'mock' });
   });
 
   afterEach(() => {
@@ -410,7 +412,7 @@ describe('ChatWidget Supabase handoff', () => {
     document.body.appendChild(container);
     const semanticRouter = SemanticRouter.getInstance();
     vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
-    widget = new ChatWidget({ container });
+    widget = new ChatWidget({ container, dataSource: 'mock' });
   });
 
   afterEach(() => {
@@ -502,7 +504,7 @@ describe('ChatWidget E2E handoff flow', () => {
     document.body.appendChild(container);
     const semanticRouter = SemanticRouter.getInstance();
     vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
-    widget = new ChatWidget({ container });
+    widget = new ChatWidget({ container, dataSource: 'mock' });
   });
 
   afterEach(() => {
@@ -623,5 +625,33 @@ describe('ChatWidget E2E handoff flow', () => {
     expect(state.messages.some((m: ChatMessage) =>
       m.text.includes('ended the session')
     )).toBe(true);
+  });
+});
+
+// ── Dynamic Store Sync Tests (Phase 4) ──────────
+
+describe('ChatWidget dynamic store sync', () => {
+  it('should use mock data sources when explicitly configured', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const semanticRouter = SemanticRouter.getInstance();
+    vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+    const widget = new ChatWidget({ container, dataSource: 'mock' });
+    expect((widget as any)._policyService).toBeTruthy();
+    expect((widget as any)._policyService.useMockData).toBe(true);
+    widget.destroy();
+    container.remove();
+  });
+
+  it('should not start sync managers in mock mode', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const semanticRouter = SemanticRouter.getInstance();
+    vi.spyOn(semanticRouter, 'classify').mockResolvedValue({ intent: null, confidence: 0 });
+    const widget = new ChatWidget({ container, dataSource: 'mock' });
+    expect(widget['_catalogSync']).toBeNull();
+    expect(widget['_policySync']).toBeNull();
+    widget.destroy();
+    container.remove();
   });
 });

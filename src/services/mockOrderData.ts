@@ -1,3 +1,4 @@
+// MOCK DATA — for testing only. Use ShopifyOrderProxyDataSource in production.
 import type { Order, OrderStatus, OrderDataSource } from './types';
 
 function buildMockOrders(): Order[] {

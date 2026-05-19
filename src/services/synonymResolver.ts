@@ -1,5 +1,5 @@
 // src/services/synonymResolver.ts
-import { SIZE_SYNONYMS, COLOR_SYNONYMS, MATERIAL_SYNONYMS } from './mockCatalogData';
+import { SIZE_SYNONYMS, COLOR_SYNONYMS, MATERIAL_SYNONYMS } from './synonymConstants';
 
 // Re-export tables for convenience
 export { SIZE_SYNONYMS, COLOR_SYNONYMS, MATERIAL_SYNONYMS };

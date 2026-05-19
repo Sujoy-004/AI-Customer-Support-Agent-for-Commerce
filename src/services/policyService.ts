@@ -247,6 +247,26 @@ export class PolicyService {
     this.policies = null;
     this.cacheTimestamp = null;
   }
+
+  /**
+   * Invalidate policy cache (alias for clearCache)
+   */
+  invalidateCache(): void {
+    this.clearCache();
+  }
+
+  /**
+   * Get raw markdown content for change detection
+   */
+  async getRawContent(): Promise<string> {
+    if (this.useMockData) {
+      return JSON.stringify(this.loadMockPolicies());
+    }
+
+    const response = await fetch(this.policyUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.text();
+  }
 }
 
 /**
