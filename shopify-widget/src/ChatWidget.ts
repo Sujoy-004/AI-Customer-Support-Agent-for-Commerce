@@ -94,6 +94,8 @@ export default class ChatWidget {
   private textarea!: HTMLTextAreaElement;
   private sendBtn!: HTMLButtonElement;
   private _messageIdCounter = 0;
+  private _hasSentMessage = false;
+  private _chipContainer: HTMLDivElement | null = null;
 
   constructor(options: ChatWidgetOptions = {}) {
     this.container = options.container || document.getElementById('ai-support-widget') as HTMLElement;
@@ -291,6 +293,8 @@ export default class ChatWidget {
 
     if (this.state.isOpen && !this.state.isProcessing) {
       this.textarea.focus();
+      this._renderActionChips();
+      this._renderOnboardingHint();
     }
   }
 
@@ -572,6 +576,10 @@ export default class ChatWidget {
   async _sendMessage(): Promise<void> {
     const text = this.textarea.value.trim();
     if (!text || this.state.isProcessing) return;
+
+    this._hasSentMessage = true;
+    this._removeActionChips();
+    this._removeOnboardingHint();
 
     if (!this.state.isOnline) {
       this.setProcessing(false);
@@ -993,5 +1001,68 @@ export default class ChatWidget {
 
   _render(): void {
     // Initial render — widget is ready, no welcome message per D-14
+  }
+
+  // ── Action Chips ────────────────────────────────
+
+  private _renderActionChips(): void {
+    if (this._hasSentMessage || this.state.messages.length > 0) {
+      this._removeActionChips();
+      return;
+    }
+    if (this._chipContainer) return; // already rendered
+
+    this._chipContainer = document.createElement('div');
+    this._chipContainer.className = 'action-chips';
+
+    const chips = [
+      { action: 'track-order', label: '[Track Order]', immediate: false },
+      { action: 'check-stock', label: '[Check Stock]', immediate: false },
+      { action: 'return-item', label: '[Return Item]', immediate: true },
+      { action: 'view-policies', label: '[View Policies]', immediate: true },
+    ];
+
+    for (const chip of chips) {
+      const btn = document.createElement('button');
+      btn.className = 'action-chip';
+      btn.dataset.action = chip.action;
+      btn.textContent = chip.label;
+      btn.addEventListener('click', () => this._handleChipClick(chip));
+      this._chipContainer.appendChild(btn);
+    }
+
+    // Insert between messageList and inputContainer per D-01
+    this.widget.insertBefore(this._chipContainer, this.inputContainer);
+  }
+
+  private _removeActionChips(): void {
+    if (this._chipContainer) {
+      this._chipContainer.remove();
+      this._chipContainer = null;
+    }
+  }
+
+  private _handleChipClick(chip: { action: string; label: string; immediate: boolean }): void {
+    if (chip.immediate) {
+      const queries: Record<string, string> = {
+        'return-item': "I'd like to start a return",
+        'view-policies': 'what are your policies?',
+      };
+      this._sendImmediate(queries[chip.action]);
+    } else {
+      const fillers: Record<string, string> = {
+        'track-order': 'track order #',
+        'check-stock': 'check stock for ',
+      };
+      this.textarea.value = fillers[chip.action];
+      this.textarea.focus();
+      this._autoGrow();
+      this._updateSendButton();
+    }
+  }
+
+  private _sendImmediate(text: string): void {
+    this.textarea.value = text;
+    this._sendMessage();
   }
 }
