@@ -138,7 +138,7 @@ describe('AutocompleteService', () => {
     it('should return matching products for 2+ char query', () => {
       const results = service.getSuggestions('ai', mockProducts);
       expect(results.length).toBeGreaterThan(0);
-      const labels = results.map(r => r.label);
+      const labels = results.map((r: AutocompleteResult) => r.label);
       expect(labels).toContain('Air Max Runner');
       expect(labels).toContain('Air Lite Sneaker');
     });
@@ -146,13 +146,13 @@ describe('AutocompleteService', () => {
     it('should match case-insensitively', () => {
       const resultsUpper = service.getSuggestions('AIR', mockProducts);
       const resultsLower = service.getSuggestions('air', mockProducts);
-      expect(resultsUpper.map(r => r.label)).toEqual(resultsLower.map(r => r.label));
+      expect(resultsUpper.map((r: AutocompleteResult) => r.label)).toEqual(resultsLower.map((r: AutocompleteResult) => r.label));
     });
 
     it('should match against product tags', () => {
       const results = service.getSuggestions('running', mockProducts);
       expect(results.length).toBeGreaterThan(0);
-      const labels = results.map(r => r.label);
+      const labels = results.map((r: AutocompleteResult) => r.label);
       expect(labels).toContain('Air Max Runner');
     });
 

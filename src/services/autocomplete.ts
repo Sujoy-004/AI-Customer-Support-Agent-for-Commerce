@@ -38,10 +38,10 @@ export class AutocompleteService {
 
     for (const product of products) {
       const lowerTitle = product.title.toLowerCase();
-      const lowerTags = product.tags.map(t => t.toLowerCase());
+      const lowerTags = product.tags.map((t: string) => t.toLowerCase());
 
       const titleMatches = lowerTitle.includes(lowerQuery);
-      const tagMatches = lowerTags.some(tag => tag.includes(lowerQuery));
+      const tagMatches = lowerTags.some((tag: string) => tag.includes(lowerQuery));
 
       if (titleMatches || tagMatches) {
         const isPrefix = lowerTitle.startsWith(lowerQuery);
