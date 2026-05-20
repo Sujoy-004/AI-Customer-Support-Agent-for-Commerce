@@ -728,18 +728,18 @@ export default class ChatWidget {
 
     // General policy overview
     if (lower.includes('what are your policies') || lower.includes('show me your policies') || lower.includes('tell me about your policies')) {
-      return `Here's a quick overview:\n\n• Shipping: Standard ($5.99, 5-7 days), Express ($12.99, 2-3 days), Free on orders over $75.\n• Returns: 30-day return window, refund to original payment.\n• Warranty: 1-year limited warranty covering manufacturing defects.\n\nWant details on any of these?`;
+      return `Here's a quick overview:\n\n• Shipping: Standard (₹199, 5-7 days), Express (₹499, 2-3 days), Free on orders over ₹2,999.\n• Returns: 30-day return window, refund to original payment.\n• Warranty: 1-year limited warranty covering manufacturing defects.\n\nWant details on any of these?`;
     }
 
     // Shipping — specific sub-questions
     if (lower.includes('free shipping') || lower.includes('free ship')) {
-      return `Yes, we offer free standard shipping on orders over $75.`;
+      return `Yes, we offer free standard shipping on orders over ₹2,999.`;
     }
     if (lower.includes('how long') && (lower.includes('ship') || lower.includes('deliver'))) {
       return `Standard shipping takes 5-7 business days. Express is 2-3 business days.`;
     }
     if (lower.includes('shipping') || lower.includes('delivery') || lower.includes('ship')) {
-      return `We offer standard shipping ($5.99, 5-7 days), express ($12.99, 2-3 days), and international (calculated at checkout). Free shipping on orders over $75.`;
+      return `We offer standard shipping (₹199, 5-7 days), express (₹499, 2-3 days), and international (calculated at checkout). Free shipping on orders over ₹2,999.`;
     }
 
     // Warranty — specific sub-questions

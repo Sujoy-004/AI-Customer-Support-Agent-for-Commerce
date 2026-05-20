@@ -111,10 +111,10 @@ function buildMockProducts(): Product[] {
         { name: 'Color', values: ['Black', 'Gray', 'Navy'] },
         { name: 'Material', values: ['Cotton', 'Polyester'] }
       ],
-      basePrice: 49.99,
+      basePrice: 3999,
       priceVariation: {
-        'XL': 5.00,
-        'Navy': 2.00
+        'XL': 500,
+        'Navy': 200
       },
       stockOverrides: {
         'M_Black_Cotton': { available: true, quantity: 25 },
@@ -143,7 +143,7 @@ function buildMockProducts(): Product[] {
         { name: 'Shoe Size', values: ['8', '9', '10', '11'] },
         { name: 'Color', values: ['Black', 'White'] }
       ],
-      basePrice: 89.99,
+      basePrice: 7999,
       priceVariation: {},
       stockOverrides: {
         '8_Black': { available: true, quantity: 15 },
@@ -171,7 +171,7 @@ function buildMockProducts(): Product[] {
         { name: 'Color', values: ['Black', 'Brown'] },
         { name: 'Material', values: ['Genuine Leather'] }
       ],
-      basePrice: 34.99,
+      basePrice: 2499,
       priceVariation: {},
       stockOverrides: {
         'Black_Genuine Leather': { available: true, quantity: 30 },
@@ -192,7 +192,7 @@ function buildMockProducts(): Product[] {
       options: [
         { name: 'Color', values: ['Natural', 'Black', 'Olive'] }
       ],
-      basePrice: 24.99,
+      basePrice: 1999,
       priceVariation: {},
       stockOverrides: {
         'Natural': { available: true, quantity: 40 },
@@ -215,10 +215,10 @@ function buildMockProducts(): Product[] {
         { name: 'Color', values: ['Gray', 'Burgundy'] },
         { name: 'Material', values: ['Wool', 'Acrylic Blend'] }
       ],
-      basePrice: 29.99,
+      basePrice: 2499,
       priceVariation: {
-        'Wool': 10.00,
-        'Burgundy': 2.00
+        'Wool': 1000,
+        'Burgundy': 200
       },
       stockOverrides: {
         'Gray_Wool': { available: true, quantity: 4, isLowStock: true },
@@ -242,9 +242,9 @@ function buildMockProducts(): Product[] {
         { name: 'Size', values: ['S', 'M', 'L', 'XL'] },
         { name: 'Color', values: ['Blue', 'Black'] }
       ],
-      basePrice: 69.99,
+      basePrice: 5999,
       priceVariation: {
-        'XL': 5.00
+        'XL': 500
       },
       stockOverrides: {
         'S_Blue': { available: true, quantity: 10 },
@@ -272,9 +272,9 @@ function buildMockProducts(): Product[] {
       options: [
         { name: 'Color', values: ['Gold', 'Silver', 'Black'] }
       ],
-      basePrice: 19.99,
+      basePrice: 1499,
       priceVariation: {
-        'Gold': 10.00
+        'Gold': 1000
       },
       stockOverrides: {
         'Gold': { available: true, quantity: 45 },

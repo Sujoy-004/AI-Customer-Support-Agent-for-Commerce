@@ -125,10 +125,10 @@ function mapFrontmatterToPolicyData(data: Record<string, any>): PolicyData {
   const shipping = data.shipping || {};
   return {
     shipping: {
-      standard: `Standard shipping (${shipping.standard || '5-7 business days'}): $5.99`,
-      express: `Express shipping (${shipping.express || '2-3 business days'}): $12.99`,
+      standard: `Standard shipping (${shipping.standard || '5-7 business days'}): ₹199`,
+      express: `Express shipping (${shipping.express || '2-3 business days'}): ₹499`,
       international: 'International shipping (7-14 business days): Calculated at checkout',
-      freeShippingThreshold: shipping.free_threshold ?? 75,
+      freeShippingThreshold: shipping.free_threshold ?? 2999,
       processingTime: 'Orders processed within 1-2 business days',
     },
     warranty: {
@@ -199,15 +199,15 @@ export class PolicyService {
   private loadMockPolicies(): PolicyData {
     const mockPolicies: PolicyData = {
       shipping: {
-        standard: 'Standard shipping (5-7 business days): $5.99',
-        express: 'Express shipping (2-3 business days): $12.99',
+        standard: 'Standard shipping (5-7 business days): ₹199',
+        express: 'Express shipping (2-3 business days): ₹499',
         international: 'International shipping (7-14 business days): Calculated at checkout',
-        freeShippingThreshold: 75,
+        freeShippingThreshold: 2999,
         processingTime: 'Orders processed within 1-2 business days'
       },
       warranty: {
         standardPeriod: '1 year limited warranty',
-        extendedOptions: ['2-year extension ($19.99)', '3-year extension ($29.99)'],
+        extendedOptions: ['2-year extension (₹999)', '3-year extension (₹1,499)'],
         coverageDetails: 'Covers manufacturing defects and hardware failures under normal use',
         claimProcess: 'Contact support with order number and issue description for RMA'
       },

@@ -13,7 +13,7 @@ describe('ResponseGrounder', () => {
   describe('groundResponse', () => {
     it('should ground a correct shipping response', async () => {
       const userQuery = 'What are your shipping options?';
-      const agentResponse = 'Standard shipping (5-7 business days): $5.99. Express shipping (2-3 business days): $12.99. We offer free shipping on orders over $75. Orders are processed within 1-2 business days.';
+      const agentResponse = 'Standard shipping (5-7 business days): ₹199. Express shipping (2-3 business days): ₹499. We offer free shipping on orders over ₹2,999. Orders are processed within 1-2 business days.';
       
       const result = await responseGrounder.groundResponse(userQuery, agentResponse);
       
@@ -83,7 +83,7 @@ describe('ResponseGrounder', () => {
       // isGrounded=true requires confidence >= 0.5, so we test source presence
       const result = await responseGrounder.groundResponse(
         'What is your express shipping?',
-        'Standard shipping (5-7 business days): $5.99. Express shipping (2-3 business days): $12.99. Orders processed within 1-2 business days.'
+        'Standard shipping (5-7 business days): ₹199. Express shipping (2-3 business days): ₹499. Orders processed within 1-2 business days.'
       );
       expect(result.isGrounded).toBe(true);
       expect(result.policySources).toContain('shipping.express');
@@ -94,7 +94,7 @@ describe('ResponseGrounder', () => {
     it('should detect international shipping source when the exact policy text appears', async () => {
       const result = await responseGrounder.groundResponse(
         'Do you ship internationally?',
-        'Standard shipping (5-7 business days): $5.99. International shipping (7-14 business days): Calculated at checkout. Orders processed within 1-2 business days.'
+        'Standard shipping (5-7 business days): ₹199. International shipping (7-14 business days): Calculated at checkout. Orders processed within 1-2 business days.'
       );
       expect(result.isGrounded).toBe(true);
       expect(result.policySources).toContain('shipping.international');
@@ -105,7 +105,7 @@ describe('ResponseGrounder', () => {
     it('should detect free shipping threshold source when the dollar amount is correct', async () => {
       const result = await responseGrounder.groundResponse(
         'When do you offer free shipping?',
-        'Standard shipping (5-7 business days): $5.99. We offer free shipping on orders over $75. Orders processed within 1-2 business days.'
+        'Standard shipping (5-7 business days): ₹199. We offer free shipping on orders over ₹2,999. Orders processed within 1-2 business days.'
       );
       expect(result.isGrounded).toBe(true);
       expect(result.policySources).toContain('shipping.freeShippingThreshold');
@@ -145,7 +145,7 @@ describe('ResponseGrounder', () => {
     it('should detect extended warranty source when option text appears', async () => {
       const result = await responseGrounder.groundResponse(
         'Do you have extended warranty?',
-        'Our products come with a 1 year limited warranty that covers manufacturing defects and hardware failures under normal use. We also offer a 2-year extension ($19.99) for extended coverage.'
+        'Our products come with a 1 year limited warranty that covers manufacturing defects and hardware failures under normal use. We also offer a 2-year extension (₹999) for extended coverage.'
       );
       expect(result.isGrounded).toBe(true);
       expect(result.policySources).toContain('warranty.extendedOptions');
@@ -211,7 +211,7 @@ describe('ResponseGrounder', () => {
       // "shipping and warranty" — both matched, shippingCount >= warrantyCount → SHIPPING
       const result = await responseGrounder.groundResponse(
         'Tell me about your shipping and warranty policies',
-        'Standard shipping (5-7 business days): $5.99. We offer free shipping on orders over $75. Orders processed within 1-2 business days.'
+        'Standard shipping (5-7 business days): ₹199. We offer free shipping on orders over ₹2,999. Orders processed within 1-2 business days.'
       );
       expect(result.isGrounded).toBe(true);
       expect(result.policySources).toContain('shipping.standard');

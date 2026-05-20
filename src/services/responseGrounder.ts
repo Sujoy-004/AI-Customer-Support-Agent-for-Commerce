@@ -152,7 +152,7 @@ export class ResponseGrounder {
     
     // Check for standard shipping mention
     if (lowerResponse.includes('standard') || lowerResponse.includes('5-7 business days') || 
-        lowerResponse.includes('$5.99')) {
+        lowerResponse.includes('₹199')) {
       if (response.includes(shippingPolicy.standard)) {
         confidence += 0.25;
         sources.push('shipping.standard');
@@ -170,7 +170,7 @@ export class ResponseGrounder {
     
     // Check for express shipping mention
     if (lowerResponse.includes('express') || lowerResponse.includes('2-3 business days') || 
-        lowerResponse.includes('$12.99')) {
+        lowerResponse.includes('₹499')) {
       if (response.includes(shippingPolicy.express)) {
         confidence += 0.25;
         sources.push('shipping.express');
@@ -203,8 +203,9 @@ export class ResponseGrounder {
     
     // Check for free shipping threshold
     if (lowerResponse.includes('free shipping') || lowerResponse.includes('free ship')) {
-      const thresholdMatch = response.includes(`$${shippingPolicy.freeShippingThreshold}`) || 
-                           response.includes(`${shippingPolicy.freeShippingThreshold} dollars`);
+      const formattedThreshold = `₹${shippingPolicy.freeShippingThreshold.toLocaleString('en-IN')}`;
+      const thresholdMatch = response.includes(formattedThreshold) || 
+                           response.includes(`${shippingPolicy.freeShippingThreshold}`);
       if (thresholdMatch) {
         confidence += 0.15;
         sources.push('shipping.freeShippingThreshold');
