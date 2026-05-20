@@ -4,6 +4,7 @@ export interface WidgetShellElements {
   offlineBanner: HTMLDivElement;
   messageList: HTMLDivElement;
   dataSourceIndicator: HTMLDivElement;
+  refreshBtn: HTMLButtonElement;
 }
 
 export function createWidgetShell(): WidgetShellElements {
@@ -22,6 +23,27 @@ export function createWidgetShell(): WidgetShellElements {
   widget.className = 'chat-widget';
   widget.setAttribute('role', 'dialog');
   widget.setAttribute('aria-label', 'Customer Support Chat');
+
+  const header = document.createElement('div');
+  header.className = 'chat-header';
+
+  const headerTitle = document.createElement('span');
+  headerTitle.className = 'chat-header-title';
+  headerTitle.textContent = 'Support';
+
+  const refreshBtn = document.createElement('button');
+  refreshBtn.className = 'chat-refresh-btn';
+  refreshBtn.setAttribute('aria-label', 'Refresh chat');
+  refreshBtn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2 8C2 11.31 4.69 14 8 14C10.21 14 12.14 12.79 13.16 11M14 8C14 4.69 11.31 2 8 2C5.79 2 3.86 3.21 2.84 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M13.5 7.5V11H10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M2.5 8.5V5H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  `;
+
+  header.appendChild(headerTitle);
+  header.appendChild(refreshBtn);
 
   const dataSourceIndicator = document.createElement('div');
   dataSourceIndicator.className = 'data-source-indicator';
@@ -44,9 +66,10 @@ export function createWidgetShell(): WidgetShellElements {
   const messageList = document.createElement('div');
   messageList.className = 'message-list';
 
+  widget.appendChild(header);
   widget.appendChild(dataSourceIndicator);
   widget.appendChild(offlineBanner);
   widget.appendChild(messageList);
 
-  return { toggleBtn, widget, offlineBanner, messageList, dataSourceIndicator };
+  return { toggleBtn, widget, offlineBanner, messageList, dataSourceIndicator, refreshBtn };
 }
