@@ -12,10 +12,10 @@ const ALLOWED_CLASSES = new Set([
   'oc-badge', 'oc-status--cancelled', 'oc-status--returned', 'oc-status--hold',
   'oc-status--delivered', 'oc-status--active',
   'oc-items', 'oc-item', 'oc-item-name', 'oc-item-variant', 'oc-item-qty',
-  'oc-tracking', 'oc-tracking-head', 'oc-tracking-row', 'oc-tracking-carrier',
+  'oc-tracking', 'oc-tracking-icon', 'oc-tracking-info', 'oc-tracking-row', 'oc-tracking-carrier',
   'oc-tracking-number', 'oc-tracking-est',
-  'oc-hold-banner', 'oc-timeline', 'oc-tl-head', 'oc-tl-steps',
-  'oc-tl-step', 'oc-tl-dot', 'oc-tl-label', 'oc-tl-line',
+  'oc-hold-banner', 'oc-timeline',
+  'oc-tl-step', 'oc-tl-dot', 'oc-tl-line',
   'oc-tl--paused', 'oc-tl--inactive', 'oc-tl--done', 'oc-tl--current', 'oc-tl--upcoming',
   'oc-notes',
   // Response Surface
