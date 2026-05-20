@@ -36,13 +36,39 @@ const SUGGESTION_MAP: Record<string, SuggestedAction[]> = {
     { label: "No, I'm Fine", query: "No, I'll keep trying" },
     { label: 'View FAQ', query: 'Show me frequently asked questions' },
   ],
+  return_flow: [
+    { label: 'Start Return', query: "I'd like to start a return" },
+    { label: 'Check Return Status', query: 'What is the status of my return?' },
+    { label: 'View Return Policy', query: 'What is your return policy?' },
+  ],
 };
 
 const DEFAULT_SUGGESTIONS = SUGGESTION_MAP.initial;
 
 export class SuggestedActionsService {
-  getSuggestions(state: ConversationState, _lastResult: unknown): SuggestedAction[] {
-    const suggestions = SUGGESTION_MAP[state] ?? DEFAULT_SUGGESTIONS;
-    return suggestions.slice(0, MAX_CHIPS).map(s => ({ ...s }));
+  getSuggestions(state: ConversationState, lastResult: unknown): SuggestedAction[] {
+    const base = SUGGESTION_MAP[state] ?? DEFAULT_SUGGESTIONS;
+    const suggestions = base.slice(0, MAX_CHIPS).map(s => ({ ...s }));
+
+    // Context-aware enhancements based on last result
+    if (state === 'product_search' && lastResult && typeof lastResult === 'object') {
+      const result = lastResult as Record<string, unknown>;
+      if (result.type === 'exact' && result.product) {
+        const product = result.product as Record<string, unknown>;
+        const title = (product.title as string) || 'this';
+        suggestions[0] = { label: `Check ${title} Stock`, query: `Is ${title} in stock?` };
+      }
+    }
+
+    if (state === 'order_tracking' && lastResult && typeof lastResult === 'object') {
+      const result = lastResult as Record<string, unknown>;
+      if (result.type === 'order_found' && result.order) {
+        const order = result.order as Record<string, unknown>;
+        const orderNum = order.orderNumber as number;
+        suggestions[0] = { label: 'Start Return', query: `I'd like to return items from order #${orderNum}` };
+      }
+    }
+
+    return suggestions;
   }
 }
