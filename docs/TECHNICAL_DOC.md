@@ -160,17 +160,6 @@ The system uses a browser-side layered architecture. All services run in the use
 | `shopify-widget/src/config/semantic/orderIntents.ts` | New | 5-8 reference phrases for order intent detection |
 | `shopify-widget/src/config/semantic/embeddings.json` | Generated | Pre-computed 384-dim embeddings per reference phrase (`.gitignore`d) |
 | `shopify-widget/scripts/generateEmbeddings.ts` | New | Build-time script — loads model, generates embeddings.json |
-| `src/services/mockCatalogData.ts` | 332 | 7 products with 52 variants, stock overrides |
-| `src/services/mockOrderData.ts` | ~200 | Mock orders with 9 statuses, full timeline events |
-| `src/services/shopifyStorefrontDataSource.ts` | 208 | Live Shopify Storefront API integration — GraphQL product query, maps to Product/Variant types |
-| `src/services/shopifyOrderProxyDataSource.ts` | 142 | HMAC-signed proxy client — SHA-256 email hash, HMAC signing, retry on 5xx |
-| `src/services/conversationContext.ts` | 49 | Cross-turn context manager |
-| `src/services/cacheManager.ts` | 33 | Generic TTL cache |
-| `src/services/suggestedActions.ts` | 44 | Context-aware action chips — 6 states (initial, product_search, stock_check, order_tracking, policy_query, escalation_offer) |
-| `src/services/autocomplete.ts` | 85 | Prefix-matching dropdown — triggers at 2+ chars, max 5 results, product names + order number matching |
-| `policies.md` | Example | Markdown config file with YAML frontmatter — live policy data source |
-| `shopify-proxy/src/worker.ts` | New | Cloudflare Worker — HMAC verification, Shopify Admin GraphQL query, filtered status response |
-| `shopify-widget/.env.example` | 3 | Template for Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) |
 
 ## 1.4 Renderer Architecture (Stabilization Phase)
 
@@ -217,8 +206,6 @@ Each agent message carries a `responseType` that controls spacing rhythm and hie
 
 ## 2. AI/Deterministic Boundary
 
-This is the most important architectural property of the system. The boundary is explicitly defined and enforced.
-
 The system uses a **hybrid AI architecture**: in-browser semantic understanding for intent routing, then deterministic data retrieval for all responses. No LLM API calls are made — zero API cost, zero privacy exposure, zero hallucination risk.
 
 ```
@@ -260,7 +247,7 @@ User Query → SemanticRouter.classify(query, refs)
 
 ### 2.2 What Is Deterministic (ZERO LLM — Data Retrieval Layer)
 
-**The entire data retrieval pipeline uses zero LLM calls.** Every product lookup, stock check, variant resolution, order lookup, and policy lookup goes through deterministic structured code:
+Every product lookup, stock check, variant resolution, order lookup, and policy lookup goes through deterministic structured code:
 
 ```
 Classified Intent → CatalogService.searchProducts() (text matching)
@@ -1096,27 +1083,27 @@ User Input → SemanticRouter → OffTopicDetector → EscalationDetector
 
 ### 11.4 File Changes (Phase 8 + Phase 9)
 
-| File | Change | Lines |
-|------|--------|-------|
-| `shopify-widget/agent-console.html` | **Created** — standalone agent console | ~405 |
-| `shopify-widget/.env.example` | **Created** — Supabase credential template | ~3 |
-| `shopify-widget/src/ChatWidget.ts` | **Modified** — full service pipeline integration, Supabase handoff, action chips, autocomplete, network detection | 1329 |
-| `shopify-widget/src/orderCard.ts` | **Created** — DOM component for order cards | 126 |
-| `shopify-widget/src/core/semanticRouter.ts` | **Created** — SemanticRouter singleton with MiniLM embeddings | — |
-| `shopify-widget/tests/ChatWidget.integration.test.ts` | **Modified** — Supabase handoff tests, action chip tests | — |
-| `src/services/handoffChannel.ts` | **Created** — Supabase Realtime channel wrapper | 128 |
-| `src/services/agentPresence.ts` | **Created** — Agent online/offline presence detection | 57 |
-| `src/services/catalogSync.ts` | **Created** — Periodic catalog sync (5-min interval) | 67 |
-| `src/services/policySync.ts` | **Created** — Periodic policy sync (10-min interval) | 58 |
-| `src/services/suggestedActions.ts` | **Created** — Context-aware action chips | 44 |
-| `src/services/autocomplete.ts` | **Created** — Prefix-matching dropdown | 85 |
-| `src/services/synonymConstants.ts` | **Created** — Shared synonym constants | 23 |
-| `src/services/shopifyStorefrontDataSource.ts` | **Created** — Live Storefront API integration | 186 |
-| `src/services/shopifyOrderProxyDataSource.ts` | **Created** — HMAC-signed proxy client | 164 |
-| `src/services/policyService.ts` | **Modified** — live fetch from markdown URL, frontmatter parser | 247 |
-| `src/services/escalationTransferHandler.ts` | **Modified** — timeout 20000→60000 | 37 |
-| `src/services/escalationQueueSimulator.ts` | **Deleted** — replaced by Supabase | -45 |
-| `src/services/escalationQueueSimulator.test.ts` | **Deleted** — replaced by Supabase | -45 |
-| `src/services/escalationHumanAgent.ts` | **Deleted** — replaced by Supabase | -26 |
-| `src/services/escalationHumanAgent.test.ts` | **Deleted** — replaced by Supabase | -26 |
-| `shopify-proxy/src/worker.ts` | **Created** — Cloudflare Worker for order lookup | — |
+| File | Change |
+|------|--------|
+| `shopify-widget/agent-console.html` | **Created** |
+| `shopify-widget/.env.example` | **Created** |
+| `shopify-widget/src/ChatWidget.ts` | **Modified** |
+| `shopify-widget/src/orderCard.ts` | **Created** |
+| `shopify-widget/src/core/semanticRouter.ts` | **Created** |
+| `shopify-widget/tests/ChatWidget.integration.test.ts` | **Modified** |
+| `src/services/handoffChannel.ts` | **Created** |
+| `src/services/agentPresence.ts` | **Created** |
+| `src/services/catalogSync.ts` | **Created** |
+| `src/services/policySync.ts` | **Created** |
+| `src/services/suggestedActions.ts` | **Created** |
+| `src/services/autocomplete.ts` | **Created** |
+| `src/services/synonymConstants.ts` | **Created** |
+| `src/services/shopifyStorefrontDataSource.ts` | **Created** |
+| `src/services/shopifyOrderProxyDataSource.ts` | **Created** |
+| `src/services/policyService.ts` | **Modified** |
+| `src/services/escalationTransferHandler.ts` | **Modified** |
+| `src/services/escalationQueueSimulator.ts` | **Deleted** |
+| `src/services/escalationQueueSimulator.test.ts` | **Deleted** |
+| `src/services/escalationHumanAgent.ts` | **Deleted** |
+| `src/services/escalationHumanAgent.test.ts` | **Deleted** |
+| `shopify-proxy/src/worker.ts` | **Created** |
