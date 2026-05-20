@@ -20,7 +20,6 @@ test('capture DOM snapshot of widget', async ({ page }) => {
     allMessages.push(`[requestfailed] ${req.url()}`);
   });
 
-  // Log all responses
   page.on('response', res => {
     if (res.status() >= 400) {
       allMessages.push(`[response:${res.status()}] ${res.url()}`);
@@ -30,7 +29,6 @@ test('capture DOM snapshot of widget', async ({ page }) => {
   await page.goto('/', { waitUntil: 'networkidle', timeout: 15000 });
   await page.waitForTimeout(1000);
 
-  // Click toggle to open the widget
   await page.click('.chat-toggle');
   await page.waitForTimeout(500);
 

@@ -13,7 +13,7 @@ export default defineConfig({
   webServer: {
     command: 'npx tsc -p tsconfig.widget.json && npx vite build --config shopify-widget/vite.config.ts && npx serve shopify-widget -l 3000 --no-clipboard',
     port: 3000,
-    timeout: 60000,
+    timeout: 120000,
     reuseExistingServer: false,
     cwd: '..',
   },
