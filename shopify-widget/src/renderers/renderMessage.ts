@@ -6,6 +6,27 @@ const ALLOWED_TAGS = new Set([
   'ul', 'ol', 'li', 'code', 'pre',
 ]);
 
+const ALLOWED_CLASSES = new Set([
+  // Order Card
+  'oc-card', 'oc-head', 'oc-head-left', 'oc-order-label', 'oc-order-number',
+  'oc-badge', 'oc-status--cancelled', 'oc-status--returned', 'oc-status--hold',
+  'oc-status--delivered', 'oc-status--active',
+  'oc-items', 'oc-item', 'oc-item-name', 'oc-item-variant', 'oc-item-qty',
+  'oc-tracking', 'oc-tracking-head', 'oc-tracking-row', 'oc-tracking-carrier',
+  'oc-tracking-number', 'oc-tracking-est',
+  'oc-hold-banner', 'oc-timeline', 'oc-tl-head', 'oc-tl-steps',
+  'oc-tl-step', 'oc-tl-dot', 'oc-tl-label', 'oc-tl-line',
+  'oc-tl--paused', 'oc-tl--inactive', 'oc-tl--done', 'oc-tl--current', 'oc-tl--upcoming',
+  'oc-notes',
+  // Response Surface
+  'rs-list', 'rs-list-header', 'rs-item', 'rs-item-title', 'rs-item-price',
+  'rs-item-stock', 'rs-item-stock--in', 'rs-item-stock--low', 'rs-item-stock--out',
+  // Product Card
+  'pc-card', 'pc-header', 'pc-title', 'pc-price', 'pc-badge',
+  'pc-options', 'pc-option', 'pc-variants', 'pc-variant',
+  'pc-stock', 'pc-stock--in', 'pc-stock--low', 'pc-stock--out',
+]);
+
 function sanitizeHtml(html: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -27,8 +48,15 @@ function sanitizeHtml(html: string): string {
       }
       el.remove();
     } else {
-      while (el.attributes.length > 0) {
-        el.removeAttribute(el.attributes[0].name);
+      // Preserve whitelisted classes, remove others
+      if (el.hasAttribute('class')) {
+        const classes = el.getAttribute('class')!.split(/\s+/);
+        const kept = classes.filter(c => ALLOWED_CLASSES.has(c));
+        if (kept.length > 0) {
+          el.setAttribute('class', kept.join(' '));
+        } else {
+          el.removeAttribute('class');
+        }
       }
     }
   }
