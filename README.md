@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # AI Customer Support Agent for Commerce
 
-**v1.2 — Ship Ready May 20, 2026** | 607 tests passing | 149 commits | 10 phases complete
+**v1.1 — UX Polish & Response Quality May 20, 2026** | 607 tests passing | 156 commits | 10 phases complete
 
 A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Uses a **hybrid architecture**: in-browser semantic understanding (MiniLM embeddings via transformer.js) for intent routing + deterministic data retrieval for zero-hallucination answers.
 
@@ -50,6 +50,23 @@ npx playwright test --config=e2e/playwright.config.ts
 ```
 
 This builds the widget (tsc + vite), serves it on port 3000, runs tests.
+
+### v1.1 Changes (May 20, 2026)
+
+| Change | What It Fixes |
+|--------|---------------|
+| Return service enabled | "item is defective", "wrong size", "changed my mind" → return flow instead of fallback |
+| Compound query handling | "is the hoodie in stock and can I return it" → answers both parts |
+| Warranty keyword mapping | "defective", "damaged", "broken" → warranty response |
+| Order number format | `ORD-5678` now recognized alongside `#1234` |
+| Context-aware chips | Chips reflect specific product/order being discussed |
+| Order card rendering | CSS classes preserved — styled cards, not plain text |
+| Conversational responses | Catalog templates rewritten for natural tone |
+| Context limit | Increased from 3 to 20 turns |
+| Refresh button | Chat header reset button |
+| Policy routing fix | "shipping" queries → policy, not order tracking |
+| Off-topic fixes | Word-boundary regex prevents substring false positives |
+| Size synonyms | "extra large" no longer matches "Large" |
 
 ### 5. Configure Supabase Realtime (for live human handoff)
 
@@ -110,7 +127,7 @@ Open `shopify-widget/agent-console.html` in your browser. It connects to the sam
 │   │   ├── policyService.ts           # Policy data management
 │   │   ├── mockCatalogData.ts         # 7 products, 52 variants (testing only)
 │   │   ├── synonymResolver.ts         # Canonical → alias mapping
-│   │   ├── conversationContext.ts     # 5min/3turn context manager
+│   │   ├── conversationContext.ts     # 5min/20turn context manager
 │   │   ├── cacheManager.ts            # Generic TTL cache
 │   │   ├── escalationDetector.ts      # Handoff + frustration detection
 │   │   ├── escalationStateMachine.ts  # FSM with localStorage

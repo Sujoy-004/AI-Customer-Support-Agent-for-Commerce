@@ -827,6 +827,118 @@ Source: `.planning/phases/06-semantic-ai-router/06-AI-SPEC.md` — 34 decisions 
 
 ---
 
+## 2026-05-20: D-01 — Return Service Enabled by Default (v1.1)
+
+**Considered:** Keep feature-flagged (disabled) vs enable by default vs keep disabled with explicit opt-in.
+
+**Chose:** Enable by default — `enableReturnService` defaults to `true` in ChatWidget constructor.
+
+**Because:** Manual testing revealed "item is defective", "wrong size", "changed my mind" all fell to generic fallback. ReturnService already has the keyword detection and eligibility logic — it just wasn't wired in. Enabling it closes the biggest response quality gap.
+
+**Tradeoff:** Return flow requires order number + email — users without order context get prompted for it. Acceptable — better than fallback.
+
+Source: `shopify-widget/src/ChatWidget.ts` line 154.
+
+---
+
+## 2026-05-20: D-02 — Compound Query Handling (v1.1)
+
+**Considered:** Split on "and"/"but" and process separately vs detect dual intent and answer both vs ignore second part.
+
+**Chose:** Detect queries with BOTH catalog AND policy intent, process catalog first, append policy response.
+
+**Because:** "is the hoodie in stock and can I return it" was losing the catalog part because policy check caught "return" first and returned early. Dual-intent detection preserves both answers.
+
+**Tradeoff:** Adds regex overhead per query. Only triggers when both intents present — negligible impact.
+
+Source: `shopify-widget/src/ChatWidget.ts` lines 792-825.
+
+---
+
+## 2026-05-20: D-03 — Warranty Keyword Mapping (v1.1)
+
+**Considered:** Map defect/damaged to return policy vs warranty policy vs generic fallback.
+
+**Chose:** Map "defective", "damaged", "broken", "not working", "malfunction" → warranty response with 1-year coverage details.
+
+**Because:** Defective items are a warranty issue, not just a return. Users need to know about warranty coverage first. Response includes both warranty info and return option.
+
+**Tradeoff:** Some users may want immediate return without warranty discussion. Response mentions both paths.
+
+Source: `shopify-widget/src/ChatWidget.ts` lines 745-748.
+
+---
+
+## 2026-05-20: D-04 — Order Number Format Expansion (v1.1)
+
+**Considered:** Keep `#1234` only vs add `ORD-XXXX` vs support all Shopify formats.
+
+**Chose:** Add `ORD-XXXX` pattern to both detection regex and extraction patterns.
+
+**Because:** Shopify order numbers come in multiple formats. `ORD-5678` was not recognized, causing fallback. Both `#1234` and `ORD-5678` now work.
+
+**Tradeoff:** Still doesn't cover all possible Shopify formats (e.g., custom prefixes). Covers the two most common.
+
+Source: `src/services/orderIntentDetector.ts` lines 42, 204-223.
+
+---
+
+## 2026-05-20: D-05 — Context Limit Increased to 20 Turns (v1.1)
+
+**Considered:** Keep 3-turn limit vs increase to 10 vs increase to 20.
+
+**Chose:** 20 turns with 5-minute TTL.
+
+**Because:** 3 turns was too restrictive for natural conversations — users refining product queries or going through order auth flow often exceeded it. 20 turns covers realistic support interactions while still having a bound.
+
+**Tradeoff:** More memory per conversation. 5-minute TTL still prevents stale context.
+
+Source: `src/services/catalogIntentDetector.ts` line 28, `src/services/orderIntentDetector.ts` line 28.
+
+---
+
+## 2026-05-20: D-06 — HTML Sanitizer Class Whitelist (v1.1)
+
+**Considered:** Keep stripping all classes vs allow specific classes vs switch to DOMPurify.
+
+**Chose:** Whitelist approach — allow order card classes (`oc-*`), response surface classes (`rs-*`), and product card classes (`pc-*`) through the sanitizer.
+
+**Because:** The sanitizer was stripping ALL CSS classes from OrderCard HTML, turning styled cards into plain unstyled text. Whitelist is safer than disabling sanitization entirely, more targeted than DOMPurify for now.
+
+**Tradeoff:** New component classes must be added to whitelist. DOMPurify still recommended for production.
+
+Source: `shopify-widget/src/renderers/renderMessage.ts` lines 4-37.
+
+---
+
+## 2026-05-20: D-07 — Action Chip Context Awareness (v1.1)
+
+**Considered:** Keep static chips vs inject product/order names dynamically vs full AI-generated suggestions.
+
+**Chose:** Inject product name into stock check chip, order number into return chip based on last result.
+
+**Because:** "Is this in stock?" is vague after viewing a specific product. "Is Classic Hoodie in stock?" is clearer. Same for returns — "return items from order #1001" beats generic "start a return".
+
+**Tradeoff:** Requires passing last result through the pipeline. Added `_lastResult` field to ChatWidget.
+
+Source: `src/services/suggestedActions.ts`, `shopify-widget/src/ChatWidget.ts`.
+
+---
+
+## 2026-05-20: D-08 — Policy Routing Priority Fix (v1.1)
+
+**Considered:** Keep order detection before policy vs check policy keywords first vs semantic routing only.
+
+**Chose:** Check policy keywords (shipping, return, warranty, etc.) BEFORE order tracking.
+
+**Because:** "shipping" queries were hitting order flow instead of policy flow — "shipping" matched order tracking intent. Policy check first prevents this misrouting.
+
+**Tradeoff:** Policy check adds one more pipeline step for order queries. Negligible.
+
+Source: `shopify-widget/src/ChatWidget.ts` lines 864-873.
+
+---
+
 ## 2026-05-19: D-21 — Live-by-Default Data Sources Enforced (Phase 9)
 
 **Considered:** Keep D-15 as declared but not fully wired vs re-affirm and wire end-to-end vs keep mock default for demo.
@@ -880,6 +992,28 @@ Source: `src/services/policyService.ts`, `src/services/policySyncManager.ts`.
 **Tradeoff:** Two-plan approach took longer than single auto-fix pass. Categorization prevented cascading failures — B1 fix ensured compilation before touching rendering.
 
 Source: `.planning/phases/09-gap-closure/09-01-PLAN.md`, `09-01-SUMMARY.md`, `09-02-PLAN.md`, `09-02-SUMMARY.md`.
+
+---
+
+## v1.1 Milestone Summary
+
+**Shipped:** 2026-05-20 | **Duration:** 1 day (May 20) | **Commits:** 7 | **Changes:** 12
+
+### What Changed
+
+A focused UX polish pass addressing response quality gaps found during manual testing:
+- **Return flow enabled** — `enableReturnService` defaults to `true`, return keywords (defective, wrong size, changed my mind) now trigger return flow instead of fallback
+- **Compound query handling** — queries with both catalog AND policy intent (e.g., "is the hoodie in stock and can I return it") now answer both parts
+- **Warranty keyword mapping** — "defective", "damaged", "broken", "not working" → warranty response instead of fallback
+- **Order number format** — `ORD-XXXX` pattern now recognized alongside `#1234`
+- **Context-aware chips** — action chips now reflect specific product/order being discussed
+- **Order card rendering** — CSS class whitelist in sanitizer allows styled order cards through
+- **Conversational responses** — catalog templates rewritten for natural tone
+- **Context limit** — increased from 3 to 20 turns for longer conversations
+- **Refresh button** — chat header now has reset button
+- **Policy routing fix** — policy keywords checked before order tracking to prevent "shipping" misrouting
+- **Off-topic fixes** — word-boundary regex prevents substring false positives
+- **Size synonyms** — full size names added to synonym table to prevent "extra large" matching "Large"
 
 ---
 

@@ -2,8 +2,8 @@
 # Product Document: AI Customer Support Agent for Commerce
 
 > **Track:** Kasparro Agentic Commerce Hackathon — Track 4
-> **Stack:** TypeScript, Vitest, Playwright, @huggingface/transformers, Supabase Realtime, OpenCode Plugin System
-> **Status:** v1.0 shipped — 9 phases complete (May 19, 2026)
+> **Stack:** TypeScript, Vitest, Playwright, @huggingface/transformers, Supabase Realtime
+> **Status:** v1.1 — UX polish, return flow, compound queries (May 20, 2026)
 
 ## Problem
 
@@ -43,7 +43,7 @@ All data retrieval uses **zero LLM calls** — product lookup, variant resolutio
 2. **Stock check** — "is the classic hoodie in stock?" → per-variant availability
 3. **Sizing inquiry** — "what sizes does the denim jacket come in?" → option listing
 4. **Variant lookup** — "classic hoodie medium black" → exact SKU with price + stock
-5. **Multi-turn refinement** — cross-turn context (3 turns / 5-min expiry)
+5. **Multi-turn refinement** — cross-turn context (20 turns / 5-min expiry)
 6. **Policy queries** — grounded policy response with semantic routing
 7. **Off-topic refusal** — polite refusal with redirect suggestions
 8. **Order tracking** — rich order card with timeline via CF Worker proxy
@@ -62,13 +62,29 @@ Chat widget loads as `[+] Support` toggle, bottom-right. Opens to empty message 
 
 1. **Browser-side only** — all services in browser; new instances per page load
 2. **Mock data is test-only** — production uses live Shopify data sources by default
-3. **No persistent conversation history** — context expires after 5 min / 3 turns
-4. **ChatWidget is a god class** — 1500+ lines, needs splitting
-5. **Hand-rolled HTML sanitization** — adequate for demo, replace with DOMPurify for production
-6. **Static suggestion map** — dynamic refinement deferred
+3. **No persistent conversation history** — context expires after 5 min / 20 turns
+4. **ChatWidget is a god class** — 1400+ lines, needs splitting
+5. **Hand-rolled HTML sanitization** — whitelist-based, adequate for demo
+6. **Static suggestion map** — partially dynamic (product/order context injected)
 7. **Supabase credentials hardcoded** — should use env vars / build-time injection
 
 ## Roadmap
+
+### v1.1 — UX Polish & Response Quality (Shipped May 20, 2026)
+| Change | Status |
+|--------|--------|
+| Return service enabled by default | Complete |
+| Compound query handling (catalog + policy) | Complete |
+| Warranty keyword mapping (defective, damaged, broken) | Complete |
+| Order number regex for ORD-XXXX format | Complete |
+| Context-aware action chips | Complete |
+| Order card CSS class whitelist in sanitizer | Complete |
+| Conversational response templates | Complete |
+| Context limit increased to 20 turns | Complete |
+| Refresh button in chat header | Complete |
+| Policy routing priority fix | Complete |
+| Off-topic word-boundary fixes | Complete |
+| Size synonym full-name matching | Complete |
 
 ### Hackathon Submission (v1.0 — Shipped May 19, 2026)
 | Phase | Status |

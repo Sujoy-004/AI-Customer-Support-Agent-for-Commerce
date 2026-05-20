@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Technical Document: AI Customer Support Agent for Commerce
 
-> **Last updated:** 2026-05-19 (v1.0 milestone — 9 phases complete, 607 tests)
+> **Last updated:** 2026-05-20 (v1.1 — UX polish, return flow, compound queries)
 > **Repository:** AI Customer Support Agent for Commerce (Track 4)
 
 ## 1. Architecture Overview
@@ -57,10 +57,10 @@ The system uses a browser-side layered architecture. All services run in the use
 │  │RefusalResponseService│ │ OrderCard                     │  │
 │  │(polite refusals)     │ │ (DOM component for orders)    │  │
 │  └──────────────────────┘ └───────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────┐            │
-│  │ ReturnService (feature-flagged)              │            │
-│  │ (return intent, eligibility, submission)     │            │
-│  └──────────────────────────────────────────────┘            │
+  │  ┌──────────────────────────────────────────────┐            │
+  │ │ ReturnService (enabled by default)             │            │
+  │ │ (return intent, eligibility, submission)       │            │
+  │  └──────────────────────────────────────────────┘            │
 │  ┌────────────────────────────┐ ┌─────────────────────────┐  │
   │ │EscalationDetector          │ │EscalationStateMachine   │  │
   │ │(handoff + frustration)     │ │(FSM + localStorage)     │  │
@@ -100,7 +100,7 @@ The system uses a browser-side layered architecture. All services run in the use
 │  └──────────────────────────┘  └────────────────────────────┘ │
 │  ┌────────────────────┐  ┌────────────────────────────────┐   │
 │  │ConversationContext │  │ Synonym Config (colors.ts,     │   │
-│  │Manager (5min/3turn)│  │  sizes.ts, materials.ts)      │   │
+│  │Manager (5min/20turn)│  │  sizes.ts, materials.ts)      │   │
 │  └────────────────────┘  └────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -275,7 +275,7 @@ NO LLM call anywhere in this chain.
 - CatalogSyncManager, PolicySyncManager — periodic background sync, deterministic fetch
 - EscalationDetector — uses keywords + frustration signals by design, not semantic routing
 - HandoffChannel, AgentPresence — Supabase Realtime wrapper, deterministic event dispatch
-- ReturnService — feature-flagged (disabled by default), uses keyword detection
+- ReturnService — enabled by default (v1.1), uses keyword detection
 - ResponseGrounder — policy validation unchanged
 
 ### 2.3 Why This Hybrid Approach
@@ -292,9 +292,11 @@ NO LLM call anywhere in this chain.
 The `_generateAgentResponse` pipeline in ChatWidget.ts now starts with semantic routing, then falls through to the deterministic data pipeline:
 
 ```
+→ Compound query detection (v1.1)            (catalog + policy in one query)
 → SemanticRouter.classify()                 (semantic intent)
 → OffTopicDetector.detectOffTopic()         (semantic on-topic check + keyword fallback)
 → OrderIntentDetector.resolveQuery()        (semantic + keyword fallback)
+→ ReturnService.detectReturnIntent()        (enabled by default, v1.1)
 → CatalogIntentDetector.resolveQuery()      (semantic + keyword fallback)
 → PolicyService.getAllPolicies()            (cached data lookup)
 → Greeting keywords                         (string includes)
@@ -398,11 +400,11 @@ What happens:
 ### 3.7 Context Expired
 
 ```
-Scenario: User returns to chat after 5+ minutes or exceeds 3 turns
+Scenario: User returns to chat after 5+ minutes or exceeds 20 turns
 What happens:
   CatalogIntentDetector.isContextExpired():
     → Checks elapsed time > CONTEXT_TTL_MS (300000ms = 5 min)
-    → Checks turnCount >= MAX_CONTEXT_TURNS (3)
+    → Checks turnCount >= MAX_CONTEXT_TURNS (20)
   If expired:
     → Context cleared via clearContext()
     → Returns { type: 'context_expired', message: "Your previous product inquiry has expired..." }
@@ -631,12 +633,8 @@ User Input
     │ (not escalating)
     ▼
 ┌──────────────────────────────┐
-│ OrderIntentDetector          │──── order found ──► formatOrderResponse() ──► Response
-│ (semantic + keyword fallback)│
-│ ├─ classify() via SemanticRouter
-│ ├─ parseOrderIdentifier()    │
-│ ├─ validateEmail()           │
-│ └─ orderService.lookup()     │
+│ ReturnService                │──── return intent? ──► checkEligibility() ──► return response
+│ (enabled by default, v1.1)   │
 └──────────────────────────────┘
     │ (not order-related)
     ▼
@@ -781,7 +779,7 @@ Implemented by `MockCatalogDataSource` (for testing/development) with an interfa
 | Product catalog | 2 minutes (120000ms) | `clearCache()` method | `catalogService.ts` |
 | Inventory/Stock | **NEVER cached** | Always hits data source | `catalogService.ts` line 75-85 |
 | Policies | 5 minutes (300000ms) | `clearCache()` method | `policyService.ts` |
-| Conversation context | 5 minutes (300000ms) | 3-turn max, `clearContext()` | `catalogIntentDetector.ts` |
+| Conversation context | 5 minutes (300000ms) | 20-turn max, `clearContext()` | `catalogIntentDetector.ts` |
 | Generic cache | Configurable per key | `CacheManager.delete()` | `cacheManager.ts` |
 | Catalog sync | 5-minute periodic refresh | `CatalogSyncManager` | `catalogSync.ts` |
 | Policy sync | 10-minute periodic refresh | `PolicySyncManager` | `policySync.ts` |
