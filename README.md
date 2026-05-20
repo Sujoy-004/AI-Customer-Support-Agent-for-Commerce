@@ -31,7 +31,7 @@ Not a generic FAQ wrapper or an expensive LLM chatbot. Executes active workflows
 npm install
 ```
 
-### 2. Run unit tests (optional, 605 tests)
+### 2. Run unit tests (optional, 607 tests)
 
 ```bash
 npx vitest run
