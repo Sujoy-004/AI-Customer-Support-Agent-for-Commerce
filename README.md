@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # AI Customer Support Agent for Commerce
 
-**v1.2 — Ship Ready May 20, 2026** | 605 tests passing | 148 commits | 10 phases complete
+**v1.2 — Ship Ready May 20, 2026** | 607 tests passing | 149 commits | 10 phases complete
 
 A "Store-Native" Shopify AI customer support agent built for the Kasparro Agentic Commerce Hackathon (Track 4). Uses a **hybrid architecture**: in-browser semantic understanding (MiniLM embeddings via transformer.js) for intent routing + deterministic data retrieval for zero-hallucination answers.
 
@@ -137,11 +137,7 @@ Open `shopify-widget/agent-console.html` in your browser. It connects to the sam
 ├── tsconfig.json            # Root TypeScript config
 ├── tsconfig.widget.json     # Widget-specific TS config
 ├── vitest.config.ts         # Vitest configuration
-├── PRODUCT_DOC.md           # Product document (in docs/)
-├── TECHNICAL_DOC.md         # Technical document (in docs/)
-├── DECISION_LOG.md          # Key decisions log (in docs/)
-├── DESIGN.md                # Berkeley Mono design system spec (in docs/)
-├── hackathon.md             # Hackathon rules & requirements (in docs/)
+├── docs/                    # Product, technical, and decision documentation
 └── package.json
 ```
 
@@ -244,8 +240,6 @@ RATE_LIMIT_WINDOW_MS=60000
 RATE_LIMIT_MAX_REQUESTS=20
 ```
 
-See `docs/PHASE1_SECURITY.md` for complete security implementation details.
-
 ## Phases
 
 | Phase | Status | What It Delivers |
@@ -289,10 +283,10 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 ## Screenshots
 
 Widget UI features premium commerce design with:
-- Inter font family, cream/ink palette, hairline borders
+- Berkeley Mono font family, cream/ink palette, hairline borders
 - Structured product cards with stock status badges
 - Response-type-aware message surfaces (product, order, policy, escalation)
-- Live store data indicator for trust reinforcement
+- Silent data source mode — identical UX regardless of backend
 - Adaptive onboarding with example queries
 - Context-aware action chips and autocomplete dropdown
 - Mobile-optimized layout with safe-area support
@@ -318,7 +312,7 @@ Widget UI features premium commerce design with:
 2. **Product card surface** (0:45) — structured commerce data, not text-only
 3. **Order timeline** (1:00) — visual logistics tracking with carrier + ETA
 4. **Live handoff** (2:00) — real Supabase WebSocket, not simulated
-5. **Data source indicator** (always visible) — "Connected to store" trust signal
+5. **Policy grounding** (1:15) — exact policy answers validated against live data
 
 ## Contribution Note
 
