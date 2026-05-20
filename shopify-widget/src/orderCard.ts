@@ -52,16 +52,18 @@ function isTerminal(status: OrderStatus): boolean {
   return ['cancelled', 'returned'].includes(status);
 }
 
-function renderHorizontalTimeline(status: OrderStatus): string {
+function renderTimeline(status: OrderStatus): string {
   const steps = ['confirmed', 'processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered'];
   return steps.map((step, i) => {
     const cls = timelineClass(status, step as OrderStatus);
     const icon = STATUS_ICONS[step as OrderStatus];
-    return `<div class="oc-tl-step ${cls}" title="${STATUS_LABELS[step as OrderStatus]}">
+    const label = STATUS_LABELS[step as OrderStatus];
+    return `<div class="oc-tl-step ${cls}">
       <div class="oc-tl-dot">${icon}</div>
+      <span class="oc-tl-label">${label}</span>
       ${i < steps.length - 1 ? '<div class="oc-tl-line"></div>' : ''}
     </div>`;
-  }).join('');
+  }).join('\n');
 }
 
 function renderItems(items: Order['items']): string {
@@ -108,7 +110,7 @@ export class OrderCard {
 
       ${o.status === 'on_hold' ? `<div class="oc-hold-banner">⏸ On Hold — progress paused</div>` : ''}
 
-      ${!isTerm ? `<div class="oc-timeline">${renderHorizontalTimeline(o.status)}</div>` : ''}
+      ${!isTerm ? `<div class="oc-timeline"><div class="oc-tl-steps">${renderTimeline(o.status)}</div></div>` : ''}
 
       ${o.notes ? `<div class="oc-notes">${o.notes}</div>` : ''}
     </div>`;

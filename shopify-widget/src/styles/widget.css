@@ -1163,31 +1163,37 @@
   border-bottom: 1px solid var(--color-hairline);
 }
 
-/* ── Timeline (horizontal, compact) ── */
+/* ── Timeline (vertical, compact) ── */
 .oc-timeline {
+  padding: 8px 14px 10px;
+}
+
+.oc-tl-steps {
   display: flex;
-  align-items: center;
-  padding: 10px 14px;
+  flex-direction: column;
   gap: 0;
 }
 
 .oc-tl-step {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  gap: 10px;
   position: relative;
-  flex: 1;
-  min-width: 0;
+  padding-bottom: 12px;
+}
+
+.oc-tl-step:last-child {
+  padding-bottom: 0;
 }
 
 .oc-tl-dot {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 12px;
   flex-shrink: 0;
   position: relative;
   z-index: 1;
@@ -1197,13 +1203,11 @@
 
 .oc-tl-step.oc-tl--done .oc-tl-dot {
   background: var(--color-green);
-  color: #fff;
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
 }
 
 .oc-tl-step.oc-tl--current .oc-tl-dot {
   background: var(--color-status-active);
-  color: #fff;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
   animation: tl-current-pulse 2s var(--ease-in-out) infinite;
 }
@@ -1216,13 +1220,11 @@
 .oc-tl-step.oc-tl--upcoming .oc-tl-dot {
   background: var(--color-surface-card);
   border: 1.5px solid var(--color-hairline-strong);
-  color: var(--color-stone);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .oc-tl-step.oc-tl--paused .oc-tl-dot {
   background: var(--color-amber);
-  color: #fff;
   box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
 }
 
@@ -1230,27 +1232,39 @@
   background: var(--color-surface-card);
   border: 1.5px solid var(--color-hairline-strong);
   opacity: 0.4;
-  color: var(--color-stone);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .oc-tl-line {
   position: absolute;
-  top: 12px;
-  left: calc(50% + 14px);
-  right: calc(-50% + 14px);
-  height: 2px;
+  left: 12px;
+  top: 26px;
+  width: 2px;
+  height: calc(100% - 14px);
   background: var(--color-hairline);
   z-index: 0;
 }
 
 .oc-tl-step.oc-tl--done .oc-tl-line {
   background: var(--color-green);
-  opacity: 0.3;
+  opacity: 0.25;
 }
 
-.oc-tl-step:last-child .oc-tl-line {
-  display: none;
+.oc-tl-label {
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--color-stone);
+  line-height: var(--leading-tight);
+  padding-top: 5px;
+}
+
+.oc-tl-step.oc-tl--done .oc-tl-label {
+  color: var(--color-green);
+}
+
+.oc-tl-step.oc-tl--current .oc-tl-label {
+  color: var(--color-on-primary);
+  font-weight: var(--weight-semibold);
 }
 
 /* ── Notes ── */
