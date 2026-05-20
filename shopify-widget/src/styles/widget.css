@@ -10,22 +10,22 @@
    SECTION 1 — DESIGN TOKENS
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* ── Color palette ── */
-  --color-ink:      #201d1d;
-  --color-ink-deep: #0f0000;
-  --color-charcoal: #302c2c;
-  --color-body:     #424245;
-  --color-mute:     #646262;
-  --color-stone:    #6e6e73;
-  --color-ash:      #9a9898;
-  --color-canvas:   #fdfcfc;
-  --color-surface-soft:  #f8f7f7;
-  --color-surface-card:  #f1eeee;
-  --color-hairline:      rgba(15, 0, 0, 0.08);
-  --color-hairline-strong: #646262;
+  /* ── Color palette (dark teal theme) ── */
+  --color-ink:      #AFB3B7;
+  --color-ink-deep: #AFB3B7;
+  --color-charcoal: #69818D;
+  --color-body:     #AFB3B7;
+  --color-mute:     #69818D;
+  --color-stone:    #5A636A;
+  --color-ash:      #5A636A;
+  --color-canvas:   #132E35;
+  --color-surface-soft:  #2D4A53;
+  --color-surface-card:  #2D4A53;
+  --color-hairline:      rgba(105, 129, 141, 0.15);
+  --color-hairline-strong: #5A636A;
   --color-warning: #ff9f0a;
-  --color-accent:  #007aff;
-  --color-on-primary: #fdfcfc;
+  --color-accent:  #0D1F23;
+  --color-on-primary: #AFB3B7;
   --color-green:   #16a34a;
   --color-red:     #dc2626;
   --color-purple:  #7c3aed;
@@ -37,6 +37,9 @@
   --color-status-cancelled: #dc2626;
   --color-status-returned: #7c3aed;
   --color-status-on-hold: #d97706;
+
+  /* Dark surface for user bubbles, toggle, buttons */
+  --color-primary-bg: #0D1F23;
 
   /* ── Typography ── */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -189,7 +192,7 @@
 }
 
 .msg--user .msg-content {
-  background: var(--color-ink);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
   border-radius: var(--radius-md) var(--radius-md) var(--radius-sm) var(--radius-md);
   padding: 10px 14px;
@@ -214,7 +217,7 @@
 
 .msg--agent .msg-content {
   background: var(--color-surface-soft);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--radius-sm);
   padding: var(--space-sm) var(--space-md);
@@ -306,7 +309,7 @@
 }
 
 .msg-role--human {
-  color: var(--color-accent);
+  color: var(--color-on-primary);
 }
 
 .msg-role-dot {
@@ -314,7 +317,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--color-green);
   flex-shrink: 0;
 }
 
@@ -388,8 +391,8 @@
 }
 
 .sys-btn--confirm {
-  background: var(--color-accent);
-  color: var(--color-on-primary);
+  background: var(--color-on-primary);
+  color: var(--color-primary-bg);
   box-shadow: var(--elevation-1);
 }
 
@@ -401,7 +404,7 @@
 .sys-btn--confirm:active {
   transform: translateY(0);
   box-shadow: var(--elevation-0);
-  background: var(--color-ink-deep);
+  background: var(--color-primary-bg);
 }
 
 .sys-btn--cancel,
@@ -414,7 +417,7 @@
 .sys-btn--cancel:hover,
 .sys-btn--ghost:hover {
   background: var(--color-surface-soft);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
 }
 
 .sys-btn--text {
@@ -462,7 +465,7 @@
 .sys-dot-pulse {
   width: 6px;
   height: 6px;
-  background: var(--color-accent);
+  background: var(--color-mute);
   border-radius: 50%;
   animation: dot-pulse 1.4s var(--ease-in-out) infinite;
 }
@@ -508,7 +511,7 @@
 .sys-queue-position {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-family: var(--font-mono);
 }
 
@@ -562,7 +565,7 @@
   width: 14px;
   height: 14px;
   border: 2px solid var(--color-hairline);
-  border-top-color: var(--color-accent);
+  border-top-color: var(--color-mute);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   flex-shrink: 0;
@@ -642,7 +645,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  background: var(--color-ink);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
@@ -710,7 +713,7 @@
 .input-textarea {
   width: 100%;
   background: var(--color-surface-soft);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-family: var(--font-sans);
   font-size: var(--text-body);
   line-height: var(--leading-body);
@@ -738,8 +741,8 @@
 
 .input-textarea:focus {
   outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.08);
+  border-color: var(--color-mute);
+  box-shadow: 0 0 0 3px rgba(105, 129, 141, 0.15);
 }
 
 .input-textarea:disabled {
@@ -758,7 +761,7 @@
   width: 32px;
   height: 32px;
   background: transparent;
-  color: var(--color-ash);
+  color: var(--color-stone);
   border: none;
   border-radius: var(--radius-full);
   cursor: pointer;
@@ -767,7 +770,7 @@
 }
 
 .input-send:hover {
-  background: var(--color-ink);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
 }
 
@@ -800,8 +803,8 @@
   font-family: var(--font-sans);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
-  background: var(--color-canvas);
-  color: var(--color-body);
+  background: var(--color-surface-soft);
+  color: var(--color-on-primary);
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-full);
   padding: 5px 12px;
@@ -825,15 +828,15 @@
 }
 
 .action-chip:hover {
-  background: var(--color-surface-soft);
+  background: var(--color-surface-card);
   border-color: var(--color-hairline-strong);
   transform: translateY(-1px);
 }
 
 .action-chip:active {
-  background: var(--color-accent);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
-  border-color: var(--color-accent);
+  border-color: var(--color-primary-bg);
   transform: translateY(0) scale(0.98);
   box-shadow: var(--elevation-0);
 }
@@ -854,7 +857,7 @@
 .onboarding-title {
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   margin-bottom: var(--space-2xs);
   letter-spacing: -0.01em;
 }
@@ -902,7 +905,7 @@
 }
 
 .onboarding-dismiss:hover {
-  color: var(--color-ink);
+  color: var(--color-on-primary);
 }
 
 .onboarding-hint--fading {
@@ -990,7 +993,7 @@
 .oc-order-number {
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-family: var(--font-mono);
   letter-spacing: -0.02em;
 }
@@ -1046,7 +1049,7 @@
 }
 
 .oc-item-name {
-  color: var(--color-ink);
+  color: var(--color-on-primary);
 }
 
 .oc-item-variant {
@@ -1086,7 +1089,7 @@
 .oc-tracking-carrier {
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
 }
 
 .oc-tracking-number {
@@ -1215,7 +1218,7 @@
 }
 
 .oc-tl-step.oc-tl--current .oc-tl-label {
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-weight: var(--weight-semibold);
 }
 
@@ -1266,7 +1269,7 @@
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: var(--text-sm);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   transition: background var(--duration-fast) var(--ease-out);
 }
 
@@ -1279,7 +1282,7 @@
 }
 
 .autocomplete-item:active {
-  background: var(--color-ink);
+  background: var(--color-primary-bg);
   color: var(--color-on-primary);
 }
 
@@ -1334,7 +1337,7 @@
 .chat-header-title {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   letter-spacing: 0.01em;
 }
 
@@ -1356,7 +1359,7 @@
 
 .chat-refresh-btn:hover {
   background: var(--color-surface-soft);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
 }
 
 .chat-refresh-btn:active {
@@ -1553,7 +1556,7 @@
 
 .rs-variant-name {
   font-size: var(--text-sm);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-weight: var(--weight-medium);
   flex: 1;
   overflow: hidden;
@@ -1564,7 +1567,7 @@
 .rs-variant-price {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-family: var(--font-mono);
 }
 
@@ -1615,7 +1618,7 @@
 .rs-stock-product {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   margin-bottom: var(--space-xs);
 }
 
@@ -1646,7 +1649,7 @@
 .pc-title {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   line-height: var(--leading-tight);
   flex: 1;
 }
@@ -1654,7 +1657,7 @@
 .pc-price {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-family: var(--font-mono);
   white-space: nowrap;
 }
