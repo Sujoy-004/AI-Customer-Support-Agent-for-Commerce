@@ -31,6 +31,8 @@ const EXCLUSION_KEYWORDS = [
 ];
 
 export function formatCatalogResponse(query: string, result: ResolvedQuery): string {
+  const lowerQuery = query.toLowerCase();
+
   switch (result.type) {
     case 'exact': {
       const stockBadge = formatStockBadge(result.stock);
@@ -47,18 +49,16 @@ export function formatCatalogResponse(query: string, result: ResolvedQuery): str
       const missing = result.product.options
         .filter(o => !result.options[o.name])
         .map(o => o.name);
-      const optionsSummary = result.product.options.map(o => {
-        if (result.options[o.name]) {
-          return `${o.name}: ${result.options[o.name]}`;
-        }
-        return `${o.name}: ${o.values.join(', ')}`;
-      }).join(' | ');
 
-      let msg = `We have the ${result.product.title}. Here are the available options:\n${optionsSummary}\n`;
+      let msg = `Yes, we have the ${result.product.title}`;
+      if (resolvedParts.length > 0) {
+        msg += ` in ${resolvedParts.join(', ')}`;
+      }
+      msg += '.';
       if (missing.length > 0) {
-        msg += `Which ${missing.join(' and ')} would you like?`;
+        msg += ` Which ${missing.join(' and ')} would you like?`;
       } else {
-        msg += `We have ${result.candidates.length} combination${result.candidates.length !== 1 ? 's' : ''} available.`;
+        msg += ` ${result.candidates.length} option${result.candidates.length !== 1 ? 's' : ''} available.`;
       }
       return msg;
     }
@@ -67,11 +67,22 @@ export function formatCatalogResponse(query: string, result: ResolvedQuery): str
       const priceRange = result.product.priceRange.min === result.product.priceRange.max
         ? `$${result.product.priceRange.min}`
         : `$${result.product.priceRange.min} – $${result.product.priceRange.max}`;
-      const optionsSummary = result.product.options.map(o =>
-        `${o.name}: ${o.values.join(', ')}`
-      ).join('\n');
       const stockSummary = summarizeStock(result.product.variants);
-      return `${result.product.title}\n${result.product.description}\nPrice: ${priceRange}\n\nOptions:\n${optionsSummary}\n\n${stockSummary}`;
+
+      if (lowerQuery.includes('stock') || lowerQuery.includes('available') || lowerQuery.includes('in stock') || lowerQuery.includes('any left')) {
+        return `Yes, the ${result.product.title} is in stock. ${stockSummary}`;
+      }
+      if (lowerQuery.includes('how many') || lowerQuery.includes('quantity') || lowerQuery.includes('count')) {
+        const totalQty = result.product.variants.reduce((sum, v) => sum + (v.inventory.quantity || 0), 0);
+        return `We have ${totalQty} ${result.product.title}${totalQty !== 1 ? 's' : ''} in stock across all variants.`;
+      }
+      if (lowerQuery.includes('restock') || lowerQuery.includes('restock') || lowerQuery.includes('back in stock')) {
+        return `I don't have restock dates for the ${result.product.title}, but we currently have stock available. You can check back later or I can let you know what's available now.`;
+      }
+      if (lowerQuery.includes('price') || lowerQuery.includes('cost') || lowerQuery.includes('how much')) {
+        return `The ${result.product.title} is priced at ${priceRange}.`;
+      }
+      return `Yes, we carry the ${result.product.title}. It's ${priceRange}. ${stockSummary}`;
     }
 
     case 'search_results': {
@@ -143,7 +154,7 @@ export class CatalogIntentDetector {
   private catalogCategories: Record<string, any>;
   private context: CatalogConversationContext | null = null;
   private readonly CONTEXT_TTL_MS = 300000;
-  private readonly MAX_CONTEXT_TURNS = 3;
+  private readonly MAX_CONTEXT_TURNS = 20;
   private readonly SUGGESTION_LIMIT = 5;
   private readonly PRICE_RANGE_FRACTION = 0.2;
 
@@ -210,13 +221,20 @@ export class CatalogIntentDetector {
     }
 
     if (detectedIntent === 'product_search' && searchResults.length === 0 && !canUseContext) {
-      const allProducts = await this.catalogService.loadProducts();
-      return {
-        type: 'search_results',
-        intent: 'product_search',
-        products: allProducts,
-        totalCount: allProducts.length
-      };
+      const searchTerms = this.extractSearchTerms(lowerQuery);
+      const genericTerms = ['products', 'items', 'catalog', 'collection', 'everything'];
+      const isGenericQuery = !searchTerms || genericTerms.some(t => searchTerms.includes(t));
+
+      if (isGenericQuery) {
+        const allProducts = await this.catalogService.loadProducts();
+        return {
+          type: 'search_results',
+          intent: 'product_search',
+          products: allProducts,
+          totalCount: allProducts.length
+        };
+      }
+      // Fall through to not_found for specific queries with no matches
     }
 
     if (searchResults.length === 0 && !canUseContext) {
@@ -572,11 +590,9 @@ export class CatalogIntentDetector {
   }
 
   private textContainsWord(text: string, word: string): boolean {
-    if (word.length <= 1) {
-      const regex = new RegExp(`(?:^|\\s)${escapeRegex(word)}(?=\\s|$|[\\.!\\?,\\;:])`, 'i');
-      return regex.test(text);
-    }
-    return text.includes(word);
+    const escaped = escapeRegex(word);
+    const regex = new RegExp(`(?:^|\\s)${escaped}(?=\\s|$|[\\.!\\?,\\;:])`, 'i');
+    return regex.test(text);
   }
 
   private findOptionValueInText(
@@ -594,7 +610,9 @@ export class CatalogIntentDetector {
     }
 
     if (Object.keys(synonymTable).length > 0) {
-      for (const [canonical, synonyms] of Object.entries(synonymTable)) {
+      // Sort by canonical length descending to match "extra large" before "large"
+      const sortedEntries = Object.entries(synonymTable).sort((a, b) => b[0].length - a[0].length);
+      for (const [canonical, synonyms] of sortedEntries) {
         const canonicalLower = canonical.toLowerCase();
         const canonicalInQuery = this.textContainsWord(remainingText, canonicalLower) ||
                                  this.textContainsWord(fullLowerQuery, canonicalLower);

@@ -6,6 +6,7 @@
 
 import { OffTopicDetector, OffTopicResult } from './offTopicDetector';
 import { PolicyService } from './policyService';
+import { SemanticRouter } from '../../shopify-widget/src/core/semanticRouter';
 
 /**
  * Interface for refusal response options
@@ -160,4 +161,4 @@ export class RefusalResponseService {
 /**
  * Default export for convenience
  */
-export default new RefusalResponseService(new OffTopicDetector(new PolicyService()));
+export default new RefusalResponseService(new OffTopicDetector(new PolicyService(), SemanticRouter.getInstance()));

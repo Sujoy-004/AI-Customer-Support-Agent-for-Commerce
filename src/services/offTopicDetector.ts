@@ -138,10 +138,11 @@ export class OffTopicDetector {
       console.error('[OffTopicDetector] Semantic on-topic check failed:', err);
     }
     
-    // Check for clearly off-topic keywords
-    const offTopicMatches = this.OFF_TOPIC_KEYWORDS.filter(keyword => 
-      lowerQuery.includes(keyword)
-    );
+    // Check for clearly off-topic keywords (word-boundary match to avoid false positives like "headphones" matching "phone")
+    const offTopicMatches = this.OFF_TOPIC_KEYWORDS.filter(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+      return regex.test(lowerQuery);
+    });
     
     if (offTopicMatches.length > 0) {
       result.isOffTopic = true;
@@ -161,10 +162,11 @@ export class OffTopicDetector {
       }
     }
     
-    // Check for on-topic keywords
-    const onTopicMatches = this.ON_TOPIC_KEYWORDS.filter(keyword => 
-      lowerQuery.includes(keyword)
-    );
+    // Check for on-topic keywords (word-boundary match)
+    const onTopicMatches = this.ON_TOPIC_KEYWORDS.filter(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+      return regex.test(lowerQuery);
+    });
     
     // If we have strong on-topic signals, it's likely not off-topic
     if (onTopicMatches.length >= 2) {
