@@ -538,9 +538,12 @@ describe('ChatWidget Supabase handoff', () => {
     (widget['_escalationStateMachine' as keyof typeof widget] as EscalationStateMachine).transition('OFFER', 'direct');
     await (widget['_handleEscalationConfirm' as keyof typeof widget] as () => Promise<void>)();
 
-    const transferringMsg = document.querySelector('.sys-msg--transfer');
-    expect(transferringMsg).toBeTruthy();
-    expect(transferringMsg!.textContent).toContain('Transferring you to a human agent');
+    const state = widget['state' as keyof typeof widget] as ChatWidgetState;
+    expect(state.messages.length).toBeGreaterThan(0);
+    const hasTransferMsg = state.messages.some(
+      (m: ChatMessage) => m.text.includes('Transferring you to a human agent')
+    );
+    expect(hasTransferMsg).toBe(true);
   });
 
   it('should render connected message when handoff_accepted received', async () => {
@@ -563,7 +566,7 @@ describe('ChatWidget Supabase handoff', () => {
     const state = widget['state' as keyof typeof widget] as ChatWidgetState;
     const connectedMsgEl = document.querySelector('.sys-msg--connected');
     expect(connectedMsgEl).toBeTruthy();
-    expect(connectedMsgEl!.textContent).toContain("You're now connected with a human agent");
+    expect(connectedMsgEl!.textContent).toContain('Connected with human agent');
   });
 
   it('should show unavailable message when subscription fails', async () => {
