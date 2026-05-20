@@ -1066,3 +1066,73 @@ A "Store-Native" Shopify AI customer support agent with hybrid architecture:
 - `as any` assertions in some test files — use proper types
 
 ---
+
+## 2026-05-20: Dark Teal Theme (Post-v1.1 Polish)
+
+**Considered:** Keep cream/ink palette (`#fdfcfc`) vs switch to dark teal (`#132E35`).
+
+**Chose:** Dark teal — `--color-canvas: #132E35`, `--color-surface-soft: #2D4A53`, `--color-body: #AFB3B7`, hairline borders in teal-adjacent gray.
+
+**Because:** Cream/ink was designed for documentation, not chat UI. Dark teal feels premium, reduces eye strain for chat sessions, and the light text on dark background makes product/order cards pop.
+
+**Tradeoff:** Dark theme consumes slightly more battery on OLED screens. Previous cream-based theme screenshots become outdated.
+
+Source: `shopify-widget/src/styles/widget.css` (design tokens).
+
+---
+
+## 2026-05-20: Font Change — Berkeley Mono → Inter + JetBrains Mono
+
+**Considered:** Keep Berkeley Mono (paid) vs switch to JetBrains Mono only vs Inter + JetBrains Mono hybrid.
+
+**Chose:** Inter for UI (body text, cards, labels) + JetBrains Mono for code/monospaced elements.
+
+**Because:** Berkeley Mono is paid — not suitable for production deployment. Inter is excellent for readable UI text at various sizes. JetBrains Mono retains the monospaced aesthetic for structured data.
+
+**Tradeoff:** Loses the distinctive Berkeley Mono look. Two fonts instead of one.
+
+Source: `shopify-widget/src/styles/widget.css`.
+
+---
+
+## 2026-05-20: INR Pricing & Indian Carriers
+
+**Considered:** Keep USD pricing with US carriers (USPS, UPS, FedEx) vs switch to INR with Indian carriers (Delhivery, Blue Dart, India Post).
+
+**Chose:** INR pricing with Indian carriers.
+
+**Because:** Hackathon is for Indian college students — INR is contextually relevant. Indian carriers (Delhivery, Blue Dart) are what Indian e-commerce customers actually see. Mock order locations changed to Indian cities (Mumbai, Delhi, Kolkata, Bangalore, etc.) with state codes.
+
+**Tradeoff:** International judges may need to mentally convert ₹ prices. Demo data no longer represents a US store.
+
+Source: `src/services/mockCatalogData.ts`, `src/services/mockOrderData.ts`.
+
+---
+
+## 2026-05-20: Order Card — Vertical Timeline with Emoji Dots
+
+**Considered:** Horizontal timeline (compact) vs vertical timeline with emoji dots (expressive) vs plain text.
+
+**Chose:** Vertical timeline with emoji dots and label beside each step. Gradient top on card, compact layout.
+
+**Because:** Vertical timeline is more scannable — each step gets its own row with a visual marker. Emoji dots add personality without breaking the monospaced aesthetic. Gradient top gives the card a premium feel.
+
+**Tradeoff:** Uses more vertical space per order card. Active steps get different emoji than completed ones.
+
+Source: `shopify-widget/src/orderCard.ts`.
+
+---
+
+## 2026-05-20: Team Roles Assigned
+
+**Considered:** Keep TBD vs assign specific roles per member.
+
+**Chose:** Sparsh Pandey → Product Thinking & Documentation. Sujoy Das → Development & Architecture.
+
+**Because:** Clear ownership for judging criteria — judges need to know who handled product vs technical dimensions. Both contributed jointly to architecture, design system, and demo prep.
+
+**Tradeoff:** Roles are slightly overlapping (both contributed to everything). Listed roles represent primary responsibility.
+
+Source: `docs/CONTRIBUTION.md`.
+
+---
