@@ -25,7 +25,7 @@ export class OrderIntentDetector {
   private orderCategories: Record<string, ReferenceCategory>;
   private context: OrderConversationContext | null = null;
   private readonly CONTEXT_TTL_MS = 300000;
-  private readonly MAX_CONTEXT_TURNS = 3;
+  private readonly MAX_CONTEXT_TURNS = 20;
 
   private readonly INTENT_GROUPS: Record<string, { includes: string[]; excludes: string[] }> = {
     order_status: {
@@ -39,7 +39,7 @@ export class OrderIntentDetector {
     },
   };
 
-  private readonly ORDER_NUMBER_PATTERN = /#\d{3,}/;
+  private readonly ORDER_NUMBER_PATTERN = /#?\d{3,}|ord-\d+/i;
 
   constructor(orderService: OrderService, semanticRouter: SemanticRouter) {
     this.orderService = orderService;
@@ -62,10 +62,10 @@ export class OrderIntentDetector {
     const detectedResult = await this.detectIntent(lowerQuery);
     const detectedIntent = detectedResult.intent;
 
-    const hasOrderPattern = lowerQuery.includes('order') && (
+    const hasOrderPattern = lowerQuery.includes('order') ||
       this.ORDER_NUMBER_PATTERN.test(lowerQuery) ||
-      /\b\d{3,}\b/.test(lowerQuery)
-    );
+      /\b\d{3,}\b/.test(lowerQuery) ||
+      /ord-\d+/i.test(lowerQuery);
 
     if (!detectedIntent && !hasOrderPattern && !this.context) {
       return { type: 'not_order', reason: 'No order-related content detected' };
@@ -205,6 +205,7 @@ export class OrderIntentDetector {
       /#(\d{3,})/,
       /order\s*#?\s*(\d{3,})/i,
       /number\s*#?\s*(\d{3,})/i,
+      /ord-(\d{3,})/i,
     ];
 
     for (const pattern of patterns) {
