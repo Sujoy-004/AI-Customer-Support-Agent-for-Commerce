@@ -576,9 +576,9 @@ Step 5: Response Formatting
 ──────────────────────────────────
   formatCatalogResponse("is the classic hoodie in stock?", result)
   → type is 'product_only' → renders:
-    "Classic Hoodie
+     "Classic Hoodie
      A comfortable cotton-blend hoodie...
-     Price: $49.99 – $59.99
+     Price: ₹3,999 – ₹4,699
 
      Options:
      Size: S, M, L, XL

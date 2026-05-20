@@ -208,7 +208,7 @@ Greeting check / Fallback text
 - **Semantic Router**: `@huggingface/transformers` with `all-MiniLM-L6-v2` — in-browser sentence embeddings for intent classification. Handles typos, synonyms, and natural phrasing.
 - **Live human handoff**: Escalation routes through Supabase Realtime WebSocket channel (`support-queue`). Agent console (`agent-console.html`) receives requests, accepts, and sends responses. Typing indicators, presence tracking, reconnect with exponential backoff.
 - **Response surfaces**: Structured product/order data rendered as inline commerce cards — not text-only responses. Each response type has distinct visual rhythm.
-- **Premium commerce UI**: Inter typography, cream/ink palette, structured surfaces, mobile-optimized with safe-area support.
+- **Premium commerce UI**: Inter + JetBrains Mono typography, dark teal palette, structured surfaces, mobile-optimized with safe-area support.
 
 ## Testing
 
@@ -300,7 +300,7 @@ See [DECISION_LOG.md](./DECISION_LOG.md) for a full record of architectural and 
 ## Screenshots
 
 Widget UI features premium commerce design with:
-- Berkeley Mono font family, cream/ink palette, hairline borders
+- Inter + JetBrains Mono font family, dark teal palette, hairline borders
 - Structured product cards with stock status badges
 - Response-type-aware message surfaces (product, order, policy, escalation)
 - Silent data source mode — identical UX regardless of backend

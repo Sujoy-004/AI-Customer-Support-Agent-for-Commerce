@@ -33,6 +33,7 @@ The original 8-phase submission scored 58/100 (Bronze). Key feedback: mock data 
 | Intent detection | LLM (expensive, variable) | Semantic embeddings + keyword fallback (free, deterministic) |
 | Hallucination risk | High | Zero — verifiable data only |
 | LLM cost per query | $0.01–0.10 | $0.00 for catalog/policy paths |
+| Pricing & Carriers | USD / US carriers | INR pricing, Indian carriers (Delhivery, Blue Dart) |
 | Human handoff | Simulated / canned scripts | Supabase Realtime to live agent console |
 
 All data retrieval uses **zero LLM calls** — product lookup, variant resolution, stock check, order lookup, policy lookup all go through deterministic parsing. AI is used only for intent routing via MiniLM embeddings. Human handoff is real — messages flow through a Supabase Realtime channel to a live agent console and back.
@@ -56,7 +57,7 @@ All data retrieval uses **zero LLM calls** — product lookup, variant resolutio
 
 ## User Experience
 
-Chat widget loads as `[+] Support` toggle, bottom-right. Opens to empty message area (no welcome message — deliberate D-14 decision). Berkeley Mono typography, cream background (`#fdfcfc`), hairline borders, ASCII bracket markers. Auto-growing textarea.
+Chat widget loads as `[+] Support` toggle, bottom-right. Opens to empty message area (no welcome message — deliberate D-14 decision). Inter + JetBrains Mono typography, dark teal theme (`#132E35`), hairline borders, ASCII bracket markers. Auto-growing textarea.
 
 ## Current Limitations
 
