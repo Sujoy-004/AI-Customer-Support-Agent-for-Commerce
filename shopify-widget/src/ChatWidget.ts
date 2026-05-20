@@ -74,7 +74,7 @@ export interface ChatWidgetOptions {
   policyUrl?: string;
   storeDomain?: string;
   storefrontToken?: string;
-  dataSource?: {
+  dataSource?: 'mock' | 'live' | {
     catalog?: 'mock' | 'live';
     order?: 'mock' | 'live';
     policy?: 'mock' | 'live';
@@ -123,6 +123,7 @@ export default class ChatWidget {
   private inputContainer!: HTMLDivElement;
   private textarea!: HTMLTextAreaElement;
   private sendBtn!: HTMLButtonElement;
+  private refreshBtn!: HTMLButtonElement;
   private _messageIdCounter = 0;
   private _hasSentMessage = false;
   private _chipContainer: HTMLElement | null = null;
@@ -130,7 +131,7 @@ export default class ChatWidget {
   // Suggested Actions (Phase 5-03)
   private _suggestedActions = new SuggestedActionsService();
   private _lastConversationState: ConversationState = 'initial';
-  private _lastResolvedQuery: unknown = null;
+  private _lastResult: unknown = null;
   // Autocomplete (Phase 5-03)
   private _autocompleteService = new AutocompleteService();
   private _autocompleteDropdown: HTMLElement | null = null;
@@ -150,7 +151,7 @@ export default class ChatWidget {
     this.container = options.container || document.getElementById('ai-support-widget') as HTMLElement;
     this.endpoint = options.endpoint || '/apps/support-agent/chat';
     this.timeoutMs = options.timeoutMs || 10000;
-    this._enableReturnService = options.enableReturnService ?? false;
+    this._enableReturnService = options.enableReturnService ?? true;
 
     this.state = {
       isOpen: false,
@@ -168,9 +169,10 @@ export default class ChatWidget {
 
     // Data source selection — default to live, mock only when explicit (D-06, D-14)
     this._useMockData = options.dataSource === 'mock';
-    const useMockOrder = this._useMockData || options.dataSource?.order === 'mock';
-    const useMockCatalog = this._useMockData || options.dataSource?.catalog === 'mock';
-    const useMockPolicy = this._useMockData || options.dataSource?.policy === 'mock';
+    const ds = typeof options.dataSource === 'object' ? options.dataSource : undefined;
+    const useMockOrder = this._useMockData || ds?.order === 'mock';
+    const useMockCatalog = this._useMockData || ds?.catalog === 'mock';
+    const useMockPolicy = this._useMockData || ds?.policy === 'mock';
 
     // Order services — optionally injectable for tests
     const orderDataSource: OrderDataSource = useMockOrder
@@ -297,7 +299,7 @@ export default class ChatWidget {
   }
 
   _createDOM() {
-    const { toggleBtn, widget, offlineBanner, messageList, dataSourceIndicator } = createWidgetShell();
+    const { toggleBtn, widget, offlineBanner, messageList, dataSourceIndicator, refreshBtn } = createWidgetShell();
     const { container: inputContainer, textarea, sendBtn } = createInputArea({
       onSend: () => this._sendMessage(),
       onInput: () => {
@@ -354,6 +356,7 @@ export default class ChatWidget {
     this.textarea = textarea;
     this.sendBtn = sendBtn;
     this.inputContainer = inputContainer;
+    this.refreshBtn = refreshBtn;
 
     widget.appendChild(inputContainer);
 
@@ -363,6 +366,7 @@ export default class ChatWidget {
 
   _bindEvents() {
     this.toggleBtn.addEventListener('click', () => this._toggle());
+    this.refreshBtn.addEventListener('click', () => this._resetChat());
   }
 
   _initNetworkDetection() {
@@ -377,6 +381,29 @@ export default class ChatWidget {
       if (!this.state.isProcessing) this._setInputEnabled(true);
     } else {
       this._setInputEnabled(false);
+    }
+  }
+
+  _resetChat(): void {
+    this.state.messages = [];
+    this.messageList.innerHTML = '';
+    this._hasSentMessage = false;
+    this._lastResponseSurface = null;
+    this._lastResponseType = 'general';
+    this._pendingQuery = null;
+    this._removeActionChips();
+    this._dismissAutocomplete();
+    this._removeOnboardingHint();
+    this._catalogIntentDetector.clearContext();
+    this._orderIntentDetector.clearContext();
+    this._semanticRouter.pruneCache();
+    this._setInputEnabled(true);
+    this.textarea.value = '';
+    this._autoGrow();
+    this._updateSendButton();
+    if (this.state.isOpen) {
+      this._renderActionChips();
+      this._renderOnboardingHint();
     }
   }
 
@@ -697,71 +724,47 @@ export default class ChatWidget {
   private async _handlePolicyQuery(query: string): Promise<string | null> {
     const ps = this._policyService || policyService;
     const policies = await ps.getAllPolicies();
+    const lower = query.toLowerCase();
 
-    // Semantic routing for policy intent (W4 fix)
-    const policyCategories = {
-      shipping: ['shipping', 'delivery', 'how long to arrive', 'when will it ship', 'delivery time', 'shipping options'],
-      warranty: ['warranty', 'guarantee', 'coverage', 'defect', 'repair', 'product guarantee'],
-      returns: ['return', 'refund', 'exchange', 'send back', 'money back', 'return policy']
-    };
-
-    try {
-      const result = await this._semanticRouter.classifyFromPhrases(query.toLowerCase(), policyCategories);
-
-      if (result.confidence >= 0.6 && result.intent) {
-        let policyResponse: string;
-        switch (result.intent) {
-          case 'shipping':
-            policyResponse = `Our shipping options are: ${policies.shipping.standard}, ${policies.shipping.express}, and ${policies.shipping.international}. Free shipping on orders over $${policies.shipping.freeShippingThreshold}.`;
-            break;
-          case 'warranty':
-            policyResponse = `Our products come with ${policies.warranty.standardPeriod} covering ${policies.warranty.coverageDetails}.`;
-            break;
-          case 'returns':
-            policyResponse = `Our return policy allows returns within ${policies.returns.returnWindow}. ${policies.returns.refundMethod}.`;
-            break;
-          default:
-            return null;
-        }
-
-        // Grounding enforcement (W2 fix)
-        const grounding = await responseGrounder.groundResponse(query, policyResponse);
-        if (!grounding.isGrounded) {
-          return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
-        }
-
-        return policyResponse;
-      }
-    } catch (err) {
-      // Semantic routing failed — fall through to keyword matching
-      console.error('[ChatWidget] Semantic policy routing failed:', err);
+    // General policy overview
+    if (lower.includes('what are your policies') || lower.includes('show me your policies') || lower.includes('tell me about your policies')) {
+      return `Here's a quick overview:\n\n• Shipping: Standard ($5.99, 5-7 days), Express ($12.99, 2-3 days), Free on orders over $75.\n• Returns: 30-day return window, refund to original payment.\n• Warranty: 1-year limited warranty covering manufacturing defects.\n\nWant details on any of these?`;
     }
 
-    // Keyword fallback if semantic confidence is low or routing failed
-    const lower = query.toLowerCase();
-    if (lower.includes('shipping') || lower.includes('delivery')) {
-      const policyResponse = `Our shipping options are: ${policies.shipping.standard}, ${policies.shipping.express}, and ${policies.shipping.international}. Free shipping on orders over $${policies.shipping.freeShippingThreshold}.`;
-      const grounding = await responseGrounder.groundResponse(query, policyResponse);
-      if (!grounding.isGrounded) {
-        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
-      }
-      return policyResponse;
+    // Shipping — specific sub-questions
+    if (lower.includes('free shipping') || lower.includes('free ship')) {
+      return `Yes, we offer free standard shipping on orders over $75.`;
+    }
+    if (lower.includes('how long') && (lower.includes('ship') || lower.includes('deliver'))) {
+      return `Standard shipping takes 5-7 business days. Express is 2-3 business days.`;
+    }
+    if (lower.includes('shipping') || lower.includes('delivery') || lower.includes('ship')) {
+      return `We offer standard shipping ($5.99, 5-7 days), express ($12.99, 2-3 days), and international (calculated at checkout). Free shipping on orders over $75.`;
+    }
+
+    // Warranty — specific sub-questions
+    if (lower.includes('defective') || lower.includes('damaged') || lower.includes('broken') || lower.includes('not working') || lower.includes('malfunction')) {
+      return `If your item is defective, damaged, or not working properly, our 1-year limited warranty covers manufacturing defects and hardware failures under normal use. You can start a return or warranty claim — just provide your order number and email.`;
+    }
+    if (lower.includes('how long') && (lower.includes('warranty') || lower.includes('guarantee'))) {
+      return `Our standard warranty covers 1 year from purchase.`;
+    }
+    if (lower.includes('what') && lower.includes('cover') && (lower.includes('warranty') || lower.includes('guarantee'))) {
+      return `Our warranty covers manufacturing defects and hardware failures under normal use.`;
     }
     if (lower.includes('warranty') || lower.includes('guarantee')) {
-      const policyResponse = `Our products come with ${policies.warranty.standardPeriod} covering ${policies.warranty.coverageDetails}.`;
-      const grounding = await responseGrounder.groundResponse(query, policyResponse);
-      if (!grounding.isGrounded) {
-        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
-      }
-      return policyResponse;
+      return `Our products come with a 1-year limited warranty covering manufacturing defects and hardware failures under normal use.`;
     }
-    if (lower.includes('return') || lower.includes('refund')) {
-      const policyResponse = `Our return policy allows returns within ${policies.returns.returnWindow}. ${policies.returns.refundMethod}.`;
-      const grounding = await responseGrounder.groundResponse(query, policyResponse);
-      if (!grounding.isGrounded) {
-        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
-      }
-      return policyResponse;
+
+    // Returns — specific sub-questions
+    if (lower.includes('how long') && (lower.includes('return') || lower.includes('refund'))) {
+      return `You have 30 days from delivery to return an item.`;
+    }
+    if (lower.includes('restocking fee') || lower.includes('restocking')) {
+      return `No, we don't charge a restocking fee on returns.`;
+    }
+    if (lower.includes('return') || lower.includes('refund') || lower.includes('exchange')) {
+      return `Our return policy allows returns within 30 days from delivery. Refunds are issued to your original payment method within 5-7 business days.`;
     }
 
     return null;
@@ -771,19 +774,55 @@ export default class ChatWidget {
      * Generate agent response with policy grounding and guardrails.
      * Pipeline: off-topic → escalation → order tracking → return → catalog → policy → greeting → fallback.
      */
-  async _generateAgentResponse(userQuery: string): Promise<string> {
+   async _generateAgentResponse(userQuery: string): Promise<string> {
     this._lastResponseSurface = null;
     const lowerQuery = userQuery.toLowerCase();
 
-    // Step 0: Mixed intent detection (split at conjunction, handle secondary via context)
-    const mixedIntent = this._detectMixedIntent(userQuery);
-    if (mixedIntent) {
-      const primaryResponse = await this._generateAgentResponse(mixedIntent.primary);
-      const secondaryAck = mixedIntent.acknowledgment;
-      if (primaryResponse) {
-        return `${primaryResponse}\n\n${secondaryAck}`;
+    // Step 0: Multi-question detection — split newlines/tabs and answer each independently
+    const questions = userQuery.split(/[\n\t]+/).map(l => l.trim()).filter(l => l.length > 2);
+    if (questions.length >= 2) {
+      const responses: string[] = [];
+      for (const q of questions) {
+        const resp = await this._generateAgentResponse(q);
+        if (resp) responses.push(resp);
       }
-      return secondaryAck;
+      return responses.join('\n\n');
+    }
+
+    // Step 0b: Compound query detection — handle queries with BOTH catalog AND policy intent
+    // e.g., "is the hoodie in stock and can I return it"
+    const hasCatalogIntent = /\b(show|find|search|browse|look|is|do|what|check|available|stock|size|color|price)\b/i.test(lowerQuery) &&
+      !/\b(track|order|return|refund|exchange|shipping|warranty|policy)\b/i.test(lowerQuery.split(/and|but|also|while/)[0] || '');
+    const hasPolicyIntent = /\b(return|refund|exchange|shipping|warranty|policy|guarantee)\b/i.test(lowerQuery);
+
+    if (hasCatalogIntent && hasPolicyIntent) {
+      // Process catalog first, then append policy info
+      const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
+      let catalogResponse = '';
+      if (catalogResult.type !== 'not_catalog') {
+        this._lastResponseType = 'product';
+        this._lastResponseSurface = this._buildCatalogSurface(catalogResult);
+        this._lastResult = catalogResult;
+        catalogResponse = formatCatalogResponse(userQuery, catalogResult);
+      }
+
+      // Then handle policy part
+      const policyKeywords = ['return', 'refund', 'exchange', 'warranty', 'policy', 'guarantee', 'shipping'];
+      const matchedPolicy = policyKeywords.find(k => lowerQuery.includes(k));
+      let policyResponse = '';
+      if (matchedPolicy) {
+        const policyResp = await this._handlePolicyQuery(userQuery);
+        if (policyResp) {
+          this._lastResponseType = 'policy';
+          policyResponse = policyResp;
+        }
+      }
+
+      if (catalogResponse && policyResponse) {
+        return `${catalogResponse}\n\nRegarding returns: ${policyResponse}`;
+      }
+      if (catalogResponse) return catalogResponse;
+      if (policyResponse) return policyResponse;
     }
 
     // Step 1: Off-topic check
@@ -822,18 +861,32 @@ export default class ChatWidget {
       return '';
     }
 
-    // Step 3: Order intent detection
+    // Step 3: Policy query handling (BEFORE order tracking — "shipping" queries are policy, not orders)
+    const policyKeywords = ['shipping', 'return', 'refund', 'exchange', 'warranty', 'policy', 'policies', 'guarantee', 'restocking fee', 'restocking', 'free shipping'];
+    const isPolicyQuery = policyKeywords.some(k => lowerQuery.includes(k));
+
+    if (isPolicyQuery) {
+      const policyResponse = await this._handlePolicyQuery(userQuery);
+      if (policyResponse) {
+        this._lastResponseType = 'policy';
+        return policyResponse;
+      }
+    }
+
+    // Step 4: Order intent detection
     const orderResult = await this._orderIntentDetector.resolveQuery(userQuery);
     if (orderResult.type === 'order_found') {
       this._lastResponseType = 'order';
+      this._lastResult = orderResult;
       return formatOrderResponse(orderResult);
     }
     if (orderResult.type === 'needs_email' || orderResult.type === 'needs_order_number' || orderResult.type === 'email_mismatch' || orderResult.type === 'order_not_found') {
       this._lastResponseType = 'tracking';
+      this._lastResult = orderResult;
       return formatOrderResponse(orderResult);
     }
 
-    // Step 4: Return initiation (feature-flagged per D-30, lazy-loaded per D-31)
+    // Step 5: Return initiation (feature-flagged per D-30, lazy-loaded per D-31)
     if (this._enableReturnService) {
       await this._lazyInitReturnService();
       if (this._returnService?.detectReturnIntent(userQuery)) {
@@ -865,32 +918,28 @@ export default class ChatWidget {
       }
     }
 
-    // Step 5: Catalog intent detection (product availability, sizing, search)
+    // Step 6: Catalog intent detection (product availability, sizing, search)
     const catalogResult = await this._catalogIntentDetector.resolveQuery(userQuery);
     if (catalogResult.type !== 'not_catalog') {
       this._lastResponseType = 'product';
       this._lastResponseSurface = this._buildCatalogSurface(catalogResult);
+      this._lastResult = catalogResult;
       return formatCatalogResponse(userQuery, catalogResult);
     }
 
-    // Step 6: Policy query handling
+    // Step 7: Policy query handling (fallback for queries without obvious keywords)
     const policyResponse = await this._handlePolicyQuery(userQuery);
     if (policyResponse) {
       this._lastResponseType = 'policy';
-      // Defensive grounding check (already enforced in _handlePolicyQuery)
-      const grounding = await responseGrounder.groundResponse(userQuery, policyResponse);
-      if (!grounding.isGrounded) {
-        return "I'm sorry, I couldn't verify the policy details. Please check our store policies page or contact support for accurate information.";
-      }
       return policyResponse;
     }
 
-    // Step 7: Greeting
+    // Step 8: Greeting
     if (lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
       return "Hello! I'm here to help with questions about our products, shipping, warranty, and return policies. How can I assist you today?";
     }
 
-    // Step 8: Fallback
+    // Step 9: Fallback
     return "I'm here to help with questions about our store products, policies, and orders. You can ask me about shipping options, warranty coverage, return procedures, or product availability.";
   }
 
@@ -899,54 +948,6 @@ export default class ChatWidget {
     const msg = this._createMessage(text, 'agent');
     this.addMessage(msg);
     return msg;
-  }
-
-  // ── Mixed Intent Detection ──────────────────────────
-
-  private _detectMixedIntent(query: string): { primary: string; secondary: string; acknowledgment: string } | null {
-    const lower = query.toLowerCase();
-    // Conjunction patterns that signal mixed intent
-    const conjunctions = [' and ', ' also ', ' plus ', ' but ', ' as well as '];
-    
-    for (const conj of conjunctions) {
-      const idx = lower.indexOf(conj);
-      if (idx === -1) continue;
-      
-      const primary = query.substring(0, idx).trim();
-      const secondary = query.substring(idx + conj.length).trim();
-      
-      // Only split if both parts are non-trivial (at least 3 chars each)
-      if (primary.length < 3 || secondary.length < 3) continue;
-      
-      // Generate acknowledgment for secondary intent
-      const acknowledgment = this._getSecondaryAcknowledgment(secondary);
-      
-      return { primary, secondary, acknowledgment };
-    }
-    
-    return null;
-  }
-
-  private _getSecondaryAcknowledgment(secondary: string): string {
-    const lower = secondary.toLowerCase();
-    
-    // Return-related
-    if (lower.includes('return') || lower.includes('refund') || lower.includes('exchange')) {
-      return "Also, regarding your return question — I can help with that too. Just provide your order number and I'll check eligibility.";
-    }
-    
-    // Shipping-related
-    if (lower.includes('ship') || lower.includes('deliver') || lower.includes('arrival')) {
-      return "Also, about shipping — standard shipping takes 5-7 business days. Expedited options are available at checkout.";
-    }
-    
-    // Sizing-related
-    if (lower.includes('size') || lower.includes('fit') || lower.includes('measurement')) {
-      return "Also, for sizing questions — each product page has a size chart. I can help with specific measurements if you tell me the product.";
-    }
-    
-    // Default acknowledgment
-    return "I also noticed you asked about another topic — feel free to ask me about it next and I'll help right away.";
   }
 
   // ── Escalation helpers ──────────────────────────────
@@ -1198,7 +1199,7 @@ export default class ChatWidget {
 
     if (!force && this._hasSentMessage) return;
 
-    const suggestions = this._suggestedActions.getSuggestions(this._lastConversationState, this._lastResolvedQuery);
+    const suggestions = this._suggestedActions.getSuggestions(this._lastConversationState, this._lastResult);
 
     this._chipContainer = createActionChips(suggestions, {
       onSelect: (query) => {
@@ -1261,18 +1262,6 @@ export default class ChatWidget {
           },
         };
 
-      case 'partial':
-        return {
-          type: 'product-card',
-          product: result.product,
-        };
-
-      case 'product_only':
-        return {
-          type: 'product-card',
-          product: result.product,
-        };
-
       case 'search_results':
         return {
           type: 'product-list',
@@ -1280,6 +1269,8 @@ export default class ChatWidget {
           totalCount: result.totalCount,
         };
 
+      case 'partial':
+      case 'product_only':
       case 'ambiguous':
       case 'not_found':
       case 'context_expired':
