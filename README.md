@@ -62,7 +62,7 @@ This builds the widget (tsc + vite), serves it on port 3000, runs tests.
 | Context-aware chips | Chips reflect specific product/order being discussed |
 | Order card rendering | CSS classes preserved — styled cards, not plain text |
 | Conversational responses | Catalog templates rewritten for natural tone |
-| Context limit | Increased from 3 to 20 turns |
+| Context limit | Bounded to 3 turns with a 5-minute expiry |
 | Refresh button | Chat header reset button |
 | Policy routing fix | "shipping" queries → policy, not order tracking |
 | Off-topic fixes | Word-boundary regex prevents substring false positives |
@@ -127,7 +127,7 @@ Open `shopify-widget/agent-console.html` in your browser. It connects to the sam
 │   │   ├── policyService.ts           # Policy data management
 │   │   ├── mockCatalogData.ts         # 7 products, 52 variants (testing only)
 │   │   ├── synonymResolver.ts         # Canonical → alias mapping
-│   │   ├── conversationContext.ts     # 5min/20turn context manager
+│   │   ├── conversationContext.ts     # 5min/3turn context manager
 │   │   ├── cacheManager.ts            # Generic TTL cache
 │   │   ├── escalationDetector.ts      # Handoff + frustration detection
 │   │   ├── escalationStateMachine.ts  # FSM with localStorage
